@@ -1,0 +1,5 @@
+variant,check2_emissions_weighted_abs_dev_pct,mean_signed_pct,signed_2024_2030_pct,signed_2040_2050_pct
+combustion_only,5.886,-4.864,1.874,-10.852
+consistent_new0,18.540,-20.109,-11.208,-26.382
+consistent_new76,1.363,-1.448,-0.457,-2.331
+consistent_scope,10.885,-11.715,-6.799,-15.008

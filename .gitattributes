@@ -1,0 +1,4 @@
+# Keep data files byte-identical so MANIFEST.csv checksums hold after checkout.
+*.csv -text linguist-generated
+*.parquet binary
+*.docx binary

@@ -1,0 +1,11 @@
+scenario,island,first_year_below_p75,first_year_below_p50,first_year_below_p25,first_year_below_p10,first_year_below_p5
+Constraint,NI,2042,,,,
+Environmental,NI,2032,,,,
+Growth,NI,2041,,,,
+Innovation,NI,2032,,,,
+Reference,NI,2037,,,,
+Constraint,SI,2024,2024.0,2024.0,2024.0,2024.0
+Environmental,SI,2024,2024.0,2024.0,2024.0,2024.0
+Growth,SI,2024,2024.0,2024.0,2024.0,2024.0
+Innovation,SI,2024,2024.0,2024.0,2024.0,2024.0
+Reference,SI,2024,2024.0,2024.0,2024.0,2024.0

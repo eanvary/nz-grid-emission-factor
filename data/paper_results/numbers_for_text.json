@@ -1,0 +1,1307 @@
+{
+ "check_NI_generation_vs_chain_max_abs_diff": 4.85722573273506e-16,
+ "NI_generation": {
+  "n_rows": 105,
+  "fit_counts": {
+   "full": 60,
+   "truncated_26yrs": 15,
+   "truncated_24yrs": 15,
+   "truncated_21yrs": 15
+  },
+  "spatial_gt_temporal_mean": 105,
+  "spatial_gt_temporal_all_six_orders": 105,
+  "ratio_min": 6.21,
+  "ratio_median": 22.99,
+  "ratio_max": 2145.0,
+  "ratio_min_any_order": 3.88,
+  "ratio_min_by_profile": {
+   "continuous_24_7": 8.68,
+   "daytime_office": 6.21,
+   "evening_weighted": 14.38
+  },
+  "temporal_sign_differs_across_orders": 54,
+  "trajectory_gt_spatial": {
+   "n": 23,
+   "by_scenario": {
+    "Environmental": 14,
+    "Innovation": 9
+   }
+  },
+  "order_range_over_mean_pct_max": {
+   "temporal": 21997.2,
+   "spatial": 79.7,
+   "trajectory": 99.5
+  },
+  "headline": {
+   "E_a": 212.7,
+   "E_c": 134.5,
+   "E_d": 198.2,
+   "total": -14.6,
+   "practice_c_minus_a": -78.3,
+   "temporal": 17.9,
+   "temporal_min": 10.3,
+   "temporal_max": 31.2,
+   "temporal_o1": 15.9,
+   "spatial": -112.2,
+   "spatial_min": -138.8,
+   "spatial_max": -88.5,
+   "spatial_o1": -94.2,
+   "trajectory": 79.8,
+   "trajectory_min": 57.0,
+   "trajectory_max": 108.3,
+   "trajectory_o1": 63.7,
+   "n_years": 24,
+   "total_pct": -6.8,
+   "practice_c_pct": -36.8,
+   "spatial_pct_of_resolved": 52.8,
+   "spatial_o1_pct_of_resolved": 44.3
+  },
+  "case_2027_10": {
+   "E_a": 111.0,
+   "E_c": 70.3,
+   "E_d": 82.6,
+   "total": -28.4,
+   "practice_c_minus_a": -40.6,
+   "temporal": 8.3,
+   "temporal_min": 5.0,
+   "temporal_max": 13.0,
+   "temporal_o1": 8.7,
+   "spatial": -51.4,
+   "spatial_min": -57.8,
+   "spatial_max": -45.6,
+   "spatial_o1": -49.4,
+   "trajectory": 14.7,
+   "trajectory_min": 10.2,
+   "trajectory_max": 20.7,
+   "trajectory_o1": 12.2,
+   "n_years": 10,
+   "total_pct": -25.6,
+   "practice_c_pct": -36.6,
+   "spatial_pct_of_resolved": 46.3,
+   "spatial_o1_pct_of_resolved": 44.5
+  },
+  "case_2025_25": {
+   "E_a": 231.7,
+   "E_c": 146.3,
+   "E_d": 206.0,
+   "total": -25.7,
+   "practice_c_minus_a": -85.4,
+   "temporal": 15.6,
+   "temporal_min": 10.9,
+   "temporal_max": 23.8,
+   "temporal_o1": 17.5,
+   "spatial": -121.7,
+   "spatial_min": -148.8,
+   "spatial_max": -96.3,
+   "spatial_o1": -102.9,
+   "trajectory": 80.4,
+   "trajectory_min": 58.6,
+   "trajectory_max": 105.6,
+   "trajectory_o1": 59.7,
+   "n_years": 25,
+   "total_pct": -11.1,
+   "practice_c_pct": -36.9,
+   "spatial_pct_of_resolved": 52.5,
+   "spatial_o1_pct_of_resolved": 44.4
+  },
+  "table4": {
+   "daytime_office|Reference": {
+    "E_a": 212.7,
+    "E_c": 134.5,
+    "E_d": 198.2,
+    "total": -14.6,
+    "practice_c_minus_a": -78.3,
+    "temporal": 17.9,
+    "temporal_min": 10.3,
+    "temporal_max": 31.2,
+    "temporal_o1": 15.9,
+    "spatial": -112.2,
+    "spatial_min": -138.8,
+    "spatial_max": -88.5,
+    "spatial_o1": -94.2,
+    "trajectory": 79.8,
+    "trajectory_min": 57.0,
+    "trajectory_max": 108.3,
+    "trajectory_o1": 63.7,
+    "n_years": 24,
+    "total_pct": -6.8,
+    "practice_c_pct": -36.8,
+    "spatial_pct_of_resolved": 52.8,
+    "spatial_o1_pct_of_resolved": 44.3
+   },
+   "continuous_24_7|Reference": {
+    "E_a": 241.3,
+    "E_c": 134.5,
+    "E_d": 198.2,
+    "total": -43.1,
+    "practice_c_minus_a": -106.8,
+    "temporal": -4.9,
+    "temporal_min": -12.6,
+    "temporal_max": 6.5,
+    "temporal_o1": -12.6,
+    "spatial": -116.6,
+    "spatial_min": -138.8,
+    "spatial_max": -94.2,
+    "spatial_o1": -94.2,
+    "trajectory": 78.4,
+    "trajectory_min": 56.5,
+    "trajectory_max": 108.3,
+    "trajectory_o1": 63.7,
+    "n_years": 24,
+    "total_pct": -17.9,
+    "practice_c_pct": -44.3,
+    "spatial_pct_of_resolved": 48.3,
+    "spatial_o1_pct_of_resolved": 39.0
+   },
+   "evening_weighted|Reference": {
+    "E_a": 230.3,
+    "E_c": 134.5,
+    "E_d": 198.2,
+    "total": -32.1,
+    "practice_c_minus_a": -95.8,
+    "temporal": 3.9,
+    "temporal_min": -1.6,
+    "temporal_max": 16.7,
+    "temporal_o1": -1.6,
+    "spatial": -114.7,
+    "spatial_min": -138.8,
+    "spatial_max": -94.2,
+    "spatial_o1": -94.2,
+    "trajectory": 78.7,
+    "trajectory_min": 56.4,
+    "trajectory_max": 108.3,
+    "trajectory_o1": 63.7,
+    "n_years": 24,
+    "total_pct": -13.9,
+    "practice_c_pct": -41.6,
+    "spatial_pct_of_resolved": 49.8,
+    "spatial_o1_pct_of_resolved": 40.9
+   },
+   "daytime_office|Growth": {
+    "E_a": 210.8,
+    "E_c": 135.2,
+    "E_d": 188.5,
+    "total": -22.4,
+    "practice_c_minus_a": -75.6,
+    "temporal": 16.3,
+    "temporal_min": 11.1,
+    "temporal_max": 24.9,
+    "temporal_o1": 17.2,
+    "spatial": -107.6,
+    "spatial_min": -130.1,
+    "spatial_max": -86.7,
+    "spatial_o1": -92.8,
+    "trajectory": 68.9,
+    "trajectory_min": 50.5,
+    "trajectory_max": 90.6,
+    "trajectory_o1": 53.3,
+    "n_years": 24,
+    "total_pct": -10.6,
+    "practice_c_pct": -35.9,
+    "spatial_pct_of_resolved": 51.0,
+    "spatial_o1_pct_of_resolved": 44.0
+   },
+   "daytime_office|Constraint": {
+    "E_a": 222.6,
+    "E_c": 136.2,
+    "E_d": 196.8,
+    "total": -25.8,
+    "practice_c_minus_a": -86.5,
+    "temporal": 15.6,
+    "temporal_min": 7.8,
+    "temporal_max": 30.3,
+    "temporal_o1": 11.7,
+    "spatial": -115.6,
+    "spatial_min": -140.4,
+    "spatial_max": -94.3,
+    "spatial_o1": -98.2,
+    "trajectory": 74.2,
+    "trajectory_min": 52.4,
+    "trajectory_max": 102.9,
+    "trajectory_o1": 60.7,
+    "n_years": 24,
+    "total_pct": -11.6,
+    "practice_c_pct": -38.8,
+    "spatial_pct_of_resolved": 51.9,
+    "spatial_o1_pct_of_resolved": 44.1
+   },
+   "daytime_office|Innovation": {
+    "E_a": 160.4,
+    "E_c": 100.1,
+    "E_d": 180.1,
+    "total": 19.7,
+    "practice_c_minus_a": -60.3,
+    "temporal": 10.0,
+    "temporal_min": 7.3,
+    "temporal_max": 14.8,
+    "temporal_o1": 9.7,
+    "spatial": -95.8,
+    "spatial_min": -125.0,
+    "spatial_max": -67.6,
+    "spatial_o1": -70.0,
+    "trajectory": 105.5,
+    "trajectory_min": 78.0,
+    "trajectory_max": 135.0,
+    "trajectory_o1": 80.0,
+    "n_years": 24,
+    "total_pct": 12.3,
+    "practice_c_pct": -37.6,
+    "spatial_pct_of_resolved": 59.7,
+    "spatial_o1_pct_of_resolved": 43.6
+   },
+   "daytime_office|Environmental": {
+    "E_a": 141.8,
+    "E_c": 87.4,
+    "E_d": 184.6,
+    "total": 42.9,
+    "practice_c_minus_a": -54.3,
+    "temporal": 10.7,
+    "temporal_min": 5.6,
+    "temporal_max": 20.6,
+    "temporal_o1": 7.2,
+    "spatial": -94.3,
+    "spatial_min": -131.0,
+    "spatial_max": -60.0,
+    "spatial_o1": -61.5,
+    "trajectory": 126.4,
+    "trajectory_min": 90.9,
+    "trajectory_max": 166.7,
+    "trajectory_o1": 97.2,
+    "n_years": 24,
+    "total_pct": 30.2,
+    "practice_c_pct": -38.3,
+    "spatial_pct_of_resolved": 66.5,
+    "spatial_o1_pct_of_resolved": 43.4
+   }
+  },
+  "by_trajectory": {
+   "Constraint": {
+    "n": 21,
+    "understates": 21,
+    "overstates": 0,
+    "pct_min": -36.0,
+    "pct_max": -11.6
+   },
+   "Environmental": {
+    "n": 21,
+    "understates": 8,
+    "overstates": 13,
+    "pct_min": -20.1,
+    "pct_max": 31.4
+   },
+   "Growth": {
+    "n": 21,
+    "understates": 21,
+    "overstates": 0,
+    "pct_min": -38.2,
+    "pct_max": -9.6
+   },
+   "Innovation": {
+    "n": 21,
+    "understates": 12,
+    "overstates": 9,
+    "pct_min": -21.7,
+    "pct_max": 15.8
+   },
+   "Reference": {
+    "n": 21,
+    "understates": 21,
+    "overstates": 0,
+    "pct_min": -37.3,
+    "pct_max": -6.8
+   }
+  },
+  "practice_c_by_trajectory": {
+   "Constraint": {
+    "n": 21,
+    "understates": 21,
+    "pct_min": -44.4,
+    "pct_max": -37.2
+   },
+   "Environmental": {
+    "n": 21,
+    "understates": 21,
+    "pct_min": -46.9,
+    "pct_max": -38.3
+   },
+   "Growth": {
+    "n": 21,
+    "understates": 21,
+    "pct_min": -46.2,
+    "pct_max": -35.8
+   },
+   "Innovation": {
+    "n": 21,
+    "understates": 21,
+    "pct_min": -46.7,
+    "pct_max": -37.5
+   },
+   "Reference": {
+    "n": 21,
+    "understates": 21,
+    "pct_min": -45.1,
+    "pct_max": -36.6
+   }
+  },
+  "practice_c_headline_by_trajectory_pct": {
+   "Reference": -36.8,
+   "Growth": -35.9,
+   "Constraint": -38.8,
+   "Innovation": -37.6,
+   "Environmental": -38.3
+  },
+  "within_5pct": {
+   "n": 8,
+   "by_scenario": {
+    "Innovation": 6,
+    "Environmental": 2
+   }
+  },
+  "fig6_daytime_25yr_total_pct": {
+   "Constraint": {
+    "2025": -14.3,
+    "2027": -11.6,
+    "2030": -20.9
+   },
+   "Environmental": {
+    "2025": 29.4,
+    "2027": 30.2,
+    "2030": 27.5
+   },
+   "Growth": {
+    "2025": -10.5,
+    "2027": -10.6,
+    "2030": -18.5
+   },
+   "Innovation": {
+    "2025": 14.6,
+    "2027": 12.3,
+    "2030": 5.8
+   },
+   "Reference": {
+    "2025": -11.1,
+    "2027": -6.8,
+    "2030": -20.6
+   }
+  }
+ },
+ "NI_consumption": {
+  "n_rows": 105,
+  "fit_counts": {
+   "full": 60,
+   "truncated_26yrs": 15,
+   "truncated_24yrs": 15,
+   "truncated_21yrs": 15
+  },
+  "spatial_gt_temporal_mean": 105,
+  "spatial_gt_temporal_all_six_orders": 105,
+  "ratio_min": 5.53,
+  "ratio_median": 18.17,
+  "ratio_max": 374.0,
+  "ratio_min_any_order": 3.32,
+  "ratio_min_by_profile": {
+   "continuous_24_7": 7.34,
+   "daytime_office": 5.53,
+   "evening_weighted": 17.99
+  },
+  "temporal_sign_differs_across_orders": 40,
+  "trajectory_gt_spatial": {
+   "n": 27,
+   "by_scenario": {
+    "Environmental": 15,
+    "Innovation": 12
+   }
+  },
+  "order_range_over_mean_pct_max": {
+   "temporal": 2572.0,
+   "spatial": 79.4,
+   "trajectory": 92.4
+  },
+  "headline": {
+   "E_a": 198.2,
+   "E_c": 134.5,
+   "E_d": 198.2,
+   "total": -0.0,
+   "practice_c_minus_a": -63.8,
+   "temporal": 17.2,
+   "temporal_min": 10.3,
+   "temporal_max": 26.8,
+   "temporal_o1": 16.0,
+   "spatial": -95.1,
+   "spatial_min": -117.5,
+   "spatial_max": -74.0,
+   "spatial_o1": -79.7,
+   "trajectory": 77.8,
+   "trajectory_min": 57.0,
+   "trajectory_max": 101.4,
+   "trajectory_o1": 63.7,
+   "n_years": 24,
+   "total_pct": -0.0,
+   "practice_c_pct": -32.2,
+   "spatial_pct_of_resolved": 48.0,
+   "spatial_o1_pct_of_resolved": 40.2
+  },
+  "case_2027_10": {
+   "E_a": 104.1,
+   "E_c": 70.3,
+   "E_d": 82.6,
+   "total": -21.6,
+   "practice_c_minus_a": -33.8,
+   "temporal": 7.7,
+   "temporal_min": 5.0,
+   "temporal_max": 11.2,
+   "temporal_o1": 7.8,
+   "spatial": -43.7,
+   "spatial_min": -48.9,
+   "spatial_max": -38.8,
+   "spatial_o1": -41.6,
+   "trajectory": 14.4,
+   "trajectory_min": 10.2,
+   "trajectory_max": 19.5,
+   "trajectory_o1": 12.2,
+   "n_years": 10,
+   "total_pct": -20.7,
+   "practice_c_pct": -32.5,
+   "spatial_pct_of_resolved": 41.9,
+   "spatial_o1_pct_of_resolved": 40.0
+  },
+  "case_2025_25": {
+   "E_a": 216.0,
+   "E_c": 146.3,
+   "E_d": 206.0,
+   "total": -10.0,
+   "practice_c_minus_a": -69.8,
+   "temporal": 14.8,
+   "temporal_min": 10.9,
+   "temporal_max": 19.8,
+   "temporal_o1": 17.1,
+   "spatial": -102.0,
+   "spatial_min": -123.9,
+   "spatial_max": -80.7,
+   "spatial_o1": -86.9,
+   "trajectory": 77.2,
+   "trajectory_min": 58.6,
+   "trajectory_max": 96.7,
+   "trajectory_o1": 59.7,
+   "n_years": 25,
+   "total_pct": -4.6,
+   "practice_c_pct": -32.3,
+   "spatial_pct_of_resolved": 47.2,
+   "spatial_o1_pct_of_resolved": 40.2
+  },
+  "table4": {
+   "daytime_office|Reference": {
+    "E_a": 198.2,
+    "E_c": 134.5,
+    "E_d": 198.2,
+    "total": -0.0,
+    "practice_c_minus_a": -63.8,
+    "temporal": 17.2,
+    "temporal_min": 10.3,
+    "temporal_max": 26.8,
+    "temporal_o1": 16.0,
+    "spatial": -95.1,
+    "spatial_min": -117.5,
+    "spatial_max": -74.0,
+    "spatial_o1": -79.7,
+    "trajectory": 77.8,
+    "trajectory_min": 57.0,
+    "trajectory_max": 101.4,
+    "trajectory_o1": 63.7,
+    "n_years": 24,
+    "total_pct": -0.0,
+    "practice_c_pct": -32.2,
+    "spatial_pct_of_resolved": 48.0,
+    "spatial_o1_pct_of_resolved": 40.2
+   },
+   "continuous_24_7|Reference": {
+    "E_a": 228.2,
+    "E_c": 134.5,
+    "E_d": 198.2,
+    "total": -30.0,
+    "practice_c_minus_a": -93.7,
+    "temporal": -6.8,
+    "temporal_min": -14.0,
+    "temporal_max": -1.2,
+    "temporal_o1": -14.0,
+    "spatial": -100.6,
+    "spatial_min": -118.1,
+    "spatial_max": -79.7,
+    "spatial_o1": -79.7,
+    "trajectory": 77.3,
+    "trajectory_min": 56.5,
+    "trajectory_max": 101.4,
+    "trajectory_o1": 63.7,
+    "n_years": 24,
+    "total_pct": -13.2,
+    "practice_c_pct": -41.1,
+    "spatial_pct_of_resolved": 44.1,
+    "spatial_o1_pct_of_resolved": 34.9
+   },
+   "evening_weighted|Reference": {
+    "E_a": 216.4,
+    "E_c": 134.5,
+    "E_d": 198.2,
+    "total": -18.3,
+    "practice_c_minus_a": -82.0,
+    "temporal": 2.6,
+    "temporal_min": -2.2,
+    "temporal_max": 9.8,
+    "temporal_o1": -2.2,
+    "spatial": -98.2,
+    "spatial_min": -117.5,
+    "spatial_max": -79.7,
+    "spatial_o1": -79.7,
+    "trajectory": 77.4,
+    "trajectory_min": 56.4,
+    "trajectory_max": 101.4,
+    "trajectory_o1": 63.7,
+    "n_years": 24,
+    "total_pct": -8.4,
+    "practice_c_pct": -37.9,
+    "spatial_pct_of_resolved": 45.4,
+    "spatial_o1_pct_of_resolved": 36.8
+   },
+   "daytime_office|Growth": {
+    "E_a": 197.5,
+    "E_c": 135.2,
+    "E_d": 188.5,
+    "total": -9.1,
+    "practice_c_minus_a": -62.4,
+    "temporal": 15.7,
+    "temporal_min": 11.1,
+    "temporal_max": 21.9,
+    "temporal_o1": 16.8,
+    "spatial": -92.0,
+    "spatial_min": -111.4,
+    "spatial_max": -73.4,
+    "spatial_o1": -79.1,
+    "trajectory": 67.2,
+    "trajectory_min": 50.5,
+    "trajectory_max": 85.5,
+    "trajectory_o1": 53.3,
+    "n_years": 24,
+    "total_pct": -4.6,
+    "practice_c_pct": -31.6,
+    "spatial_pct_of_resolved": 46.6,
+    "spatial_o1_pct_of_resolved": 40.1
+   },
+   "daytime_office|Constraint": {
+    "E_a": 205.6,
+    "E_c": 136.2,
+    "E_d": 196.8,
+    "total": -8.7,
+    "practice_c_minus_a": -69.4,
+    "temporal": 15.1,
+    "temporal_min": 7.8,
+    "temporal_max": 25.7,
+    "temporal_o1": 12.5,
+    "spatial": -96.5,
+    "spatial_min": -117.5,
+    "spatial_max": -77.2,
+    "spatial_o1": -81.9,
+    "trajectory": 72.7,
+    "trajectory_min": 52.4,
+    "trajectory_max": 96.3,
+    "trajectory_o1": 60.7,
+    "n_years": 24,
+    "total_pct": -4.3,
+    "practice_c_pct": -33.8,
+    "spatial_pct_of_resolved": 47.0,
+    "spatial_o1_pct_of_resolved": 39.9
+   },
+   "daytime_office|Innovation": {
+    "E_a": 152.2,
+    "E_c": 100.1,
+    "E_d": 180.1,
+    "total": 27.9,
+    "practice_c_minus_a": -52.1,
+    "temporal": 10.3,
+    "temporal_min": 7.3,
+    "temporal_max": 14.7,
+    "temporal_o1": 10.7,
+    "spatial": -83.8,
+    "spatial_min": -108.8,
+    "spatial_max": -59.4,
+    "spatial_o1": -62.8,
+    "trajectory": 101.4,
+    "trajectory_min": 78.0,
+    "trajectory_max": 126.0,
+    "trajectory_o1": 80.0,
+    "n_years": 24,
+    "total_pct": 18.3,
+    "practice_c_pct": -34.2,
+    "spatial_pct_of_resolved": 55.0,
+    "spatial_o1_pct_of_resolved": 41.3
+   },
+   "daytime_office|Environmental": {
+    "E_a": 130.8,
+    "E_c": 87.4,
+    "E_d": 184.6,
+    "total": 53.8,
+    "practice_c_minus_a": -43.4,
+    "temporal": 11.0,
+    "temporal_min": 5.6,
+    "temporal_max": 19.3,
+    "temporal_o1": 8.5,
+    "spatial": -79.0,
+    "spatial_min": -110.5,
+    "spatial_max": -49.0,
+    "spatial_o1": -51.9,
+    "trajectory": 121.9,
+    "trajectory_min": 90.9,
+    "trajectory_max": 155.8,
+    "trajectory_o1": 97.2,
+    "n_years": 24,
+    "total_pct": 41.1,
+    "practice_c_pct": -33.2,
+    "spatial_pct_of_resolved": 60.4,
+    "spatial_o1_pct_of_resolved": 39.7
+   }
+  },
+  "by_trajectory": {
+   "Constraint": {
+    "n": 21,
+    "understates": 21,
+    "overstates": 0,
+    "pct_min": -32.0,
+    "pct_max": -4.3
+   },
+   "Environmental": {
+    "n": 21,
+    "understates": 5,
+    "overstates": 16,
+    "pct_min": -15.4,
+    "pct_max": 42.2
+   },
+   "Growth": {
+    "n": 21,
+    "understates": 21,
+    "overstates": 0,
+    "pct_min": -34.9,
+    "pct_max": -3.6
+   },
+   "Innovation": {
+    "n": 21,
+    "understates": 9,
+    "overstates": 12,
+    "pct_min": -17.8,
+    "pct_max": 22.3
+   },
+   "Reference": {
+    "n": 21,
+    "understates": 21,
+    "overstates": 0,
+    "pct_min": -33.6,
+    "pct_max": -0.0
+   }
+  },
+  "practice_c_by_trajectory": {
+   "Constraint": {
+    "n": 21,
+    "understates": 21,
+    "pct_min": -40.5,
+    "pct_max": -32.8
+   },
+   "Environmental": {
+    "n": 21,
+    "understates": 21,
+    "pct_min": -43.3,
+    "pct_max": -33.1
+   },
+   "Growth": {
+    "n": 21,
+    "understates": 21,
+    "pct_min": -43.2,
+    "pct_max": -31.3
+   },
+   "Innovation": {
+    "n": 21,
+    "understates": 21,
+    "pct_min": -44.7,
+    "pct_max": -33.9
+   },
+   "Reference": {
+    "n": 21,
+    "understates": 21,
+    "pct_min": -41.8,
+    "pct_max": -32.2
+   }
+  },
+  "practice_c_headline_by_trajectory_pct": {
+   "Reference": -32.2,
+   "Growth": -31.6,
+   "Constraint": -33.8,
+   "Innovation": -34.2,
+   "Environmental": -33.2
+  },
+  "within_5pct": {
+   "n": 14,
+   "by_scenario": {
+    "Innovation": 5,
+    "Reference": 3,
+    "Growth": 3,
+    "Environmental": 2,
+    "Constraint": 1
+   }
+  },
+  "fig6_daytime_25yr_total_pct": {
+   "Constraint": {
+    "2025": -7.3,
+    "2027": -4.3,
+    "2030": -14.0
+   },
+   "Environmental": {
+    "2025": 40.1,
+    "2027": 41.1,
+    "2030": 38.8
+   },
+   "Growth": {
+    "2025": -4.5,
+    "2027": -4.6,
+    "2030": -12.8
+   },
+   "Innovation": {
+    "2025": 21.1,
+    "2027": 18.3,
+    "2030": 11.3
+   },
+   "Reference": {
+    "2025": -4.6,
+    "2027": -0.0,
+    "2030": -14.6
+   }
+  }
+ },
+ "SI_building": {
+  "consumption": {
+   "headline": {
+    "E_a": 6.0,
+    "E_d": 198.2,
+    "total": 192.2,
+    "spatial": 150.3,
+    "temporal": 9.6,
+    "trajectory": 32.3,
+    "total_pct": 3220.0
+   },
+   "case_2027_10": {
+    "E_a": 3.2,
+    "E_d": 82.6,
+    "total": 79.4,
+    "spatial": 69.1
+   },
+   "overstates_in": 105,
+   "n": 105,
+   "spatial_positive_in": 105,
+   "spatial_gt_temporal": 105,
+   "total_pct_range": [
+    1019.5,
+    5081.9
+   ]
+  },
+  "generation": {
+   "headline": {
+    "E_a": 0.0,
+    "E_d": 198.2,
+    "total": 198.2,
+    "spatial": 160.1,
+    "temporal": 7.4,
+    "trajectory": 30.7,
+    "total_pct": null
+   },
+   "case_2027_10": {
+    "E_a": 0.0,
+    "E_d": 82.6,
+    "total": 82.6,
+    "spatial": 73.6
+   },
+   "overstates_in": 105,
+   "n": 105,
+   "spatial_positive_in": 105,
+   "spatial_gt_temporal": 105,
+   "total_pct_range": [
+    NaN,
+    NaN
+   ]
+  }
+ },
+ "practice_anchor": [
+  {
+   "start_year": 2027,
+   "period": 25,
+   "resolved_kgm2": 212.7,
+   "static_projected_kgm2": 198.2,
+   "static_mfe_kgm2": 250.4,
+   "total_mfe_kgm2": 37.7,
+   "total_mfe_pct": 17.7,
+   "projected_national_start_year_g_per_kwh": 62.3
+  },
+  {
+   "start_year": 2027,
+   "period": 10,
+   "resolved_kgm2": 111.0,
+   "static_projected_kgm2": 82.6,
+   "static_mfe_kgm2": 104.4,
+   "total_mfe_kgm2": -6.6,
+   "total_mfe_pct": -6.0,
+   "projected_national_start_year_g_per_kwh": 62.3
+  },
+  {
+   "start_year": 2025,
+   "period": 25,
+   "resolved_kgm2": 231.7,
+   "static_projected_kgm2": 206.0,
+   "static_mfe_kgm2": 260.9,
+   "total_mfe_kgm2": 29.2,
+   "total_mfe_pct": 12.6,
+   "projected_national_start_year_g_per_kwh": 62.1
+  }
+ ],
+ "mfe_2025_g_per_kwh": 78.7,
+ "reference_annual_g_per_kwh": {
+  "2024": {
+   "NI": 137.2,
+   "national": 82.6,
+   "NI_over_national": 1.66
+  },
+  "2025": {
+   "NI": 107.0,
+   "national": 62.1,
+   "NI_over_national": 1.72
+  },
+  "2027": {
+   "NI": 105.8,
+   "national": 62.3,
+   "NI_over_national": 1.7
+  },
+  "2030": {
+   "NI": 85.6,
+   "national": 50.1,
+   "NI_over_national": 1.71
+  },
+  "2035": {
+   "NI": 84.8,
+   "national": 50.2,
+   "NI_over_national": 1.69
+  },
+  "2049": {
+   "NI": 59.3,
+   "national": 35.1,
+   "NI_over_national": 1.69
+  },
+  "2050": {
+   "NI": 59.4,
+   "national": 35.2,
+   "NI_over_national": 1.69
+  }
+ },
+ "screening_bound": [
+  {
+   "system": "Canada",
+   "understatement_highest_subregion_pct": 84.8,
+   "national_over_lowest": 83.3
+  },
+  {
+   "system": "USA",
+   "understatement_highest_subregion_pct": 44.4,
+   "national_over_lowest": 3.0
+  },
+  {
+   "system": "Australia",
+   "understatement_highest_subregion_pct": 20.5,
+   "national_over_lowest": 3.1
+  },
+  {
+   "system": "Europe (EU27, country-level)",
+   "understatement_highest_subregion_pct": 62.8,
+   "national_over_lowest": 32.2
+  },
+  {
+   "system": "New Zealand",
+   "understatement_highest_subregion_pct": 41.2,
+   "national_over_lowest": null
+  }
+ ],
+ "eta2": {
+  "season_2024": 47.4,
+  "season_2050": 10.3,
+  "hour_2024": 5.5,
+  "hour_2050": 20.7,
+  "hour_2050_by_scenario": {
+   "Constraint": 11.5,
+   "Environmental": 34.3,
+   "Growth": 34.2,
+   "Innovation": 30.1,
+   "Reference": 20.7
+  },
+  "season_r": {
+   "Constraint": [
+    -0.88,
+    1.7e-09
+   ],
+   "Environmental": [
+    -0.82,
+    1.8e-07
+   ],
+   "Growth": [
+    -0.85,
+    1.8e-08
+   ],
+   "Innovation": [
+    -0.79,
+    1.1e-06
+   ],
+   "Reference": [
+    -0.85,
+    2.3e-08
+   ]
+  },
+  "hour_r": {
+   "Constraint": [
+    0.59,
+    0.0011
+   ],
+   "Environmental": [
+    0.98,
+    2.9e-20
+   ],
+   "Growth": [
+    0.97,
+    2.3e-17
+   ],
+   "Innovation": [
+    0.99,
+    1.4e-25
+   ],
+   "Reference": [
+    0.95,
+    1.9e-14
+   ]
+  }
+ },
+ "distribution": {
+  "cv_2024": [
+   0.41,
+   0.43
+  ],
+  "cv_2050": [
+   0.6,
+   0.8
+  ],
+  "mean_minus_median_2024": [
+   -4.4,
+   -3.8
+  ],
+  "mean_minus_median_2050": [
+   10.5,
+   21.3
+  ],
+  "zero_hours_pct_2024_max": 0.01,
+  "zero_hours_pct_2050": [
+   0.01,
+   0.01
+  ]
+ },
+ "diurnal_corr_2050": {
+  "Constraint": 0.93,
+  "Environmental": 0.64,
+  "Growth": 0.82,
+  "Innovation": 0.7,
+  "Reference": 0.9
+ },
+ "peak_hour_counts": {
+  "21": 14,
+  "20": 10,
+  "22": 6
+ },
+ "cagr_NI_pct_per_yr": {
+  "Constraint": -3.23,
+  "Environmental": -5.5,
+  "Growth": -3.34,
+  "Innovation": -4.41,
+  "Reference": -3.17
+ },
+ "templates": [
+  {
+   "template": "central_2021",
+   "n_rows": 120,
+   "spatial_gt_temporal_primary": 120,
+   "spatial_gt_temporal_alt": 120,
+   "ratio_min_primary": 3.883,
+   "ratio_median_primary": 9.247,
+   "ratio_min_alt": 7.071,
+   "headline_total_error_pct": -11.074,
+   "headline_spatial": -0.775,
+   "headline_temporal": 0.132,
+   "headline_trajectory": 0.45,
+   "headline_sign_of_total": -1.0
+  },
+  {
+   "template": "wet_2023",
+   "n_rows": 120,
+   "spatial_gt_temporal_primary": 120,
+   "spatial_gt_temporal_alt": 120,
+   "ratio_min_primary": 4.803,
+   "ratio_median_primary": 11.34,
+   "ratio_min_alt": 7.399,
+   "headline_total_error_pct": -10.693,
+   "headline_spatial": -0.775,
+   "headline_temporal": 0.139,
+   "headline_trajectory": 0.45,
+   "headline_sign_of_total": -1.0
+  },
+  {
+   "template": "dry_2024",
+   "n_rows": 120,
+   "spatial_gt_temporal_primary": 120,
+   "spatial_gt_temporal_alt": 120,
+   "ratio_min_primary": 3.483,
+   "ratio_median_primary": 8.87,
+   "ratio_min_alt": 5.152,
+   "headline_total_error_pct": -6.749,
+   "headline_spatial": -0.775,
+   "headline_temporal": 0.213,
+   "headline_trajectory": 0.45,
+   "headline_sign_of_total": -1.0
+  },
+  {
+   "template": "median_2017",
+   "n_rows": 120,
+   "spatial_gt_temporal_primary": 120,
+   "spatial_gt_temporal_alt": 120,
+   "ratio_min_primary": 4.088,
+   "ratio_median_primary": 9.438,
+   "ratio_min_alt": 6.55,
+   "headline_total_error_pct": -9.042,
+   "headline_spatial": -0.775,
+   "headline_temporal": 0.171,
+   "headline_trajectory": 0.45,
+   "headline_sign_of_total": -1.0
+  }
+ ],
+ "jan2030_NI_hourly_range_by_template": [
+  [
+   "central",
+   14.4,
+   178.8
+  ],
+  [
+   "_tmpl2017",
+   12.8,
+   161.9
+  ],
+  [
+   "_tmpl2023",
+   13.4,
+   188.3
+  ],
+  [
+   "_tmpl2024",
+   14.2,
+   194.2
+  ]
+ ],
+ "jan2030_span_all_templates": [
+  12.8,
+  194.2
+ ],
+ "template_selection": [
+  {
+   "year": 2015,
+   "hydro_rank_driest_first": 5,
+   "corr_hour_of_day": 0.951,
+   "corr_day_of_week": 0.987,
+   "corr_month_of_year": 0.14
+  },
+  {
+   "year": 2016,
+   "hydro_rank_driest_first": 8,
+   "corr_hour_of_day": 0.941,
+   "corr_day_of_week": 0.971,
+   "corr_month_of_year": 0.755
+  },
+  {
+   "year": 2017,
+   "hydro_rank_driest_first": 6,
+   "corr_hour_of_day": 0.92,
+   "corr_day_of_week": 0.98,
+   "corr_month_of_year": -0.092
+  },
+  {
+   "year": 2018,
+   "hydro_rank_driest_first": 9,
+   "corr_hour_of_day": 0.89,
+   "corr_day_of_week": 0.986,
+   "corr_month_of_year": -0.702
+  },
+  {
+   "year": 2019,
+   "hydro_rank_driest_first": 7,
+   "corr_hour_of_day": 0.962,
+   "corr_day_of_week": 0.988,
+   "corr_month_of_year": 0.469
+  },
+  {
+   "year": 2020,
+   "hydro_rank_driest_first": 4,
+   "corr_hour_of_day": 0.923,
+   "corr_day_of_week": 0.982,
+   "corr_month_of_year": 0.185
+  },
+  {
+   "year": 2021,
+   "hydro_rank_driest_first": 3,
+   "corr_hour_of_day": 0.94,
+   "corr_day_of_week": 0.845,
+   "corr_month_of_year": 0.935
+  },
+  {
+   "year": 2022,
+   "hydro_rank_driest_first": 10,
+   "corr_hour_of_day": 0.906,
+   "corr_day_of_week": 0.983,
+   "corr_month_of_year": 0.861
+  },
+  {
+   "year": 2023,
+   "hydro_rank_driest_first": 11,
+   "corr_hour_of_day": 0.954,
+   "corr_day_of_week": 0.937,
+   "corr_month_of_year": -0.268
+  },
+  {
+   "year": 2024,
+   "hydro_rank_driest_first": 1,
+   "corr_hour_of_day": 0.909,
+   "corr_day_of_week": 0.921,
+   "corr_month_of_year": 0.836
+  },
+  {
+   "year": 2025,
+   "hydro_rank_driest_first": 2,
+   "corr_hour_of_day": 0.951,
+   "corr_day_of_week": 0.967,
+   "corr_month_of_year": 0.884
+  }
+ ],
+ "bdg2": {
+  "n": 280,
+  "spatial_gt_temporal": 280,
+  "ratio_min": 2.85,
+  "mean6_2027_10_total_pct": -32.8
+ },
+ "overlap_chain": {
+  "2024": {
+   "hourly_r": 0.66,
+   "median_abs_dev_pct": 30.0
+  },
+  "2025": {
+   "hourly_r": 0.51,
+   "median_abs_dev_pct": 43.6
+  }
+ },
+ "check2_primary": {
+  "emissions_weighted_abs_dev_pct": 10.9,
+  "combustion_only_pct": 5.9,
+  "worst": {
+   "scenario": "Environmental",
+   "year": 2050,
+   "gap_pct": -21.6
+  }
+ },
+ "six_order_sensitivity": {
+  "bdg2": {
+   "n": 245,
+   "spatial_gt_temporal_mean": 245,
+   "spatial_gt_temporal_all_six_orders": 245,
+   "ratio_min": 4.22,
+   "ratio_min_any_order": 2.85,
+   "headline_total_pct_by_shape": {
+    "Fox_office_Demetrius": -20.6,
+    "Lamb_office_Bertha": -23.5,
+    "Bull_office_Chantel": -18.9,
+    "Wolf_office_Cary": -13.2,
+    "Hog_office_Josefina": -16.2,
+    "Eagle_office_Tia": -18.9,
+    "SAMPLE_AVERAGE_6_BUILDINGS": -18.7
+   },
+   "case_2027_10_total_pct_by_shape": {
+    "Fox_office_Demetrius": -33.9,
+    "Lamb_office_Bertha": -37.7,
+    "Bull_office_Chantel": -32.8,
+    "Wolf_office_Cary": -28.7,
+    "Hog_office_Josefina": -30.5,
+    "Eagle_office_Tia": -32.2,
+    "SAMPLE_AVERAGE_6_BUILDINGS": -32.8
+   }
+  },
+  "template_2017": {
+   "n": 105,
+   "spatial_gt_temporal_mean": 105,
+   "spatial_gt_temporal_all_six_orders": 105,
+   "ratio_min": 5.29,
+   "ratio_min_any_order": 3.76,
+   "headline_total_pct_by_shape": {
+    "daytime_office": -4.6,
+    "continuous_24_7": -15.7,
+    "evening_weighted": -11.8
+   },
+   "case_2027_10_total_pct_by_shape": {
+    "daytime_office": -24.1,
+    "continuous_24_7": -29.4,
+    "evening_weighted": -27.4
+   }
+  },
+  "template_2021": {
+   "n": 105,
+   "spatial_gt_temporal_mean": 105,
+   "spatial_gt_temporal_all_six_orders": 105,
+   "ratio_min": 6.21,
+   "ratio_min_any_order": 3.88,
+   "headline_total_pct_by_shape": {
+    "daytime_office": -6.8,
+    "continuous_24_7": -17.9,
+    "evening_weighted": -13.9
+   },
+   "case_2027_10_total_pct_by_shape": {
+    "daytime_office": -25.6,
+    "continuous_24_7": -31.4,
+    "evening_weighted": -29.2
+   }
+  },
+  "template_2023": {
+   "n": 105,
+   "spatial_gt_temporal_mean": 105,
+   "spatial_gt_temporal_all_six_orders": 105,
+   "ratio_min": 6.21,
+   "ratio_min_any_order": 4.64,
+   "headline_total_pct_by_shape": {
+    "daytime_office": -6.2,
+    "continuous_24_7": -15.9,
+    "evening_weighted": -13.1
+   },
+   "case_2027_10_total_pct_by_shape": {
+    "daytime_office": -25.3,
+    "continuous_24_7": -29.9,
+    "evening_weighted": -28.7
+   }
+  },
+  "template_2024": {
+   "n": 105,
+   "spatial_gt_temporal_mean": 105,
+   "spatial_gt_temporal_all_six_orders": 105,
+   "ratio_min": 4.09,
+   "ratio_min_any_order": 3.07,
+   "headline_total_pct_by_shape": {
+    "daytime_office": -2.2,
+    "continuous_24_7": -15.8,
+    "evening_weighted": -10.9
+   },
+   "case_2027_10_total_pct_by_shape": {
+    "daytime_office": -21.9,
+    "continuous_24_7": -29.6,
+    "evening_weighted": -26.6
+   }
+  }
+ }
+}

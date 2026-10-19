@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use these data or code, please cite the paper and this repository."
+title: "New Zealand island-resolved grid emission factors, 2015 to 2050"
+version: "1.0.1"
+date-released: "2026-10-19"
+license: [MIT, CC-BY-4.0]
+authors:
+  # Add co-authors in paper order before publishing.
+  - family-names: "Arab Anvari"
+    given-names: "Ehsan"
+    affiliation: "Auckland University of Technology"
+    email: "vazhaanvari@gmail.com"
+keywords:
+  - grid emission factor
+  - New Zealand
+  - hourly emission factor
+  - life cycle assessment
+  - operational carbon
+preferred-citation:
+  type: article
+  title: "Where, when, and which future: decomposing grid emission factor error in building life cycle assessment"
+  authors:
+    - family-names: "Arab Anvari"
+      given-names: "Ehsan"
+  status: submitted
+  year: 2026

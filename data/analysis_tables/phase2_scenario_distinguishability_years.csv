@@ -1,0 +1,11 @@
+pair,first_year_hourly_distinguishable,first_year_annual_gt5pct,gap_years
+Reference-Growth,2027,2027,0
+Reference-Constraint,2028,2028,0
+Reference-Innovation,2026,2026,0
+Reference-Environmental,2025,2027,2
+Growth-Constraint,2027,2027,0
+Growth-Innovation,2026,2028,2
+Growth-Environmental,2025,2031,6
+Constraint-Innovation,2024,2026,2
+Constraint-Environmental,2027,2027,0
+Innovation-Environmental,2026,2026,0

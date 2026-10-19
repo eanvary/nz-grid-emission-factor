@@ -1,0 +1,8 @@
+Profile,Trajectory,Start year,Period (yr),Fit status,Resolved value (kgCO2e/m2),Static value (kgCO2e/m2),Total error (kgCO2e/m2),Total error (%),Temporal component (kgCO2e/m2),Spatial component (kgCO2e/m2),Trajectory component (kgCO2e/m2)
+daytime_office,Reference,2025,25,full,234.0,208.0,-25.9,-11.1,17.7,-103.9,60.3
+continuous_24_7,Reference,2025,25,full,262.6,208.0,-54.6,-20.8,-11.0,-103.9,60.3
+evening_weighted,Reference,2025,25,full,251.5,208.0,-43.4,-17.3,0.2,-103.9,60.3
+daytime_office,Growth,2025,25,full,232.4,208.0,-24.3,-10.5,18.8,-102.5,59.4
+daytime_office,Constraint,2025,25,full,243.8,209.0,-34.8,-14.3,13.7,-107.9,59.4
+daytime_office,Innovation,2025,25,full,183.0,209.6,26.6,14.6,11.2,-80.2,95.7
+daytime_office,Environmental,2025,25,full,166.5,215.4,49.0,29.4,9.1,-72.8,112.7

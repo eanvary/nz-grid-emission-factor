@@ -1,0 +1,6 @@
+scenario,first_year_below_p75_NIonly,first_year_below_p50_NIonly,first_year_below_p25_NIonly,first_year_below_p10_NIonly,first_year_below_p5_NIonly
+Constraint,2031,2042,,,
+Environmental,2030,2032,2033.0,2037.0,2043.0
+Growth,2030,2041,,,
+Innovation,2029,2032,2033.0,,
+Reference,2030,2037,,,

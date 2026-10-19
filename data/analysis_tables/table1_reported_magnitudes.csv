@@ -1,0 +1,19 @@
+Study,Grid system,Axis,Factor basis,Reported magnitude,Spatial boundary applied,Magnitude verified
+NESO Carbon Intensity API (2025),UK (14 DNO regions),Spatial,not stated,"~220 gCO2e/kWh (SW England) vs ~129 (GB avg), 2025",DNO region (UK),No
+This study (2026),"New Zealand (North/South Island, MBIE EDGS)",Spatial,average,"120-352% of total decomposition error (spatial component, F1)",island (NI/SI),Yes
+Siler-Evans et al. (2012),USA (Midwest vs West),Spatial,marginal,"~70% more avoided CO2/MWh (Midwest vs West, equivalent efficiency measure)","US regions (Midwest vs West, eGRID-based)",No
+"Dong, Gu & Zhang (2024)",China,Spatial,not stated,"20.59% (spatial resolution, largest of 3 deviation sources)",provincial/regional grid (China),No
+Canadian Energy Regulator / provincial data (2024),Canada (BC/Quebec/Manitoba vs Alberta/Saskatchewan),Spatial,not stated,>15x (hydro provinces <30 gCO2/kWh vs Alberta/Saskatchewan 400-600 gCO2/kWh),provincial grid,No
+EPA eGRID / NREL Cambium 2025 (2025),USA eGRID subregions,Spatial,not stated,~6-11x subregional range (~39 kgCO2eq/MWh Seattle to ~435 Miami),eGRID/Cambium subregion,No
+DCCEEW NGA state factors (2024),Australia (Tasmania vs Victoria),Spatial,not stated,"up to 4x (Tasmania hydro vs Victoria brown coal, NGA)",state grid (NGA factors),Yes
+Graff Zivin et al. (2014),USA (Midwest vs West),Spatial,marginal,">3x (marginal emission rates, upper Midwest vs western US)",US regions (Midwest vs West),No
+Weber et al. (2010),USA eGRID subregions,Spatial,average,~0.65 kgCO2/kWh (eGRID subregion vs national average difference),eGRID subregion,No
+Li et al. (2023),multi-country (97-publication SLR),Temporal,not stated,"max 150%, avg 69% (DA7: time resolution of energy mix)",n/a,Yes
+G7 NZEB dynamic-EF study (2025),France (Paris) / USA (New York),Temporal,not stated,understates 111% (Paris); overstates up to 120% (New York),national/city average,No
+Bontekoe et al. (2024),Netherlands / France / Sweden,Temporal,not stated,"underestimated 67% (FR), 19% (SE); max EFD 149 kgCO2 (NL)",national average,Yes
+"Schäfer, Cerdas & Herrmann (2024)",multi-country (65-reference review),Temporal,not stated,+36% (France) to +69% (Switzerland) (hourly vs annual resolution effect),national average (review scope),Yes
+"Zou, Raftery, Roberts et al. (2026)",USA (18 grid regions),Temporal,not stated,median errors typically <10% (season-hour/month-hour vs hourly factors),grid region (18 US ISO/RTO regions),Yes
+"Dong, Gu & Zhang (2024)",China,Temporal,not stated,5.01% (temporal resolution),provincial/regional grid (China),No
+Graff Zivin et al. (2014),USA (Midwest vs West),Temporal,marginal,">2x (marginal rates, some hours of day vs others, within region)",US regions (Midwest vs West),No
+London office dynamic-LCA study (2025),UK (London),Trajectory,not stated,~10% reduction in carbon & embodied impacts (evolving vs static mix),national average,No
+Li et al. (2023),multi-country (97-publication SLR),Trajectory,not stated,"3%-910% (M7: energy mix scenario, Grade 2, 55-80% studies most-influential)",n/a,Yes

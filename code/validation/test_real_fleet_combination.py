@@ -1,0 +1,71 @@
+"""
+Answers directly: instead of assuming plants combine as an unweighted population spread
+(build_fleet_uncertainty.py's cross-sectional proxy) or an IPCC-default range, what is the
+REAL combination of the gas fleet's plants, and how much does the REAL blended EF actually
+move because of it?
+
+Two things computed here, both directly from data, neither assumed:
+
+1. Real per-POC generation SHARE within the gas fleet, 2015-2025 -- shows whether a few
+   plants dominate (concentration) or generation spreads evenly across all 11.
+2. The REAL, already-observed month-to-month and hour-to-hour blended gas EF (this is not
+   a model -- it's the actual generation-weighted average of whichever real plants actually
+   ran, exactly as build_ef_timeseries*.py computes it, with the pipeline's own shared
+   generation reader and attribution, generation_pipeline/fuel_attribution.py: flagged
+   fills included, generator- and unit-level factors, and the gas portion of Huntly 1-4
+   counted as gas) -- its empirical standard deviation measures how much the true
+   combination has actually varied historically.
+
+IMPORTANT CONCEPTUAL DISTINCTION (read before reusing #2 as an "uncertainty"): the point EF
+for any historical period is not itself uncertain -- it is a deterministic function of which
+real plants ran (known) and their registered EF (taken as ground truth). So the empirical
+std of the real series in #2 measures REAL DISPATCH VOLATILITY, a different quantity from
+"how wrong might the register's EF values be" (the epistemic quantity IPCC Table 2.2's
+default range, and build_fleet_uncertainty.py's cross-sectional spread, both approximate).
+Reported side by side below, not conflated.
+"""
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent.parent
+sys.path.insert(0, str(ROOT / "generation_pipeline"))
+from fuel_attribution import FuelAttribution, poc_island_map  # noqa: E402
+
+OUT = HERE / "gas_real_plant_shares.csv"
+
+fa = FuelAttribution()
+print("Loading Generation_MD files and flagged fills (via fuel_attribution), keeping attributed GAS rows...")
+gen = fa.generation(level="month", include_fills=True)
+gen["island"] = gen["poc"].map(poc_island_map())
+gen = gen[gen["island"].isin(["NI", "SI"])]
+gen = gen.groupby(["poc", "gen_code", "fuel_std", "year", "month"], as_index=False)["gen_mwh"].sum()
+monthly = fa.attribute(gen)
+monthly = monthly[monthly["fuel_std"] == "GAS"]
+monthly = monthly.rename(columns={"poc": "POC_Code", "ef_kg_per_mwh": "ef"})
+
+# 1. Real generation share per POC, whole period -- concentration check
+share = monthly.groupby("POC_Code")["gen_mwh"].sum().sort_values(ascending=False)
+share_pct = (share / share.sum() * 100).round(2)
+print("\n=== Real generation share by gas POC, 2015-2025 (concentration, not assumed) ===")
+print(share_pct.to_string())
+top2_share = share_pct.iloc[:2].sum()
+print(f"\nTop 2 plants' combined share: {top2_share:.1f}% of all gas generation")
+share_pct.to_csv(OUT, header=["share_pct"])
+
+# 2. Real blended monthly EF, generation-weighted -- reproduces monthly_fuel_mix_NI_SI.csv's
+#    own GAS row exactly, as a cross-check that this script's numbers agree with the shipped one.
+monthly_blend = monthly.groupby(["year", "month"]).apply(
+    lambda g: (g["gen_mwh"] * g["ef"]).sum() / g["gen_mwh"].sum(), include_groups=False
+)
+print(f"\n=== Real blended monthly GAS EF (recomputed here, independent of monthly_fuel_mix_NI_SI.csv) ===")
+print(f"n={len(monthly_blend)}, mean={monthly_blend.mean():.2f}, std={monthly_blend.std():.2f}, "
+      f"rel_std={monthly_blend.std()/monthly_blend.mean()*100:.2f}%")
+
+mm_shipped = pd.read_csv(ROOT / "output" / "monthly_fuel_mix_NI_SI.csv")
+shipped_gas = mm_shipped[(mm_shipped.island == "NI") & (mm_shipped.fuel_code == "GAS")]["weighted_ef_kg_per_MWh"].dropna()
+print(f"Shipped monthly_fuel_mix_NI_SI.csv GAS row: mean={shipped_gas.mean():.2f}, "
+      f"std={shipped_gas.std():.2f}, rel_std={shipped_gas.std()/shipped_gas.mean()*100:.2f}% "
+      f"(cross-check -- should closely match the line above)")

@@ -1,0 +1,45 @@
+id,category,description,status,detail
+A1,Completeness,"All Generation_MD monthly files present, no gaps (2015-01 to 2026-08)",PASS,140/140; missing=[]
+A2,Completeness,"All HVDC_flows monthly files present, no gaps (2015-01 to 2026-08)",PASS,140/140; missing=[]
+A3,Completeness,"No suspiciously small (<1KB, likely truncated/error-page) raw files",PASS,[]
+A4,Completeness,"Monthly EF table has exactly 280 rows (140 months x 2 islands, 2015-01 to 2026-08)",PASS,actual=280
+A5,Completeness,"Daily EF table has one row per island per calendar day, full range",PASS,"actual=8522, expected=8522"
+A6,Completeness,Hourly EF table has 24 rows/day/island (fixed-grid convention),PASS,"actual=204528, expected=204528"
+A7,Completeness,"No duplicate (island, date, hour) rows in hourly table",PASS,0 duplicates
+A8,Completeness,"No duplicate (island, date) rows in daily table",PASS,0 duplicates
+B1,Consistency,Hourly sums reconcile exactly to daily table,PASS,"max gen diff=0.000000000 MWh, max CO2 diff=0.000000007 kg"
+B2,Consistency,Daily sums reconcile exactly to monthly table,PASS,"max gen diff=0.000000000 MWh, max CO2 diff=0.000000119 kg"
+B3,Consistency,Monthly sums reconcile exactly to annual table,PASS,max gen diff=0.000000004 MWh
+B4,Consistency,Fuel-mix breakdown sums to the same total as monthly EF table,PASS,max diff=0.000000000 MWh
+B5,Consistency,Plant-level total generation matches EF-pipeline annual total,PASS,"plant=479.319 TWh, EF-pipeline=479.319 TWh"
+B6,Consistency,HVDC directional flow components are non-negative (signs pre-separated),PASS,0 negative rows
+B7,Consistency,"Zone generation and CO2, summed by island and month, equal the island database (2015-2025, within 0.01%)",PASS,"264 island-months, 0 missing on either side; max relative diff generation 2.18e-16, CO2 2.68e-16 (worst ('NI', np.int64(2022), np.int64(5)))"
+C1,Plausibility,"No negative generation values, hourly table",PASS,0 negative rows
+C2,Plausibility,"No negative EF values, hourly table",PASS,0 negative rows
+C3,Plausibility,No EF values exceed 1100 kg/MWh (coal-plant physical ceiling + margin),PASS,"max observed=407.6 kg/MWh, 0 rows over bound"
+C4,Plausibility,Annual generation per island within plausible historical NZ range,PASS,"NI out-of-range years=[], SI=[]"
+C5,Plausibility,Fleet-average EF per thermal fuel within literature benchmark ranges,PASS,all within range
+D1,External-validation,Full-scope quarterly national EF vs MBIE published Electricity EFs (45 quarters),PASS,"r=0.9966, mean|diff|=9.8% (systematic — MBIE excludes autoproducer/cogen sales, this pipeline includes them; see D2)"
+D2,External-validation,"Same comparison, cogeneration excluded per EMI Tech_Code (matching MBIE's stated scope)",WARN,"r=0.9937, mean|diff|=13.1%, mean signed diff=-13.1% (full scope, D1: 9.8%, signed -9.8%; see D3 for the fuel-level split). Scope note: this comparison is scope-mismatched. MBIE's electricity emissions include most cogeneration gas: MBIE's natural-gas electricity CO2-e divided by the MfE 2025 gas factor exceeds the gas data tables' 'Electricity Generation' row (Annual_PJ row 65) by 75% to 93% of the 'Cogeneration' row (row 66) in every year 2015-2025, mean 83% (MBIE_gas_electricity_PJ_2026Q2.csv; D3 GAS-emissions), while the metered cogeneration series here is grid export only"
+D3a-CLG,External-validation,"Coal electricity emissions vs MBIE, cogeneration excluded, annual (|gap| < 10% every full year)",PASS,"2015-2025: mean signed gap -2.0%, mean |gap| 2.9%, worst 2016 -5.9%; years over threshold: []; quarterly r=0.9988 over 45 quarters"
+D3b-CLG,External-validation,"Coal electricity emissions vs MBIE, cogeneration excluded, quarterly correlation (r > 0.95)",PASS,r=0.9988 over 45 quarters
+D3-GEO,External-validation,Geothermal electricity emissions vs MBIE (information only),INFO,"2015-2025: mean signed gap -10.4%, mean |gap| 10.4%, worst 2015 -17.3%; years over threshold: [2015, 2017, 2019, 2022, 2023]; quarterly r=0.9693 over 45 quarters. Scope mismatch: MBIE's geothermal row matches the national inventory's 1.B.2.d Geothermal total (e.g. 2020 567 vs 566.5 kt, 2024 478 vs 478.4 kt), which includes industrial direct use; the NIR 2026 does not publish an electricity/direct-use split, so no scope-matched target exists"
+D3a-GAS-PJ,External-validation,"Gas fuel for electricity (PJ), pipeline implied non-cogeneration vs MBIE gas data tables 'Electricity Generation', annual (|gap| < 10% every full year)",PASS,"2015-2025: mean signed gap -0.1%, mean |gap| 1.5%, worst 2015 +4.8%; years over threshold: []; quarterly r=0.9961 over 46 quarters"
+D3b-GAS-PJ,External-validation,"Gas fuel for electricity (PJ), pipeline implied non-cogeneration vs MBIE gas data tables 'Electricity Generation', quarterly correlation (r > 0.95)",PASS,r=0.9961 over 46 quarters
+D3-GAS-emissions,External-validation,Gas electricity emissions vs MBIE 'Electricity CO2-e' natural gas row (information only),INFO,"2015-2025: mean signed gap -22.4%, mean |gap| 22.4%, worst 2022 -27.0%; years over threshold: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]; quarterly r=0.9791 over 45 quarters. Scope mismatch: MBIE's gas emissions row also covers most cogeneration gas; metered cogeneration is export only"
+E6,Temporal,No POC has a zero/missing month between two months with generation (Generation_MD),WARN,"45 flagged POC-months (1 covered by a flagged fill); with >=5 GWh in both neighbouring months: [('HLY2201', '202009'), ('KAW1101', '202305'), ('OKI2201', '202008'), ('PPI2201', '201503'), ('TKA0111', '202011'), ('TKA0111', '202410'), ('WWD1103', '201911')]; see completeness_flags.csv"
+E1,Temporal,"DST spring-forward NaN-hour count matches expected (1/year/island, counting only years whose September is in scope)",PASS,"actual=22, expected=22 (11 in-scope Septembers)"
+E2,Temporal,"Leap-year day counts correct for all 12 covered years ([2016, 2020, 2024]=366, rest=365, partial years counted by in-scope months only)",PASS,verified per-year above
+E3,Temporal,"DST fall-back day (TP49/TP50) present and now included in totals (see fix, Section on bugs; counting only years whose April is in scope)",PASS,12 files with a fall-back day found (expected 12 in-scope Aprils)
+F1,Provenance,Every raw file's byte size logged and none anomalously small,PASS,"140 Generation_MD + 140 HVDC_flows files, sizes checked in A3"
+F2,Provenance,"All known pipeline bugs documented with fix date, magnitude, and rationale",PASS,see EDGS_Pipeline_Complete_Documentation.md Section 8.5 and script NOTES logs
+G1,Outliers,"NI daily EF: count of >3xIQR outliers (flagged for manual review, not auto-removed)",PASS,0/4261 rows (0.00%) beyond 3xIQR
+H1,Consumption,Consumption-side annual table covers all 12 years (2015-01 to 2026-08),PASS,"years present=[2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]"
+H2,Consumption,"National energy & CO2 conservation (generation == consumption, summed both islands), annual",PASS,"max energy diff=0.000000007 MWh, max CO2 diff=0.000000477 kg"
+H3,Consumption,"Hourly consumption table has one row per hour, full 2015-01 to 2026-08 range",PASS,"actual=102264, expected=102264"
+H4,Consumption,National energy conservation holds exactly at hourly resolution too,PASS,max diff=0.000000000 MWh
+H5,Consumption,"NI consumption-based EF <= NI generation-based EF in every year (imports dilute, never inflate)",PASS,"NI_EF_consumption vs NI_EF_generation by year: {2015: True, 2016: True, 2017: True, 2018: True, 2019: True, 2020: True, 2021: True, 2022: True, 2023: True, 2024: True, 2025: True, 2026: True}"
+H6,Consumption,SI consumption EF is higher in already-identified dry years than other years (convergent evidence),PASS,dry-year mean=5.79 kg/MWh vs other-year mean=1.93 kg/MWh
+H7a,Consumption,Energy (MWh): daily-summed-to-month EXACTLY equals monthly script's own figure (resolution-independent by construction),PASS,max diff=0.000000001 MWh
+H7b,Consumption,"Island-level CO2: daily-summed-to-month vs monthly-direct DIFFERS (expected -- resolution-dependent average-mix EF, not a bug)",INFO,"NI |diff| mean=0.051%, max=0.430% of monthly total (140 months); confirmed NI_diff = -SI_diff to float precision every month (max |NI_diff+SI_diff|=1.23e-07 kg) -- i.e. the NATIONAL total is exactly resolution-independent (proven algebraically: transfer terms cancel identically regardless of which period's EF was used), only the NI/SI SPLIT of it moves."
+H7c,Consumption,Same effect confirmed at the hourly->daily boundary too (not limited to daily->monthly),INFO,"NI |diff| mean=0.081%, max=1.798% of daily total (4018 days)"

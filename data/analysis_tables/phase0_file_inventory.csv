@@ -1,0 +1,73 @@
+path,suffix,size_mb,n_rows,n_cols,columns
+output\annual_emission_factor_NI_SI.csv,.csv,0.001,22,5,"island,year,EF_kg_per_MWh,total_gen_MWh,total_CO2_kg"
+output\daily_emission_factor_NI_SI.csv,.csv,0.395,8036,5,"island,date,total_gen_MWh,total_CO2_kg,EF_kg_per_MWh"
+output\DATA_QUALITY_ASSESSMENT_RESULTS.csv,.csv,0.005,36,5,"id,category,description,status,detail"
+output\hourly_emission_factor_NI_SI.csv,.csv,13.531,192864,7,"island,date,hour,datetime,EF_kg_per_MWh,total_gen_MWh,total_CO2_kg"
+output\monthly_emission_factor_NI_SI.csv,.csv,0.015,264,7,"island,year,month,period,EF_kg_per_MWh,total_gen_MWh,total_CO2_kg"
+output\monthly_fuel_mix_NI_SI.csv,.csv,0.076,1234,8,"island,year,month,fuel_code,gen_mwh,co2_kg,share_pct,weighted_ef_kg_per_MWh"
+output\plant_level_generation_emissions_2015_2025.csv,.csv,0.006,85,8,"plant_name,fuel_std,island,total_gen_MWh,total_CO2_kg,EF_kg_per_MWh,total_CO2_kt,total_gen_GWh"
+output\edgs\edgs_annual_targets.csv,.csv,0.238,1755,8,"scenario,year,metric,commodity,value,unit,source_tag,source_detail"
+output\edgs\edgs_annual_targets.parquet,.parquet,0.017,1755,8,scenario; year; metric; commodity; value; unit; source_tag; source_detail
+output\edgs\edgs_battery_gap_comparison.csv,.csv,0.007,135,5,"scenario,year,dsr_mw_shipped,report_battery_mw,ratio"
+output\edgs\edgs_battery_hvdc_continuous_magnitude.csv,.csv,0.014,135,10,"scenario,year,demand_peak_hr,residual_peak_hr,hour_divergence,max_transfer_mw_shipped,max_transfer_mw_report,continuous_mag_MWh_shipped,continuous_mag_MWh_report,continuous_mag_change"
+output\edgs\edgs_battery_hvdc_continuous_magnitude_tmpl2017.csv,.csv,0.015,135,10,"scenario,year,demand_peak_hr,residual_peak_hr,hour_divergence,max_transfer_mw_shipped,max_transfer_mw_report,continuous_mag_MWh_shipped,continuous_mag_MWh_report,continuous_mag_change"
+output\edgs\edgs_battery_mechanism_test.csv,.csv,0.014,135,10,"scenario,year,demand_peak_hr,residual_peak_hr,hour_divergence,max_transfer_mw_shipped,max_transfer_mw_report,continuous_mag_MWh_shipped,continuous_mag_MWh_report,continuous_mag_change"
+output\edgs\edgs_battery_mechanism_test_tmpl2017.csv,.csv,0.015,135,10,"scenario,year,demand_peak_hr,residual_peak_hr,hour_divergence,max_transfer_mw_shipped,max_transfer_mw_report,continuous_mag_MWh_shipped,continuous_mag_MWh_report,continuous_mag_change"
+output\edgs\edgs_battery_sensitivity_ef.csv,.csv,0.01,135,5,"scenario,year,mean_abs_hourly_EF_diff_kg_per_kwh,peak_hour_EF_shipped,peak_hour_EF_report"
+output\edgs\edgs_battery_sensitivity_ef_tmpl2017.csv,.csv,0.01,135,5,"scenario,year,mean_abs_hourly_EF_diff_kg_per_kwh,peak_hour_EF_shipped,peak_hour_EF_report"
+output\edgs\edgs_battery_sensitivity_hvdc.csv,.csv,0.008,135,6,"scenario,year,max_transfer_mw_shipped,max_transfer_mw_report,n_hours_violate_shipped,n_hours_violate_report"
+output\edgs\edgs_battery_sensitivity_hvdc_tmpl2017.csv,.csv,0.008,135,6,"scenario,year,max_transfer_mw_shipped,max_transfer_mw_report,n_hours_violate_shipped,n_hours_violate_report"
+output\edgs\edgs_battery_sensitivity_peakshave.csv,.csv,0.011,135,9,"scenario,year,dsr_mw_shipped,dsr_mw_report,total_shaved_mwh_shipped,total_shaved_mwh_report,worst_shave_hour_shipped,worst_shave_hour_report,same_worst_hour"
+output\edgs\edgs_battery_sensitivity_peakshave_tmpl2017.csv,.csv,0.011,135,9,"scenario,year,dsr_mw_shipped,dsr_mw_report,total_shaved_mwh_shipped,total_shaved_mwh_report,worst_shave_hour_shipped,worst_shave_hour_report,same_worst_hour"
+output\edgs\edgs_check2_diagnostic.csv,.csv,0.009,135,9,"scenario,year,model_comb_Mt,mbie_ghg_Mt,Wood,Waste heat,Biogas,Geothermal,gap_Mt"
+output\edgs\edgs_check2_emissions.csv,.csv,0.008,135,4,"scenario,year,check2a_emissions_pct,check2b_ef_pct"
+output\edgs\edgs_check2_rawgap_test.csv,.csv,0.014,135,13,"scenario,year,model_comb_Mt,mbie_ghg_Mt,Wood,Waste heat,Biogas,Geothermal,gap_Mt,coal_gwh,total_thermal_gwh,carbon_price,coal_frac"
+output\edgs\edgs_dsr_capacity_by_scenario_year.csv,.csv,0.003,135,3,"scenario,year,dsr_mw_shipped"
+output\edgs\edgs_gem_build.parquet,.parquet,0.014,938,7,scenario; year; commodity; technology_type; island; capacity_mw; plant
+output\edgs\edgs_geothermal_cited_vs_regression.csv,.csv,0.011,135,11,"scenario,year,model_comb_Mt,mbie_ghg_Mt,Wood,Waste heat,Biogas,Geothermal,gap_Mt,field_weighted_g_per_kwh,pred_cited_Mt"
+output\edgs\edgs_geothermal_field_weighted_factor.csv,.csv,0.005,135,3,"scenario,year,field_weighted_g_per_kwh"
+output\edgs\edgs_hourly_emission_factor.parquet,.parquet,61.775,5917200,8,scenario; island; datetime_hour; ef_basis; emission_factor_kg_co2e_per_kwh; reconciliation_flag; check2_deviation_pct; source_detail
+output\edgs\edgs_hourly_emission_factor_Reference.parquet,.parquet,7.127,710064,6,scenario; island; datetime_hour; ef_basis; emission_factor_kg_co2e_per_kwh; reconciliation_flag
+output\edgs\edgs_hourly_emission_factor_Reference_tmpl2023.parquet,.parquet,7.203,710064,6,scenario; island; datetime_hour; ef_basis; emission_factor_kg_co2e_per_kwh; reconciliation_flag
+output\edgs\edgs_hourly_emission_factor_Reference_tmpl2024.parquet,.parquet,7.135,710064,6,scenario; island; datetime_hour; ef_basis; emission_factor_kg_co2e_per_kwh; reconciliation_flag
+output\edgs\edgs_hourly_emission_factor_tmpl2017.parquet,.parquet,35.603,3550320,6,scenario; island; datetime_hour; ef_basis; emission_factor_kg_co2e_per_kwh; reconciliation_flag
+output\edgs\edgs_hourly_emission_factor_tmpl2023.parquet,.parquet,36.268,3550320,6,scenario; island; datetime_hour; ef_basis; emission_factor_kg_co2e_per_kwh; reconciliation_flag
+output\edgs\edgs_hourly_emission_factor_tmpl2024.parquet,.parquet,36.127,3550320,6,scenario; island; datetime_hour; ef_basis; emission_factor_kg_co2e_per_kwh; reconciliation_flag
+output\edgs\edgs_hourly_generation.parquet,.parquet,122.707,16524240,7,datetime_hour; scenario; island; fuel_commodity; generation_mwh; source_tag; source_detail
+output\edgs\edgs_hourly_generation_Reference.parquet,.parquet,24.86,3304848,7,datetime_hour; scenario; island; fuel_commodity; generation_mwh; source_tag; source_detail
+output\edgs\edgs_hourly_generation_Reference_tmpl2023.parquet,.parquet,24.869,3304848,7,datetime_hour; scenario; island; fuel_commodity; generation_mwh; source_tag; source_detail
+output\edgs\edgs_hourly_generation_Reference_tmpl2024.parquet,.parquet,27.163,3304848,7,datetime_hour; scenario; island; fuel_commodity; generation_mwh; source_tag; source_detail
+output\edgs\edgs_hourly_generation_tmpl2017.parquet,.parquet,122.223,16524240,7,datetime_hour; scenario; island; fuel_commodity; generation_mwh; source_tag; source_detail
+output\edgs\edgs_hourly_generation_tmpl2023.parquet,.parquet,122.578,16524240,7,datetime_hour; scenario; island; fuel_commodity; generation_mwh; source_tag; source_detail
+output\edgs\edgs_hourly_generation_tmpl2024.parquet,.parquet,133.329,16524240,7,datetime_hour; scenario; island; fuel_commodity; generation_mwh; source_tag; source_detail
+output\edgs\edgs_hvdc_capacity_correction_hours.csv,.csv,0.288,2205,10,"scenario,year,datetime_hour,type,required_transfer_mw,capacity_mw,shortfall_mw,spare_thermal_mw,orig_co2_kg,corrected_co2_kg"
+output\edgs\edgs_hvdc_capacity_correction_summary.csv,.csv,0.009,93,11,"scenario,year,n_hours_import_flagged,n_hours_export_flagged,n_hours_unserved,makeup_mwh,unserved_mwh,orig_NI_consumption_ef_kg_per_kwh,corrected_NI_consumption_ef_kg_per_kwh,diff_kg_per_kwh,diff_pct"
+output\edgs\edgs_hvdc_capacity_flags.csv,.csv,0.004,103,4,"scenario,year,n_hours,max_mw"
+output\edgs\edgs_hvdc_crossscenario_ranking.csv,.csv,0.0,5,6,"scenario,demand_2050_twh,first_violation_year,mw_at_first_violation,mw_2050,growth_rate_mw_per_yr"
+output\edgs\edgs_hvdc_crossscenario_ranking_tmpl2017.csv,.csv,0.0,5,6,"scenario,demand_2050_twh,first_violation_year,mw_at_first_violation,mw_2050,growth_rate_mw_per_yr"
+output\edgs\edgs_hvdc_sensitivity_summary.csv,.csv,0.02,135,14,"scenario,year,max_mw_baseline,n_hours_baseline,max_mw_dsr_split,n_hours_dsr_split,max_mw_solar_fix,n_hours_solar_fix,max_mw_loss_NIup,n_hours_loss_NIup,max_mw_loss_SIup,n_hours_loss_SIup,max_mw_combined,n_hours_combined"
+output\edgs\edgs_hvdc_sensitivity_summary_tmpl2017.csv,.csv,0.02,135,14,"scenario,year,max_mw_baseline,n_hours_baseline,max_mw_dsr_split,n_hours_dsr_split,max_mw_solar_fix,n_hours_solar_fix,max_mw_loss_NIup,n_hours_loss_NIup,max_mw_loss_SIup,n_hours_loss_SIup,max_mw_combined,n_hours_combined"
+output\edgs\edgs_hvdc_violation_vs_peak.csv,.csv,0.006,135,5,"scenario,year,max_mw,n_hours,peak_gw"
+output\edgs\edgs_hydro_sensitivity_mechanism.csv,.csv,0.052,540,7,"template,scenario,year,si_hydro_annual_gwh,si_generation_total_mwh,si_genload_target_mwh,si_net_surplus_mwh"
+output\edgs\edgs_hydro_sensitivity_summary.csv,.csv,0.035,540,7,"template,template_year,scenario,year,max_transfer_mw,n_hours_violate,continuous_mag_MWh"
+output\edgs\edgs_island_consumption_reconciliation.csv,.csv,0.004,135,4,"scenario,year,diff_kg,diff_pct"
+output\edgs\edgs_island_transfer_symmetry.csv,.csv,0.005,135,3,"scenario,year,max_asymmetry_mwh"
+output\edgs\edgs_merit_order.parquet,.parquet,0.025,2883,13,scenario; year; plant; commodity; island; capacity_mw; marginal_cost_nzd_per_mwh; fuel_cost; var_om; carbon_cost; carbon_price_nzd_per_t; merit_rank; source_detail
+output\edgs\edgs_peak_calibration.parquet,.parquet,0.005,135,4,scenario; year; mbie_peak_gw; model_peak_gw
+output\edgs\edgs_peak_calibration_Reference.parquet,.parquet,0.004,27,4,scenario; year; mbie_peak_gw; model_peak_gw
+output\edgs\edgs_peak_calibration_Reference_tmpl2023.parquet,.parquet,0.004,27,4,scenario; year; mbie_peak_gw; model_peak_gw
+output\edgs\edgs_peak_calibration_Reference_tmpl2024.parquet,.parquet,0.004,27,4,scenario; year; mbie_peak_gw; model_peak_gw
+output\edgs\edgs_peak_calibration_tmpl2017.parquet,.parquet,0.005,135,4,scenario; year; mbie_peak_gw; model_peak_gw
+output\edgs\edgs_peak_calibration_tmpl2023.parquet,.parquet,0.005,135,4,scenario; year; mbie_peak_gw; model_peak_gw
+output\edgs\edgs_peak_calibration_tmpl2024.parquet,.parquet,0.005,135,4,scenario; year; mbie_peak_gw; model_peak_gw
+output\edgs\edgs_plant_register.parquet,.parquet,0.021,33519,12,scenario; year; plant; commodity; dispatch_class; island; capacity_mw; heat_rate_gj_per_gwh; var_om_nzd_per_mwh; fuel_delivery_nzd_per_gj; status; source_detail
+output\edgs\edgs_reconciliation_report.csv,.csv,0.013,135,9,"scenario,year,check1_gen_pct,check3_peak_pct,check2a_emissions_pct,check2b_ef_pct,c1_pass,c3_pass,exact_pass"
+output\edgs\edgs_sensitivity_A1.csv,.csv,0.0,3,4,"template,mean_abs_hourly_EF_diff_vs_central_kg_per_kwh,monthly_EF_spread_kg_per_kwh,annual_mean_NI_EF_kg_per_kwh"
+output\edgs\edgs_shape_demand.parquet,.parquet,0.715,70128,6,template_year; island; month; day; hour; weight
+output\edgs\edgs_shape_renewables.parquet,.parquet,1.957,219168,7,template_year; island; fuel_std; month; day; hour; weight
+output\edgs\edgs_thermal_intensity.parquet,.parquet,0.017,405,9,scenario; year; fuel; mbie_gwh; model_gwh; fuel_use_pj; combustion_co2_kt; implied_ef_kg_per_mwh; flag
+output\edgs\edgs_thermal_intensity_Reference_tmpl2023.parquet,.parquet,0.008,81,9,scenario; year; fuel; mbie_gwh; model_gwh; fuel_use_pj; combustion_co2_kt; implied_ef_kg_per_mwh; flag
+output\edgs\edgs_thermal_intensity_Reference_tmpl2024.parquet,.parquet,0.008,81,9,scenario; year; fuel; mbie_gwh; model_gwh; fuel_use_pj; combustion_co2_kt; implied_ef_kg_per_mwh; flag
+output\edgs\edgs_thermal_intensity_tmpl2017.parquet,.parquet,0.017,405,9,scenario; year; fuel; mbie_gwh; model_gwh; fuel_use_pj; combustion_co2_kt; implied_ef_kg_per_mwh; flag
+output\edgs\edgs_thermal_intensity_tmpl2023.parquet,.parquet,0.017,405,9,scenario; year; fuel; mbie_gwh; model_gwh; fuel_use_pj; combustion_co2_kt; implied_ef_kg_per_mwh; flag
+output\edgs\edgs_thermal_intensity_tmpl2024.parquet,.parquet,0.017,405,9,scenario; year; fuel; mbie_gwh; model_gwh; fuel_use_pj; combustion_co2_kt; implied_ef_kg_per_mwh; flag

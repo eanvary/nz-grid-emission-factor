@@ -64,7 +64,7 @@ def log(m):
     log_lines.append(str(m))
 
 
-# ---------------------------------------------------------------- load
+# Load
 ef = pd.read_csv(HIST / "hourly_emission_factor_NI_SI.csv")
 ef = ef[ef["island"] == ISLAND].copy()
 ef["datetime"] = pd.to_datetime(ef["datetime"])
@@ -85,7 +85,7 @@ mix = fuel.pivot_table(index="year", columns="fuel_std", values="gen_mwh", aggfu
 mix["total"] = mix.sum(axis=1)
 
 
-# ---------------------------------------------------------------- shapes
+# Shapes
 def profile(g, keys):
     """Normalised mean EF by the given time keys (mean of profile == 1)."""
     p = g.groupby(keys)["ef"].mean()

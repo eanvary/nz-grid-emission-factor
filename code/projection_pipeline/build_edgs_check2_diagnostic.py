@@ -2,7 +2,7 @@
 Check-2 gap diagnostic (v2, follow-up brief): test the biomass hypothesis, then source and
 test a cited geothermal factor, then investigate the leftover intercept.
 
-STEP 1 — biomass/wood REJECTED (implied ~173 g/kWh, implausible, R2=0.43, coefficient goes
+STEP 1: biomass/wood REJECTED (implied ~173 g/kWh, implausible, R2=0.43, coefficient goes
 negative once geothermal enters). Geothermal generation correlates with the gap at R2=0.9995
 (regression-implied 77.4 g/kWh). A CITED field-level source was found and tested:
 
@@ -26,7 +26,7 @@ geothermal generation and the small residual gap co-trending upward over the 27-
 (both increase roughly monotonically with time) -- a correlation-of-trends artifact, not a valid
 causal/magnitude match. NOT adopted in the shipped pipeline (reverted after testing).
 
-STEP 2 (CORRECTED, this round) — a prior version of this script tested the geothermal-fit's
+STEP 2 (CORRECTED, this round): a prior version of this script tested the geothermal-fit's
 INTERCEPT (~-839 to -858 kt, stable across scenarios) against coal/carbon-price and reported it
 as an "unexplained structural residual." That intercept was a free parameter of the now-REJECTED
 geothermal magnitude hypothesis (Step 1: adding the cited factor overshoots the real gap by
@@ -58,14 +58,12 @@ Outputs: edgs_check2_diagnostic.csv (135 rows), edgs_check2_rawgap_test.csv,
 import numpy as np
 import pandas as pd
 
-from edgs_common import (RESULTS_XLSX, ASSUMPTIONS_XLSX, OUT_DIR, SCENARIOS, YEARS,
+from edgs_common import (RESULTS_XLSX, ASSUMPTIONS_XLSX, OUT_DIR, YEARS,
                          geothermal_ef_kg_per_mwh, log_factory)
 
 log, lines = log_factory()
 
-# ---------------------------------------------------------------------------
 # Assemble the 135-row dataset
-# ---------------------------------------------------------------------------
 ti = pd.read_parquet(OUT_DIR / "edgs_thermal_intensity.parquet")  # combustion-only (geothermal not adopted)
 comb = ti.groupby(["scenario", "year"])["combustion_co2_kt"].sum().div(1000).rename("model_comb_Mt")
 ghg = pd.read_excel(RESULTS_XLSX, sheet_name="Greenhouse gas emissions")
@@ -91,7 +89,7 @@ def fit(cols):
     return b, r2
 
 
-# ---- Step 1a/1b: biomass rejected, geothermal statistically implicated ----
+# Step 1a/1b: biomass rejected, geothermal statistically implicated
 log("\n=== Step 1a/1b: individual fits, gap_Mt ~ source_GWh + intercept ===")
 for c in ["Wood", "Biogas", "Geothermal"]:
     b, r2 = fit([c])
@@ -101,7 +99,7 @@ b2, r22 = fit(["Geothermal", "Wood"])
 log(f"  Geothermal+Wood joint: geo {b2[0]*1e6:.1f} g/kWh, WOOD {b2[1]*1e6:+.1f} g/kWh, R2={r22:.4f}")
 log("  -> wood negative/near-zero once geothermal is in: wood adds nothing. BIOMASS REJECTED.")
 
-# ---- Step 1c: Innovation vs Environmental (both convert Rankine->biomass @2032) ----
+# Innovation vs Environmental (both convert Rankine->biomass @2032)
 log("\n=== Step 1c: Innovation vs Environmental ===")
 for yr in [2030, 2032, 2040, 2050]:
     i = df[(df.scenario == "Innovation") & (df.year == yr)].iloc[0]
@@ -111,9 +109,7 @@ for yr in [2030, 2032, 2040, 2050]:
 log("  Constraint (NO Rankine->biomass conversion, wood=334 GWh flat) still has a substantial "
     "gap, tracking its geothermal, not wood -> confirms biomass is not the driver.")
 
-# ---------------------------------------------------------------------------
 # Step 1 (sourced): field-level factors, McLean & Richardson (2019), Ngawha override
-# ---------------------------------------------------------------------------
 log("\n=== Step 1 (sourced): McLean & Richardson (2019) field-level geothermal factors ===")
 log("  Fleet MW-weighted average (2018): 76 g CO2-e/kWh -- within 2% of regression-implied 77.4.")
 log("  Ngawha: 304 g/kWh (2018) -> 0 g/kWh from 2024 (Top Energy 100% NCG reinjection, cited, "
@@ -149,21 +145,17 @@ log("  DECISION: geothermal fugitive CO2, at its cited real-world magnitude, doe
     "reflected geothermal generation and the small residual gap co-trending upward over the "
     "27-year projection window -- correlation of trends, not a valid causal/magnitude match.")
 
-# ---------------------------------------------------------------------------
-# Step 2 (SUPERSEDED — retained only as a documented artifact, not a finding).
+# Step 2 (SUPERSEDED: retained only as a documented artifact, not a finding).
 # The per-scenario geothermal-only fit's intercept (previously reported as an "~839-858 kt
 # stable structural residual") was a free parameter of the now-REJECTED geothermal magnitude
 # hypothesis (see Step 1 above: the cited factor overshoots the real gap by 2-7x). The
 # intercept existed only to cancel a spurious geothermal slope large enough to pass near the
 # small real gap; it has no independent physical meaning and is NOT a second open finding.
 # Superseded by the raw-gap re-test directly below.
-# ---------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# Step 2 (corrected re-test) — coal fraction, carbon price, AND time, regressed directly
+# Step 2 (corrected re-test): coal fraction, carbon price, AND time, regressed directly
 # against the RAW gap_Mt (MBIE GHG - modelled combustion), not any geothermal-regression
 # byproduct. Time/year tested as its own explicit variable (was not isolated last round).
-# ---------------------------------------------------------------------------
 log("\n=== Step 2 (corrected): coal_gwh, coal_frac, carbon_price, YEAR vs RAW gap_Mt ===")
 cp = pd.read_excel(ASSUMPTIONS_XLSX, sheet_name="Commodity prices")
 cp = cp[cp.Variable == "Effective carbon price"].rename(
@@ -197,9 +189,7 @@ log("  RESULT: year/time is the strongest single explanatory variable (R2~0.6) �
     "constant since it is physically inconsistent for a fixed fuel.")
 dd.round(4).to_csv(OUT_DIR / "edgs_check2_rawgap_test.csv", index=False)
 
-# ---------------------------------------------------------------------------
 # Final conclusion
-# ---------------------------------------------------------------------------
 log("\n=== FINAL CONCLUSION ===")
 log("Biomass: REJECTED (implausible factor, weak fit, contradicted by Constraint scenario).")
 log("Geothermal (statistical): implicated by regression (R2=0.9995) but this reflects "

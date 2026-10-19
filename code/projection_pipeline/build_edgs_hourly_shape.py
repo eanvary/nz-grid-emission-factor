@@ -1,5 +1,5 @@
 """
-Module 4 — Step 4 (Assumption 1): build normalised hourly SHAPE templates, by
+Module 4: Step 4 (Assumption 1): build normalised hourly SHAPE templates, by
 island, from the user's historical EA/EMI data. These are the only non-MBIE,
 non-battery inputs the pipeline uses, and they are Assumption 1.
 
@@ -37,7 +37,7 @@ Outputs (output/edgs/):
 import numpy as np
 import pandas as pd
 
-from edgs_common import ROOT, OUT_DIR, HIST_OUT, CONSUMPTION_OUT, log_factory
+from edgs_common import ROOT, OUT_DIR, CONSUMPTION_OUT, log_factory
 
 log, lines = log_factory()
 
@@ -53,9 +53,7 @@ FUEL_STD = {  # identical mapping to build_ef_timeseries.py
     "Wind": "WIN", "WIN": "WIN", "Wood": "WOOD", "ELE": "ELE",
 }
 
-# ---------------------------------------------------------------------------
 # POC -> Island (same logic as the historical pipeline)
-# ---------------------------------------------------------------------------
 nsp = pd.concat([pd.read_csv(f, low_memory=False) for f in NSP_DIR.glob("*_NetworkSupplyPointsTable.csv")],
                 ignore_index=True)
 poc_island = (nsp.dropna(subset=["Island"])
@@ -64,9 +62,7 @@ poc_island = (nsp.dropna(subset=["Island"])
               .set_index("POC code")["Island"].to_dict())
 log(f"POC->Island lookup: {len(poc_island)} POCs")
 
-# ---------------------------------------------------------------------------
 # Renewable per-fuel per-island hourly, template years only
-# ---------------------------------------------------------------------------
 want_years = set(TEMPLATE_YEARS.values())
 gen_files = [f for f in sorted(GEN_DIR.glob("*_Generation_MD.csv")) if int(f.name[:4]) in want_years]
 log(f"Loading {len(gen_files)} Generation_MD files for template years {sorted(want_years)}")
@@ -126,9 +122,7 @@ for isl in ("NI", "SI"):
     fuels = sorted(ren_out[ren_out.island == isl]["fuel_std"].unique())
     log(f"  {isl} renewable fuels with a profile: {fuels}")
 
-# ---------------------------------------------------------------------------
 # Demand per-island hourly (Consumption pipeline output)
-# ---------------------------------------------------------------------------
 cons = pd.read_csv(CONSUMPTION_OUT / "hourly_consumption_EF_NI_SI.csv")
 cons["datetime"] = pd.to_datetime(cons["datetime"])
 cons = cons[cons["datetime"].dt.year.isin(want_years)]

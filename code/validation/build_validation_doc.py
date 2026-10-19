@@ -22,9 +22,7 @@ INK = RGBColor(0x22, 0x22, 0x22)
 
 doc = Document()
 
-# ---------------------------------------------------------------------------
 # Base styles
-# ---------------------------------------------------------------------------
 normal = doc.styles["Normal"]
 normal.font.name = "Calibri"
 normal.font.size = Pt(11)
@@ -96,9 +94,7 @@ def bullet(text):
     return p
 
 
-# ---------------------------------------------------------------------------
 # Title block
-# ---------------------------------------------------------------------------
 title = doc.add_paragraph()
 title.alignment = WD_ALIGN_PARAGRAPH.CENTER
 r = title.add_run("Validating an Hourly Grid Emission-Factor Database:\nAn IPCC-Cited Uncertainty Band and a Live External Cross-Check")
@@ -123,9 +119,7 @@ sub2.paragraph_format.space_after = Pt(14)
 
 hr()
 
-# ---------------------------------------------------------------------------
 # Abstract
-# ---------------------------------------------------------------------------
 doc.add_heading("Abstract", level=2)
 body(
     "This note reports a short, data-driven validation pass on an hourly generation-side "
@@ -147,9 +141,7 @@ body(
 
 hr()
 
-# ---------------------------------------------------------------------------
 # 1. Motivation
-# ---------------------------------------------------------------------------
 doc.add_heading("1. Why an annual cross-check is not sufficient", level=2)
 body(
     "The database's existing Category D check compares its own computed EF against MBIE's "
@@ -161,9 +153,7 @@ body(
     "Shi & Jenn, 2023; Tranberg et al., 2019). Two further checks were therefore attempted."
 )
 
-# ---------------------------------------------------------------------------
 # 2. Method
-# ---------------------------------------------------------------------------
 doc.add_heading("2. Method", level=2)
 
 doc.add_heading("2.1 External same-resolution benchmark (not completed)", level=3)
@@ -193,9 +183,7 @@ body(
 
 hr()
 
-# ---------------------------------------------------------------------------
 # 3. Results (figures)
-# ---------------------------------------------------------------------------
 doc.add_heading("3. Results", level=2)
 body(
     "All figures are computed directly from the pipeline's own shipped CSVs by "
@@ -240,9 +228,7 @@ add_figure(
 
 hr()
 
-# ---------------------------------------------------------------------------
 # 4. Limitations
-# ---------------------------------------------------------------------------
 doc.add_heading("4. Limitations, stated plainly", level=2)
 bullet("The uncertainty band covers only 52–76% of NI generation; geothermal carries no quantified band here (Fig. 2, 4).")
 bullet("IPCC Table 2.2's Tier-1 default range is applied as a conservative proxy for this project's Tier-2/3 country-specific EF — IPCC's own guidance expects the true country-specific uncertainty to be narrower.")
@@ -252,9 +238,7 @@ bullet("The external same-resolution benchmark (em6 / Electricity Maps) remains 
 
 hr()
 
-# ---------------------------------------------------------------------------
 # 5. Conclusion
-# ---------------------------------------------------------------------------
 doc.add_heading("5. Conclusion", level=2)
 body(
     "The database's existing MBIE cross-check is independently reproduced, not merely "
@@ -268,9 +252,7 @@ body(
 
 hr()
 
-# ---------------------------------------------------------------------------
 # References
-# ---------------------------------------------------------------------------
 doc.add_heading("References", level=2)
 refs = [
     "IPCC (2006). 2006 IPCC Guidelines for National Greenhouse Gas Inventories, Volume 2 (Energy), "

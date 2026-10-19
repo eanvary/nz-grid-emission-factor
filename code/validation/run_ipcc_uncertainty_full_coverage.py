@@ -91,9 +91,7 @@ if fa.nzga:
     print(f"  Shipped factors use NZGA station intensities; NZGA MW-weighted average by year (g/kWh): "
           + ", ".join(f"{y}: {v:.1f}" for y, v in sorted(nz.items())))
 
-# ---------------------------------------------------------------------------
 # Re-run propagation, monthly + hourly, with GEO now included in REL_SIGMA.
-# ---------------------------------------------------------------------------
 IPCC_TABLE_2_2 = {
     "CLG": (96100.0, 92800.0, 100000.0), "GAS": (56100.0, 54300.0, 58300.0),
     "DSL": (74100.0, 72600.0, 74800.0), "WOOD": (112000.0, 95000.0, 132000.0),

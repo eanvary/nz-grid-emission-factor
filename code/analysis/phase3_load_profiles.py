@@ -36,8 +36,8 @@ def build_shape(hourly_weekday, hourly_weekend, label):
     return df
 
 
-# --- Shape 1: daytime office (weekday 08:00-18:00 occupied, small nighttime
-# base load for servers/security; weekends near-zero) ---
+# Shape 1: daytime office (weekday 08:00-18:00 occupied, small nighttime
+# base load for servers/security; weekends near-zero)
 office_wd = [0.2]*7 + [0.6,1.0,1.0,1.0,1.0,0.8,1.0,1.0,1.0,1.0,0.6] + [0.3]*6
 # hours 0-6 (7 vals)=0.2, 7-17 (11 vals) occupied profile, 18-23 (6 vals)=0.3 -- fix length to 24
 office_wd = [0.2]*7 + [0.5,0.9,1.0,1.0,1.0,0.85,1.0,1.0,1.0,0.9,0.5] + [0.3]*6
@@ -45,14 +45,14 @@ assert len(office_wd) == 24, len(office_wd)
 office_we = [0.15]*24  # skeleton weekend base load only
 shape_office = build_shape(office_wd, office_we, "daytime_office")
 
-# --- Shape 2: 24/7 continuous operation (e.g. data centre / cold storage /
-# continuous process) -- flat, no weekday/weekend or diurnal variation ---
+# Shape 2: 24/7 continuous operation (e.g. data centre / cold storage /
+# continuous process) -- flat, no weekday/weekend or diurnal variation
 flat = [1.0]*24
 shape_247 = build_shape(flat, flat, "continuous_24_7")
 
-# --- Shape 3: evening-weighted (e.g. residential-pattern-adjacent retail /
+# Shape 3: evening-weighted (e.g. residential-pattern-adjacent retail /
 # hospitality; peak in the evening, moderate midday, low overnight, present on
-# weekends too, unlike the office shape) ---
+# weekends too, unlike the office shape)
 evening_wd = [0.25]*7 + [0.4,0.5,0.5,0.5,0.5,0.6,0.6,0.6,0.7,0.9,1.0] + [1.0,0.9,0.7,0.5,0.4,0.3]
 # ensure 24 values: 7 (night) + 11 (day ramp) + 6 (evening decay) = 24
 assert len(evening_wd) == 24, len(evening_wd)

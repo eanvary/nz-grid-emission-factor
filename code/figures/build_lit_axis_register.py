@@ -1,5 +1,5 @@
 """
-Build analysis/LITERATURE_AXIS_REGISTER.csv — the source register for Fig. 1
+Build analysis/LITERATURE_AXIS_REGISTER.csv: the source register for Fig. 1
 (evidence map) and Table 1 (magnitude register), for the "Where, when, and
 which future" manuscript.
 
@@ -30,7 +30,7 @@ LI2023 = "1-s2.0-S0360132323008065-main.md"
 FINDINGS = "FINDINGS_REGISTER.md"
 
 rows = [
-# --- Theme A: spatial resolution studies -----------------------------------
+# Theme A: spatial resolution studies
 dict(ref_key="graff_zivin_2014_spatial", authors_short="Graff Zivin et al.", year=2014,
      venue="Journal of Economic Behavior & Organization 107(A):248-268",
      doi="10.1016/j.jebo.2014.03.010", domain="ev_transport", grid_system="USA (Midwest vs West)",
@@ -87,7 +87,7 @@ dict(ref_key="neso_2025", authors_short="NESO Carbon Intensity API", year=2025,
      magnitude_value="~220 gCO2e/kWh (SW England) vs ~129 (GB avg), 2025",
      magnitude_axis="spatial", spatial_boundary_used="DNO region (UK)",
      in_review_corpus="no", source_line=f"{COMPASS} L38"),
-# --- Theme B: temporal resolution studies -----------------------------------
+# Theme B: temporal resolution studies
 dict(ref_key="zou_2026", authors_short="Zou, Raftery, Roberts et al.", year=2026,
      venue="Applied Energy", doi="",
      domain="building_lca", grid_system="USA (18 grid regions)",
@@ -139,7 +139,7 @@ dict(ref_key="ten_questions_2026", authors_short="\"Ten questions...\" review", 
      spatial_boundary_used="", in_review_corpus="no",
      source_line=f"{COMPASS} L42 -- synthesis/review anchor citing both Siler-Evans (spatial) and "
                  "temporal studies, no own quantified magnitude"),
-# --- Theme C: trajectory / temporal-evolution studies -----------------------
+# Theme C: trajectory / temporal-evolution studies
 dict(ref_key="future_grid_wblca_2024", authors_short="\"Future grid mix impacts...\"", year=2024,
      venue="Environmental Research: Infrastructure and Sustainability", doi="10.1088/2634-4505/adc154",
      domain="building_lca", grid_system="USA",
@@ -183,7 +183,7 @@ dict(ref_key="austrian_prospective_lca_2024", authors_short="Austrian building-s
      magnitude_value="", magnitude_axis="",
      spatial_boundary_used="national average", in_review_corpus="no",
      source_line=f"{COMPASS} L24 -- named without a magnitude in the scan"),
-# --- Theme E: analogous heterogeneous grids ---------------------------------
+# Theme E: analogous heterogeneous grids
 dict(ref_key="cer_canada", authors_short="Canadian Energy Regulator / provincial data", year=2024,
      venue="Canadian Energy Regulator; BC EEIF methodology", doi="",
      domain="power_sector", grid_system="Canada (BC/Quebec/Manitoba vs Alberta/Saskatchewan)",
@@ -226,7 +226,7 @@ dict(ref_key="nordics_nordpool", authors_short="Nordics (Norway vs Nord Pool)", 
      spatial_boundary_used="bidding zone / national", in_review_corpus="no",
      source_line=f"{COMPASS} L6, L54 -- qualitative only (hydro Norway/Sweden vs wider grid), no "
                  "magnitude reported in the scan"),
-# --- Uncertainty-typology paper (Li et al. 2023) -----------------------------
+# Uncertainty-typology paper (Li et al. 2023)
 # NB: known pitfall check -- 910% belongs to M7 (method-related, energy-mix
 # SCENARIO = trajectory axis, Grade 2), NOT to DA7 (data-related, time
 # RESOLUTION of the energy mix = temporal axis, Grade 1). DA7's own maximum
@@ -248,7 +248,7 @@ dict(ref_key="li_2023_m7", authors_short="Li et al.", year=2023,
      magnitude_value="3%-910% (M7: energy mix scenario, Grade 2, 55-80% studies most-influential)",
      magnitude_axis="trajectory", spatial_boundary_used="", in_review_corpus="no",
      source_line=f"{LI2023} L34 (abstract), L436, L466-469 (Table 5), L622 (conclusion)"),
-# --- This study ---------------------------------------------------------------
+# This study
 dict(ref_key="this_study", authors_short="This study", year=2026,
      venue="Building and Environment (submitted)", doi="",
      domain="building_lca", grid_system="New Zealand (North/South Island, MBIE EDGS)",

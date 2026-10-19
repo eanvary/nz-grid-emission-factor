@@ -63,11 +63,9 @@ STUDY_PERIODS = [10, 25, 30, 50]  # yrs; justified: 10=short lease/fitout cycle,
 START_YEARS = [2025, 2027, 2030]
 HEADLINE_START = 2027
 
-# ---------------------------------------------------------------------------
 # Load EF data (generation-side, NI+SI) and generation weights (for computing
 # annual island/national EF -- generation-weighted, i.e. the physically correct
 # way to average an intensity over a year of varying output).
-# ---------------------------------------------------------------------------
 ef = pd.read_parquet(EDGS / f"edgs_hourly_emission_factor{SUFFIX}.parquet")
 ef = ef[(ef["ef_basis"] == "generation") & (ef["island"].isin(["NI", "SI"]))].copy()
 ef["year"] = ef["datetime_hour"].dt.year
@@ -80,7 +78,7 @@ gen_isl = gen.groupby(["scenario", "island", "datetime_hour"], observed=True)["g
 
 efw = ef.merge(gen_isl, on=["scenario", "island", "datetime_hour"], how="left")
 
-# --- Annual island EF (b), generation-weighted (reuse Phase 1 logic) ---
+# Annual island EF (b), generation-weighted (reuse Phase 1 logic)
 def wmean(g):
     w = g["generation_mwh"].fillna(0)
     return np.average(g["emission_factor_kg_co2e_per_kwh"], weights=w) if w.sum() > 0 else np.nan
@@ -89,7 +87,7 @@ annual_island = (efw.groupby(["scenario", "island", "year"])
                  .apply(lambda g: pd.Series({"annual_island_ef": wmean(g)}), include_groups=False)
                  .reset_index())
 
-# --- Annual NATIONAL generation-side EF (c): pool NI+SI CO2 and generation ---
+# Annual NATIONAL generation-side EF (c): pool NI+SI CO2 and generation
 efw["co2_kg"] = efw["emission_factor_kg_co2e_per_kwh"] * efw["generation_mwh"].fillna(0) * 1000
 nat_hourly = efw.groupby(["scenario", "datetime_hour"]).agg(
     co2_kg=("co2_kg", "sum"), gen_mwh=("generation_mwh", "sum")).reset_index()
@@ -103,10 +101,8 @@ annual_island.to_csv(TABLES / f"phase3_annual_island_ef{SUFFIX}.csv", index=Fals
 annual_national.to_csv(TABLES / f"phase3_annual_national_ef{SUFFIX}.csv", index=False)
 log(f"Computed annual island EF ({len(annual_island)} rows) and annual national EF ({len(annual_national)} rows)")
 
-# ---------------------------------------------------------------------------
 # Load shapes: map (dow,hour) raw intensity onto each actual calendar year,
 # normalised to sum exactly 1.0 for THAT year (handles leap years exactly).
-# ---------------------------------------------------------------------------
 shapes = pd.read_csv(TABLES / "phase3_load_shapes_stylised.csv")
 SHAPE_LABELS = shapes["label"].unique().tolist()
 log(f"Load shapes: {SHAPE_LABELS}")
@@ -142,10 +138,8 @@ for shape_label in SHAPE_LABELS:
 def load_weighted_annual_ef(shape_label, scenario, year, source="island"):
     return cache[(shape_label, scenario, year, source)]
 
-# ---------------------------------------------------------------------------
 # Item 14: headline decomposition (Reference, NI, start=2027, all 4 study
 # periods, all 3 load shapes) + order-sensitivity check.
-# ---------------------------------------------------------------------------
 log("\n" + "=" * 70)
 log("ITEM 14: four-tier error decomposition, headline (Reference, NI, start=2027)")
 log("=" * 70)

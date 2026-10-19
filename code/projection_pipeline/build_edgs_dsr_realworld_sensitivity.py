@@ -1,5 +1,5 @@
 """
-Follow-up brief U — test Assumption 2's model-original DSR/battery peak-shave RULE (charge at
+Follow-up brief U: test Assumption 2's model-original DSR/battery peak-shave RULE (charge at
 the day's lowest residual hour, discharge at the day's highest) against a real-world-cited
 alternative: AEMO's published evening-peak battery discharge window for Australia's NEM.
 Standalone: reads only existing shipped parquets, writes only new CSVs. Does not modify
@@ -68,9 +68,7 @@ log(f"Source: {AEMO_SOURCE}")
 log(f"Discharge window (AEMO-stated): hrs {AEMO_DISCHARGE_HOURS}; "
     f"charge window (this script's reading): hrs {AEMO_CHARGE_HOURS}")
 
-# ---------------------------------------------------------------------------
 # Load prerequisites (identical sources to build_edgs_dispatch.py)
-# ---------------------------------------------------------------------------
 targets = pd.read_parquet(OUT_DIR / "edgs_annual_targets.parquet")
 register = pd.read_parquet(OUT_DIR / "edgs_plant_register.parquet")
 merit = pd.read_parquet(OUT_DIR / "edgs_merit_order.parquet")
@@ -153,7 +151,7 @@ def dsr_aemo(residual_pre, dsr_mw, H):
     if dsr_mw > 0:
         ndays = H // 24
         base = residual_pre[:ndays * 24].reshape(ndays, 24)
-        hi = base.argmax(axis=1); lo = base.argmin(axis=1)
+        hi = base.argmax(axis=1)
         rows_idx = np.arange(ndays)
         daily_energy = np.minimum(dsr_mw, base[rows_idx, hi])  # same magnitude rule as shipped
         disch_per_hr = daily_energy / len(AEMO_DISCHARGE_HOURS)
@@ -179,7 +177,6 @@ def run(scenario, year, mode):
     t = targets[(targets["scenario"] == scenario) & (targets["year"] == year)]
     annual_gen = t[t["metric"] == "net_generation"].set_index("commodity")["value"]
     demand_twh = float(t[t["metric"] == "annual_demand"]["value"].iloc[0])
-    peak_gw = float(t[t["metric"] == "annual_peak"]["value"].iloc[0])
     ni_share = float(ni_share_map.get((scenario, year), 0.61))
 
     island_ren_total = {"NI": np.zeros(H), "SI": np.zeros(H)}
@@ -251,9 +248,7 @@ def run(scenario, year, mode):
     return cal["datetime_hour"].to_numpy(), ef_ni, ni_gen, ni_co2, dsr_series, residual_pre
 
 
-# ---------------------------------------------------------------------------
-# Step 0: sanity check (shipped mode must reproduce the actual adopted shipped EF exactly)
-# ---------------------------------------------------------------------------
+# Sanity check (shipped mode must reproduce the actual adopted shipped EF exactly)
 ship_ef = pd.read_parquet(OUT_DIR / "edgs_hourly_emission_factor.parquet",
                            columns=["scenario", "island", "datetime_hour", "ef_basis",
                                     "emission_factor_kg_co2e_per_kwh"])
@@ -269,10 +264,8 @@ if resid > 1e-6:
     log("WARNING: reconstruction does not match shipped baseline - results below are unreliable")
 del ship_ef, ship_ni
 
-# ---------------------------------------------------------------------------
 # Part 1: match rate - how often does the shipped model's OWN chosen discharge hour
 # already fall inside AEMO's cited 1600-2100hrs window?
-# ---------------------------------------------------------------------------
 match_rows = []
 for scenario in SCENARIOS:
     for year in YEARS:
@@ -297,9 +290,7 @@ log(f"\nOverall: shipped model's own discharge hour falls inside AEMO's 1600-210
     f"on {overall_match:.1f}% of days ({match_df.n_days_in_aemo_window.sum():,} of "
     f"{match_df.n_days.sum():,} DSR-active scenario-year-days)")
 
-# ---------------------------------------------------------------------------
 # Part 2: full sensitivity - shipped rule vs AEMO-window rule, same energy, different timing
-# ---------------------------------------------------------------------------
 rows = []
 for scenario in SCENARIOS:
     for year in YEARS:

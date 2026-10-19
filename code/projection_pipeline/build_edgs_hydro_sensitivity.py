@@ -1,5 +1,5 @@
 """
-Follow-up brief G — test the HVDC capacity violation finding (Briefs B-F) against wet/dry
+Follow-up brief G: test the HVDC capacity violation finding (Briefs B-F) against wet/dry
 hydrology, not just the central 2021 template. Every prior HVDC round (B-F) used ONLY the
 central template; this is the missing Assumption-1 sensitivity test, applied for the first
 time to all 5 scenarios (earlier rounds only ran wet/dry for Reference, for the EF shape).
@@ -178,8 +178,8 @@ for tmpl_name, (tmpl_year, suffix) in TEMPLATES.items():
                             "year": year, "max_transfer_mw": max_mw, "n_hours_violate": n_hours,
                             "continuous_mag_MWh": continuous_mag})
 
-            # --- Step 3 mechanism data: SI hydro generation (annual GWh), SI island demand
-            # target (annual, from island_demand share x shape), SI exportable surplus ---
+            # Step 3 mechanism data: SI hydro generation (annual GWh), SI island demand
+            # target (annual, from island_demand share x shape), SI exportable surplus
             si_hydro_gwh = float(annual_gen.get("Hydro", 0.0)) * cap_share.get((year, "Hydro", "SI"), 0.0) \
                 if np.isfinite(cap_share.get((year, "Hydro", "SI"), np.nan)) else 0.0
             si_gen_total_mwh = g_SI.sum()
@@ -197,9 +197,7 @@ res_df.to_csv(OUT_DIR / "edgs_hydro_sensitivity_summary.csv", index=False)
 mech_df = pd.DataFrame(mechanism_rows)
 mech_df.to_csv(OUT_DIR / "edgs_hydro_sensitivity_mechanism.csv", index=False)
 
-# ---------------------------------------------------------------------------
-# Step 2: summary table, scenario x template
-# ---------------------------------------------------------------------------
+# Summary table, scenario x template
 log("\n=== Step 2: violation count & continuous magnitude, scenario x template ===")
 summ = res_df.groupby(["scenario", "template"]).apply(
     lambda x: pd.Series({"n_flagged_sy": int((x.max_transfer_mw > HVDC_CAPACITY_MW).sum()),
@@ -214,9 +212,7 @@ tot = res_df.groupby("template").apply(
 log("\n=== Total (all 5 scenarios, 27 years = 135 scenario-years, per template) ===")
 log(tot.to_string())
 
-# ---------------------------------------------------------------------------
-# Step 3: mechanism - SI surplus decomposition, central vs wet vs dry
-# ---------------------------------------------------------------------------
+# Mechanism - SI surplus decomposition, central vs wet vs dry
 log("\n=== Step 3: SI hydro / generation / genload-target / surplus, by template (all scenarios, annual sums TWh) ===")
 mech_summ = mech_df.groupby("template")[["si_hydro_annual_gwh", "si_generation_total_mwh",
                                          "si_genload_target_mwh", "si_net_surplus_mwh"]].sum()

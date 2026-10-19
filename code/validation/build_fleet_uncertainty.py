@@ -93,7 +93,7 @@ for fuel, g in monthly.groupby("fuel_std"):
     })
 result = pd.DataFrame(rows)
 
-# --- adopted gas sigma: per-unit factor uncertainty (carbon content + heat rate) ---
+# Adopted gas sigma: per-unit factor uncertainty (carbon content + heat rate)
 IPCC_GAS = (56100.0, 54300.0, 58300.0)  # IPCC 2006 Vol 2 Ch 2 Table 2.2, natural gas, kg CO2/TJ
 carbon = (abs(IPCC_GAS[0] - IPCC_GAS[1]) + abs(IPCC_GAS[2] - IPCC_GAS[0])) / IPCC_GAS[0] / 2.0
 d3 = pd.read_csv(ROOT / "output" / "D3_fuel_level_validation.csv")

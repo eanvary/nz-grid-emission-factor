@@ -38,7 +38,7 @@ out = {"built": pd.Timestamp.now().isoformat(timespec="seconds"), "stats": {}}
 QMAP = {1: "Q1", 2: "Q2", 3: "Q3", 4: "Q4"}
 MB_LABEL = {1: "Mar", 2: "Jun", 3: "Sep", 4: "Dec"}
 
-# ---------------------------------------------------------------- (a) MBIE published
+# (a) MBIE published
 xl = pd.ExcelFile(ROOT / "generation_pipeline" / "MBIE_Quarterly_Electricity_Emissions_2026Q1.xlsx")
 dfm = xl.parse("Electricity EFs", header=None)
 mb = pd.DataFrame({"mblabel": dfm.iloc[8, 1:].tolist(), "co2": dfm.iloc[10, 1:].tolist(),
@@ -73,7 +73,7 @@ out["stats"]["a"] = {
     "mad_full_pct": round(((qq.full - qq.mbie).abs() / qq.mbie * 100).mean(), 2),
     "mad_excl_pct": round(((qq.excl - qq.mbie).abs() / qq.mbie * 100).mean(), 2)}
 
-# ---------------------------------------------------------------- (b) em6
+# (b) em6
 EM6 = {"GAS": "GAS", "CG": "CLG", "HYD": "HYD", "WIN": "WIN", "SOL": "SOL", "GEO": "GEO"}
 ours = pd.read_csv(HERE / "generation_by_fuel_daily_2026.csv", parse_dates=["trading_date"])
 em6 = pd.read_csv(HERE / "em6_free_generation_by_fuel_daily.csv", parse_dates=["trading_date"])
@@ -88,7 +88,7 @@ out["stats"]["b"] = {"n_days": int(c.trading_date.nunique()), "first": str(lo.da
                                      "ratio_em6_over_ours": round((s.gen_mwh_em6 / s.gen_mwh.replace(0, np.nan)).mean(), 2),
                                      "days_em6_zero": int((s.gen_mwh_em6 <= 0).sum())} for f, s in c.groupby("fuel_std")}}
 
-# ---------------------------------------------------------------- (c) projection vs metered, NI
+# (c) projection vs metered, NI
 h = pd.read_csv(ROOT / "output" / "hourly_emission_factor_NI_SI.csv", parse_dates=["datetime"])
 h = h[(h.island == "NI") & (h.datetime.dt.year.isin([2024, 2025]))].dropna(subset=["EF_kg_per_MWh"])
 ef_ = pd.read_parquet(ROOT / "output" / "edgs" / "edgs_hourly_emission_factor.parquet")

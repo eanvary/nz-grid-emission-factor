@@ -43,11 +43,9 @@ from fuel_attribution import FuelAttribution, poc_island_map  # noqa: E402
 
 NEW_MONTHS = ["202601", "202602", "202603", "202604", "202605", "202606", "202607", "202608"]
 
-# ---------------------------------------------------------------------------
-# Step 2: build daily national generation-by-fuel for the 8 new months, using
+# Build daily national generation-by-fuel for the 8 new months, using
 # the shipped pipeline's own generation reader (fuel_attribution.py) and
 # POC->island map, not a local copy of them.
-# ---------------------------------------------------------------------------
 poc_island = poc_island_map()
 fa = FuelAttribution()
 gen = fa.generation(level="day", include_fills=True, months=NEW_MONTHS)
@@ -62,9 +60,7 @@ print(f"Built national daily generation-by-fuel for {len(NEW_MONTHS)} new months
       f"{national_daily.trading_date.min().date()} to {national_daily.trading_date.max().date()}, "
       f"{len(national_daily)} (date, fuel) rows -> generation_by_fuel_daily_2026.csv")
 
-# ---------------------------------------------------------------------------
-# Step 3: fetch em6's real free generation-by-fuel data, live, right now.
-# ---------------------------------------------------------------------------
+# Fetch em6's real free generation-by-fuel data, live, right now.
 print("\nFetching em6 free/price generation-by-fuel data (live)...")
 url = "https://api.em6.co.nz/ords/em6/data_api/free/price?grid_zone_id="
 with urllib.request.urlopen(url, timeout=30) as resp:
@@ -100,9 +96,7 @@ EM6_TO_PROJECT = {"GAS": "GAS", "CG": "CLG", "HYD": "HYD", "WIN": "WIN", "SOL": 
 em6_df["fuel_std"] = em6_df["fuel_em6"].map(EM6_TO_PROJECT)
 em6_mapped = em6_df.dropna(subset=["fuel_std"])
 
-# ---------------------------------------------------------------------------
-# Step 4: cross-check on the overlapping window only.
-# ---------------------------------------------------------------------------
+# Cross-check on the overlapping window only.
 overlap_start = max(national_daily.trading_date.min(), em6_mapped.trading_date.min())
 overlap_end = min(national_daily.trading_date.max(), em6_mapped.trading_date.max())
 print(f"\nOverlapping window: {overlap_start.date()} to {overlap_end.date()}")

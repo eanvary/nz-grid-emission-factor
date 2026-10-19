@@ -69,11 +69,9 @@ set_journal_style()
 OI = {"blue": CATEGORICAL[0], "vermillion": CATEGORICAL[1],
       "bluish_green": CATEGORICAL[2], "grey": BASE["muted_slate"]}
 
-# =============================================================================
 # Source diagram -- verbatim from the mermaid flowchart the user supplied,
 # used ONLY for its internal proportions (not its own totals, which are
 # smaller/different from this project's real, workbook-verified corpus).
-# =============================================================================
 SOURCE_DIAGRAM = {
     "id_databases": 400, "id_other": 20, "duplicates_removed": 82,
     "screened": 338, "excluded_title_abstract": 238, "sought_for_retrieval": 100,
@@ -86,18 +84,16 @@ assert S["excluded_title_abstract"] + S["sought_for_retrieval"] == S["screened"]
 assert S["not_retrieved"] + S["assessed_for_eligibility"] == S["sought_for_retrieval"]
 assert S["excluded_full_text"] + S["final_included"] == S["assessed_for_eligibility"]
 
-# =============================================================================
 # Verified totals -- these three numbers (and only these three) come from
 # the archived extraction workbook and are NOT rescaled. Everything else in
 # MANUSCRIPT_STATED below is proportionally reconstructed from S, anchored
 # to these two fixed endpoints.
-# =============================================================================
 VERIFIED_SCREENED = 333
 VERIFIED_INCLUDED = 68
 VERIFIED_GROUPS = {"G1": 18, "G2": 39, "G3": 11}
 assert sum(VERIFIED_GROUPS.values()) == VERIFIED_INCLUDED
 
-# -- upstream funnel (databases/other -> dedup -> screened), scaled so the
+# Upstream funnel (databases/other -> dedup -> screened), scaled so the
 # bottom of this segment lands exactly on VERIFIED_SCREENED --
 k_up = VERIFIED_SCREENED / S["screened"]
 id_databases = round(S["id_databases"] * k_up)
@@ -105,7 +101,7 @@ id_other = round(S["id_other"] * k_up)
 pre_dedup_total = id_databases + id_other
 duplicates_removed = pre_dedup_total - VERIFIED_SCREENED
 
-# -- downstream funnel (screened -> ... -> included), rate-scaled stage by
+# Downstream funnel (screened -> ... -> included), rate-scaled stage by
 # stage from the supplied diagram's own rates, starting at VERIFIED_SCREENED --
 ta_excl_rate = S["excluded_title_abstract"] / S["screened"]
 excluded_title_abstract = round(VERIFIED_SCREENED * ta_excl_rate)
@@ -131,7 +127,7 @@ MANUSCRIPT_STATED = {
     "not_retrieved": not_retrieved, "assessed_for_eligibility": assessed_for_eligibility,
     "excluded_full_text": excluded_full_text, "supplementary_sweep": supplementary_sweep,
     "main_flow_included": main_flow_included,
-    # -- verified exclusion-reason breakdown, unchanged from the prior
+    # Verified exclusion-reason breakdown, unchanged from the prior
     # reconstruction pass (all 265 excluded records; measured, not scaled) --
     "excl_residential": 74, "excl_new_construction": 57, "excl_non_nz": 51,
     "excl_no_lca": 44, "excl_duplicate": 2, "excl_other": 37,
@@ -180,10 +176,8 @@ excl_cat_sum = (M["excl_residential"] + M["excl_new_construction"] + M["excl_non
                 M["excl_no_lca"] + M["excl_duplicate"] + M["excl_other"])
 print(f"Verified exclusion-reason categories sum = {excl_cat_sum} (must equal 265); match={excl_cat_sum == 265}")
 
-# =============================================================================
 # Independent re-derivation from the archived workbook -- second code path
 # for the self-audit, unchanged from the prior pass.
-# =============================================================================
 df = pd.read_excel(WB, sheet_name="Extraction")
 total_rows = len(df)
 ie = df["Include_Exclude"].astype(str).str.strip()
@@ -247,12 +241,10 @@ if category_mismatch:
 
 ESTIMATED_NOTE = " (estimated)"
 
-# =============================================================================
 # Draw -- height-first layout engine. Every box's height is computed from
 # its wrapped line count BEFORE it is placed; the vertical cursor only ever
 # advances by a box's true height plus GAP, so a box can never start above
 # the true bottom of the one before it.
-# =============================================================================
 DARK_FILLS = {OI["blue"], OI["bluish_green"], OI["vermillion"]}
 LINE_H = 0.70   # opened up from 0.62 for a less cramped feel
 PAD = 0.60      # opened up from 0.5
@@ -312,7 +304,7 @@ def place_pair(y_top, xL, wL, linesL, xR, wR, linesR, gapL_kwargs=None, gapR_kwa
     bR = draw_box(xR, y_top - h, wR, linesR, height=h, **gapR_kwargs)
     return bL, bR, y_top - h - GAP
 
-# -- canvas: sized generously; trimmed to content at the end via ylim --
+# Canvas: sized generously; trimmed to content at the end via ylim
 fig, ax = plt.subplots(figsize=(8.6, 17.5))
 ax.set_xlim(0, 10)
 ax.axis("off")
@@ -332,7 +324,7 @@ def stage_label(y_top, text):
 
 stage_label(y, "Identification")
 
-# --- Identification (reconstructed) ---
+# Identification (reconstructed)
 b_db, b_om, y = place_pair(
     y, 0.4, 4.4,
     wrap(f"Records identified from databases  n = {M['id_databases']}{ESTIMATED_NOTE}", 24),
@@ -350,7 +342,7 @@ arrow(b_om, b_dedup, "bottom", "top")
 
 stage_label(y, "Screening")
 
-# --- Screening (measured total; reconstructed split) ---
+# Screening (measured total; reconstructed split)
 b_screened, y = place(
     y, 1.4, 7.2,
     wrap(f"Records screened (post-deduplication)  n = {total_rows}  (verified, all rows, Extraction sheet)", 46),
@@ -367,7 +359,7 @@ arrow(b_screened, b_ta_excl, "bottom", "top")
 
 stage_label(y, "Eligibility")
 
-# --- Eligibility (reconstructed) ---
+# Eligibility (reconstructed)
 b_sought, y = place(
     y, 1.4, 7.2, wrap(f"Reports sought for retrieval  n = {M['sought_for_retrieval']}{ESTIMATED_NOTE}", 46),
     estimated=True, fontsize=8.4,
@@ -400,7 +392,7 @@ b_supp, y = place(
 
 stage_label(y, "Included")
 
-# --- Included (measured) ---
+# Included (measured)
 b_incl, y = place(
     y, 0.9, 8.2, wrap(f"Total records included   n = {n_include}  (verified)", 30),
     fc=OI["bluish_green"], fontsize=11.5, fontweight="bold",
@@ -426,9 +418,9 @@ for g, x, lines in zip(group_order, gx, group_lines):
     arrow(b_incl, b_g, "bottom", "top")
 y = y - h_g - GAP
 
-# --- Verified exclusion-reason breakdown (measured; independent of
+# Verified exclusion-reason breakdown (measured; independent of
 # screening stage -- spans both the title/abstract and full-text exclusion
-# boxes above). Drawn full weight. ---
+# boxes above). Drawn full weight.
 excl_lines = [f"All records excluded, by reason  n = {n_exclude}  (verified; spans both screening stages above)", ""] + [
     f"Residential-only population: n = {M['excl_residential']}",
     f"New construction without existing-building assessment: n = {M['excl_new_construction']}",

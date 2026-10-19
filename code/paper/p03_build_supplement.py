@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Build the supplementary material for the 30 September 2026 revision (python-docx).
 Every value comes from Figure/analysis_v1/out (numbers_for_text.json and CSVs), the review coding
 file, or text moved out of the 24 September manuscript. Usage: python p03_build_supplement.py <out.docx>"""
@@ -196,7 +195,7 @@ p("Scripts in Figure/analysis_v1: p03_build_primary_inputs.py (projection inputs
   "p03_new_analyses.py (the 105-case decomposition over six orders and every quoted number, numbers_for_text.json), p03_six_order_sensitivity.py, p03_temporal_by_year.py, and this file. The working copy is a "
   "git archive of ef-database-v1.0.1. The database and the scripts are in the public repository named in the data availability statement.")
 
-# ---- references cited in this supplement (Table S1 records and the sources in S1 to S9)
+# References cited in this supplement (Table S1 records and the sources in S1 to S9)
 sys.path.insert(0, str(HERE))
 from p03_supp_refs import add_refs
 print("supplement references:", add_refs(doc, FIG / "excel" / "_build_scripts" / "references_20261012.txt", h))

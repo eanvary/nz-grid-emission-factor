@@ -7,7 +7,6 @@ Generation-side EF, NI and SI, all 5 scenarios. Representative years
 2024, 2030, 2035, 2040, 2050 used for shape comparisons to keep output tractable;
 duration-curve percentiles and tail-hour counts computed for every year.
 """
-import numpy as np
 import pandas as pd
 from pathlib import Path
 
@@ -36,7 +35,7 @@ log(f"Loaded {len(ef)} generation-side NI/SI hourly EF rows")
 
 REP_YEARS = [2024, 2030, 2035, 2040, 2045, 2050]
 
-# --- Diurnal profiles, representative years, all scenarios ---
+# Diurnal profiles, representative years, all scenarios
 diurnal = (ef[ef["year"].isin(REP_YEARS)]
            .groupby(["scenario", "island", "year", "hour"])["emission_factor_kg_co2e_per_kwh"]
            .mean().reset_index())
@@ -58,7 +57,7 @@ persist_df = pd.DataFrame(persist_rows)
 log(persist_df.pivot_table(index=["island", "scenario"], columns="year", values="corr_vs_2024").round(3).to_string())
 persist_df.to_csv(TABLES / "phase1_diurnal_shape_persistence.csv", index=False)
 
-# --- Peak-hour identification: which hour-of-day has max/min EF, by year ---
+# Peak-hour identification: which hour-of-day has max/min EF, by year
 log("\n=== Hour-of-day with max and min mean EF, by year (Reference scenario) ===")
 ref_diurnal = diurnal[diurnal["scenario"] == "Reference"]
 for isl in ["NI", "SI"]:
@@ -71,7 +70,7 @@ for isl in ["NI", "SI"]:
         log(f"  {isl} {yr}: max EF at hour {int(hmax['hour']):02d}:00 ({hmax['emission_factor_kg_co2e_per_kwh']:.4f}), "
             f"min EF at hour {int(hmin['hour']):02d}:00 ({hmin['emission_factor_kg_co2e_per_kwh']:.4f})")
 
-# --- Weekday/weekend contrast, by year ---
+# Weekday/weekend contrast, by year
 wkdwknd = (ef.groupby(["scenario", "island", "year", "is_weekend"])["emission_factor_kg_co2e_per_kwh"]
            .mean().reset_index())
 wkdwknd_p = wkdwknd.pivot_table(index=["scenario", "island", "year"], columns="is_weekend",
@@ -82,7 +81,7 @@ wkdwknd_p.to_csv(TABLES / "phase1_weekday_weekend.csv", index=False)
 log("\n=== Weekday vs weekend EF, Reference scenario, rep years ===")
 log(wkdwknd_p[(wkdwknd_p["scenario"] == "Reference") & (wkdwknd_p["year"].isin(REP_YEARS))].to_string(index=False))
 
-# --- Seasonal pattern, by year ---
+# Seasonal pattern, by year
 seasonal = (ef.groupby(["scenario", "island", "year", "season"])["emission_factor_kg_co2e_per_kwh"]
             .mean().reset_index())
 seasonal.to_csv(TABLES / "phase1_seasonal.csv", index=False)
@@ -90,7 +89,7 @@ log("\n=== Seasonal mean EF, Reference scenario, rep years ===")
 log(seasonal[(seasonal["scenario"] == "Reference") & (seasonal["year"].isin(REP_YEARS))]
     .pivot_table(index=["island", "year"], columns="season", values="emission_factor_kg_co2e_per_kwh").to_string())
 
-# --- Duration curves: percentiles of hourly EF, every year, all scenarios ---
+# Duration curves: percentiles of hourly EF, every year, all scenarios
 log("\n=== Duration-curve percentiles (all years) -> phase1_duration_curve_percentiles.csv ===")
 pctiles = [1, 5, 10, 25, 50, 75, 90, 95, 99]
 dur = (ef.groupby(["scenario", "island", "year"])["emission_factor_kg_co2e_per_kwh"]
@@ -100,7 +99,7 @@ dur = dur.reset_index()
 dur.to_csv(TABLES / "phase1_duration_curve_percentiles.csv", index=False)
 log(f"Wrote phase1_duration_curve_percentiles.csv ({len(dur)} rows)")
 
-# --- Zero-thermal / near-zero hours and high-EF tail hours, count per year ---
+# Zero-thermal / near-zero hours and high-EF tail hours, count per year
 # Data-driven thresholds: "near-zero" = below the 5th percentile of that
 # scenario-island's OWN 2024 distribution (so the bar migrates with the fleet,
 # not a fixed round number); "high-EF tail" = above the 95th percentile of that

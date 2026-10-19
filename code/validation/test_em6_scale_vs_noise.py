@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Is a fuel's em6 gap noise, or a systematic scale offset?
 
@@ -26,7 +25,6 @@ Run: python test_em6_scale_vs_noise.py
 import glob
 import os
 
-import numpy as np
 import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -38,7 +36,7 @@ FUEL_PREFIX = {"SOL": ("sol", "pv"), "WIN": ("win", "onw"), "HYD": ("hyd",),
 ov = pd.read_csv(os.path.join(HERE, "em6_crosscheck_overlap.csv"))
 ov["date"] = pd.to_datetime(ov.trading_date).dt.date
 
-# --- rebuild this project's side from the raw EMI files, independently -----
+# Rebuild this project's side from the raw EMI files, independently
 years = sorted({str(d)[:4] for d in ov.date})
 files = [f for f in sorted(glob.glob(os.path.join(ROOT, "EA_EMI_raw",
                                                   "*_Generation_MD.csv")))

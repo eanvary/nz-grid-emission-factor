@@ -29,9 +29,7 @@ def log(msg):
     log_lines.append(str(msg))
 
 
-# ---------------------------------------------------------------------------
-# Step 1 — NSP snapshots: POC -> Island lookup
-# ---------------------------------------------------------------------------
+# NSP snapshots: POC -> Island lookup
 nsp_files = sorted(glob.glob(str(NSP_DIR / "*_NetworkSupplyPointsTable.csv")))
 log(f"Found {len(nsp_files)} NSP snapshot files")
 
@@ -70,9 +68,7 @@ log(f"POC -> Island lookup: {len(poc_island)} POCs total "
     f"(NI: {sum(v=='NI' for v in poc_island.values())}, "
     f"SI: {sum(v=='SI' for v in poc_island.values())})")
 
-# ---------------------------------------------------------------------------
-# Step 2 — Plant SCD2: thermal EF lookup keyed by (POC, standardised fuel)
-# ---------------------------------------------------------------------------
+# Plant SCD2: thermal EF lookup keyed by (POC, standardised fuel)
 plant = pd.read_csv(PLANT_FILE, low_memory=False)
 plant["eff_start"] = pd.to_datetime(plant["effective_start_datetime"], utc=True, errors="coerce")
 # "9999-12-31..." (still-active record, no superseding end date) overflows pandas'
@@ -128,9 +124,7 @@ def get_thermal_ef(poc, fuel_std, ref_dt):
     return float(np.mean(active)), True
 
 
-# ---------------------------------------------------------------------------
-# Step 3 — Load and normalise Generation_MD files
-# ---------------------------------------------------------------------------
+# Load and normalise Generation_MD files
 def load_generation_md(filepath):
     df = pd.read_csv(filepath, low_memory=False)
     # Column casing changed at some point pre-2020 (Trading_date -> Trading_Date);
@@ -157,9 +151,7 @@ gen = pd.concat(gen_parts, ignore_index=True)
 log(f"Total generation records loaded: {len(gen):,}")
 log(f"Date range: {gen['trading_date'].min().date()} to {gen['trading_date'].max().date()}")
 
-# ---------------------------------------------------------------------------
-# Step 4 — Assign Island
-# ---------------------------------------------------------------------------
+# Assign Island
 gen["island"] = gen["poc"].map(poc_island)
 match_rate = gen["island"].notna().mean()
 log(f"\nIsland assignment rate: {match_rate:.2%}")
@@ -177,14 +169,12 @@ log(f"Records retained (NI+SI): {len(gen):,}")
 for isl, tot in gen.groupby("island")["gen_mwh"].sum().items():
     log(f"  {isl}: {tot/1e6:.2f} TWh total over period")
 
-# ---------------------------------------------------------------------------
-# Step 4b — Flagged fills (fuel_attribution.fills): Huntly 1-4 September 2020 (Genesis
+# Flagged fills (fuel_attribution.fills): Huntly 1-4 September 2020 (Genesis
 # quarterly output), and Grid_import fills: Huntly E3P/P40 September 2020 and norskeskog
 # 2015-2019 (scaled), Matahina October 2021 to December 2025 (measured). See the override table.
 # Every filled trading period is written to filled_generation_log.csv; one row per fill and
 # month, with the Grid_import ratio and any cross-check (FILLCHECK_ rows), to
 # filled_generation_summary.csv.
-# ---------------------------------------------------------------------------
 from fuel_attribution import FuelAttribution
 fa = FuelAttribution()
 fill_tp = fa.fills()
@@ -207,9 +197,7 @@ for gc, g in fill_day.groupby("gen_code"):
     log(f"Fill ({gc}): {g['gen_mwh'].sum()/1e3:.1f} GWh over {g['trading_date'].min().date()} to "
         f"{g['trading_date'].max().date()} (flagged in filled_generation_log.csv)")
 
-# ---------------------------------------------------------------------------
-# Step 5 — Assign fuel and emission factor per record (fuel_attribution.py)
-# ---------------------------------------------------------------------------
+# Assign fuel and emission factor per record (fuel_attribution.py)
 gen["fuel_std"] = gen["fuel_code_raw"].map(FUEL_STD).fillna(gen["fuel_code_raw"])
 gen["year"] = gen["trading_date"].dt.year
 gen["month"] = gen["trading_date"].dt.month
@@ -219,9 +207,7 @@ rule_summary = gen.groupby("rule").agg(gen_GWh=("gen_mwh", lambda s: s.sum() / 1
 log("\nFuel attribution rules applied (all years):")
 log(rule_summary.round(1).to_string())
 
-# ---------------------------------------------------------------------------
-# Step 6 — Aggregate to monthly EF by island
-# ---------------------------------------------------------------------------
+# Aggregate to monthly EF by island
 gen["filled_gen_mwh"] = gen["gen_mwh"].where(gen["filled"], 0.0)
 EXTRA_AGG = dict(filled_gen_MWh=("filled_gen_mwh", "sum"), CO2_kg_estimated=("co2_kg_estimated", "sum"),
                  total_CO2_kg_stratford_ccgt=("co2_kg_bound_ccgt", "sum"),
@@ -270,9 +256,7 @@ annual["EF_kg_per_MWh"] = annual["total_CO2_kg"] / annual["total_gen_MWh"]
 annual = add_bound_ef(annual)
 annual = annual.sort_values(["island", "year"]).reset_index(drop=True)
 
-# ---------------------------------------------------------------------------
-# Step 7 — Quality checks
-# ---------------------------------------------------------------------------
+# Quality checks
 log("\n=== QUALITY CHECKS ===")
 
 spot_checks = [  # (unit or POC/fuel, year, expected kg/MWh), resolved through fuel_attribution.py
@@ -305,9 +289,7 @@ if common_years:
 log(f"  NI annual EF by year: {ni_annual.round(1).to_dict()}")
 log(f"  SI annual EF by year: {si_annual.round(1).to_dict()}")
 
-# ---------------------------------------------------------------------------
 # Outputs
-# ---------------------------------------------------------------------------
 # Columns after total_CO2_kg are additions (2026-09-28, fuel_attribution.py): filled generation,
 # the CO2 carried by estimated factors, and the Stratford combined-cycle / peaker bound series.
 monthly_out = monthly[["island", "year", "month", "period", "EF_kg_per_MWh", "total_gen_MWh", "total_CO2_kg"] + EXTRA_COLS]
@@ -324,9 +306,7 @@ log(f"\nWrote: monthly_emission_factor_NI_SI.csv ({len(monthly_out)} rows)")
 log(f"Wrote: annual_emission_factor_NI_SI.csv ({len(annual_out)} rows)")
 log(f"Wrote: monthly_fuel_mix_NI_SI.csv ({len(fuel_out)} rows)")
 
-# ---------------------------------------------------------------------------
 # Chart
-# ---------------------------------------------------------------------------
 NAVY = "#1A2744"
 TEAL = "#0D7377"
 FUEL_COLOURS = {

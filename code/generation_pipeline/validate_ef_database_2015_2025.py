@@ -59,9 +59,7 @@ YEARS = sorted({int(ym[:4]) for ym in expected_months})
 LEAP_YEARS = {y for y in YEARS if calendar.isleap(y)}
 scope_label = f"{first_y}-{first_m:02d} to {last_y}-{last_m:02d}"
 
-# ===========================================================================
-# A — COMPLETENESS & COVERAGE
-# ===========================================================================
+# A: COMPLETENESS & COVERAGE
 print("\n" + "=" * 70 + "\nA — COMPLETENESS & COVERAGE\n" + "=" * 70)
 
 record("A1", f"Completeness", f"All Generation_MD monthly files present, no gaps ({scope_label})",
@@ -111,9 +109,7 @@ dup_daily = daily.duplicated(subset=["island", "date"]).sum()
 record("A8", "Completeness", "No duplicate (island, date) rows in daily table",
        "PASS" if dup_daily == 0 else "FAIL", f"{dup_daily} duplicates")
 
-# ===========================================================================
-# B — INTERNAL CONSISTENCY & RECONCILIATION
-# ===========================================================================
+# B: INTERNAL CONSISTENCY & RECONCILIATION
 print("\n" + "=" * 70 + "\nB — INTERNAL CONSISTENCY & RECONCILIATION\n" + "=" * 70)
 
 h2d = (hourly.groupby(["island", "date"])
@@ -196,9 +192,7 @@ else:
            f"{len(j)} island-months, {n_missing} missing on either side; max relative diff "
            f"generation {gen_err.max():.2e}, CO2 {co2_err.max():.2e} (worst {worst})")
 
-# ===========================================================================
-# C — PHYSICAL PLAUSIBILITY & BOUNDS
-# ===========================================================================
+# C: PHYSICAL PLAUSIBILITY & BOUNDS
 print("\n" + "=" * 70 + "\nC — PHYSICAL PLAUSIBILITY & BOUNDS\n" + "=" * 70)
 
 neg_gen = (hourly["total_gen_MWh"] < 0).sum()
@@ -236,21 +230,17 @@ for fuel, (lo, hi) in benchmarks.items():
 record("C5", "Plausibility", "Fleet-average EF per thermal fuel within literature benchmark ranges",
        "PASS" if not bench_fail else "FAIL", "; ".join(bench_fail) if bench_fail else "all within range")
 
-# ===========================================================================
-# D — EXTERNAL CROSS-VALIDATION (MBIE official quarterly national EF)
-# ===========================================================================
+# D: EXTERNAL CROSS-VALIDATION (MBIE official quarterly national EF)
 print("\n" + "=" * 70 + "\nD — EXTERNAL CROSS-VALIDATION\n" + "=" * 70)
 
 # Cogeneration scope (revised 2026-09-23). MBIE's published EF is "primary activity"
 # scope and excludes autoproducer/industrial cogeneration; this pipeline includes it.
 # D2 below re-derives the comparison on MBIE's scope so the two are like-for-like.
-#
 # This was previously a hardcoded set of five POC codes. That had two defects. It
 # missed te_rapa (TWH0331, 1.68 TWh, 12% of all cogeneration), and excluding by POC
 # also deleted Patea hydro (1.20 TWh, zero-carbon), because POC HWA1101 carries both
 # Whareroa cogen and Patea. Removing zero-carbon generation shrinks the denominator
 # without shrinking the numerator, which pushes the computed EF the wrong way.
-#
 # The EMI generation data carries its own Tech_Code field, and "Cogen" is a single
 # stable label: no unit changes Tech_Code anywhere in 2015-2026, verified. Selecting
 # on it resolves at Gen_Code level, so Patea stays in and te_rapa comes out.
@@ -434,9 +424,7 @@ record("E6", "Temporal", "No POC has a zero/missing month between two months wit
        f"{len(_flags)} flagged POC-months ({int(_flags['filled'].sum()) if len(_flags) else 0} covered by a flagged fill); "
        f"with >=5 GWh in both neighbouring months: {[(p, m) for p, m in zip(_big['poc'], _big['month'])]}; see completeness_flags.csv")
 
-# ===========================================================================
-# E — TEMPORAL INTEGRITY
-# ===========================================================================
+# E: TEMPORAL INTEGRITY
 print("\n" + "=" * 70 + "\nE — TEMPORAL INTEGRITY\n" + "=" * 70)
 
 # NZ's DST transitions are month-fixed (spring-forward late September, fall-back
@@ -477,18 +465,14 @@ record("E3", "Temporal", "DST fall-back day (TP49/TP50) present and now included
        "PASS" if len(fallback_dst_gen) == len(years_with_april) else "WARN",
        f"{len(fallback_dst_gen)} files with a fall-back day found (expected {len(years_with_april)} in-scope Aprils)")
 
-# ===========================================================================
-# F — PROVENANCE
-# ===========================================================================
+# F: PROVENANCE
 print("\n" + "=" * 70 + "\nF — PROVENANCE\n" + "=" * 70)
 record("F1", "Provenance", "Every raw file's byte size logged and none anomalously small",
        "PASS", f"{len(gen_files)} Generation_MD + {len(hvdc_files)} HVDC_flows files, sizes checked in A3")
 record("F2", "Provenance", "All known pipeline bugs documented with fix date, magnitude, and rationale",
        "PASS", "see EDGS_Pipeline_Complete_Documentation.md Section 8.5 and script NOTES logs")
 
-# ===========================================================================
-# G — STATISTICAL OUTLIER SCREEN
-# ===========================================================================
+# G: STATISTICAL OUTLIER SCREEN
 print("\n" + "=" * 70 + "\nG — STATISTICAL OUTLIER SCREEN\n" + "=" * 70)
 
 ni_daily_ef = daily[daily.island == "NI"]["EF_kg_per_MWh"].dropna()
@@ -499,9 +483,7 @@ record("G1", "Outliers", "NI daily EF: count of >3xIQR outliers (flagged for man
        "PASS" if len(outliers) < len(ni_daily_ef) * 0.01 else "WARN",
        f"{len(outliers)}/{len(ni_daily_ef)} rows ({len(outliers)/len(ni_daily_ef)*100:.2f}%) beyond 3xIQR")
 
-# ===========================================================================
-# H — CONSUMPTION-SIDE & INTER-ISLAND TRANSFER
-# ===========================================================================
+# H: CONSUMPTION-SIDE & INTER-ISLAND TRANSFER
 print("\n" + "=" * 70 + "\nH — CONSUMPTION-SIDE & INTER-ISLAND TRANSFER\n" + "=" * 70)
 
 CONS_DIR = ROOT / "Consumption_Island" / "output"
@@ -620,9 +602,7 @@ record("H7c", "Consumption",
        "Same effect confirmed at the hourly->daily boundary too (not limited to daily->monthly)",
        "INFO", f"NI |diff| mean={h2d_diff_pct.mean():.3f}%, max={h2d_diff_pct.max():.3f}% of daily total (4018 days)")
 
-# ===========================================================================
 # Summary
-# ===========================================================================
 print("\n" + "=" * 70 + "\nSUMMARY\n" + "=" * 70)
 df_checks = pd.DataFrame(checks)
 n_pass = (df_checks["status"] == "PASS").sum()

@@ -52,7 +52,7 @@ N_TRIALS = 50_000
 CHUNK = 500
 SEED = 42
 
-# --- Rebuild REL_SIGMA_FULL exactly as in run_ipcc_uncertainty_full_coverage.py ---
+# Rebuild REL_SIGMA_FULL exactly as in run_ipcc_uncertainty_full_coverage.py
 IPCC_TABLE_2_2 = {
     "CLG": (96100.0, 92800.0, 100000.0), "GAS": (56100.0, 54300.0, 58300.0),
     "DSL": (74100.0, 72600.0, 74800.0), "WOOD": (112000.0, 95000.0, 132000.0),
@@ -79,7 +79,7 @@ print("REL_SIGMA (Approach 1 inputs, reused unchanged for Approach 2):")
 for f, v in REL_SIGMA.items():
     print(f"  {f}: {v*100:.2f}%")
 
-# --- Load data, pivot to wide contribution (co2_kg) and generation matrices ---
+# Load data, pivot to wide contribution (co2_kg) and generation matrices
 print("\nLoading hourly_fuel_mix_NI_SI.csv...")
 df = pd.read_csv(HERE / "hourly_fuel_mix_uncertainty.csv")  # GEO split into GEO / GEO_PROXY
 df["year"] = df["date"].str[:4].astype(int)
@@ -108,7 +108,7 @@ Cd_sum = contrib[det_cols].values.sum(axis=1).astype(np.float64)  # (n_rows,)
 n_rows = Cq.shape[0]
 k = len(quant_cols)
 
-# --- Draw one multiplier per fuel per trial: lognormal, E[mult]=1, CV=rel_sigma ---
+# Draw one multiplier per fuel per trial: lognormal, E[mult]=1, CV=rel_sigma
 rng = np.random.default_rng(SEED)
 sigma_ln = np.array([math.sqrt(math.log(1 + REL_SIGMA[f] ** 2)) for f in quant_cols])
 mu_ln = -0.5 * sigma_ln ** 2
@@ -152,7 +152,7 @@ print(f"\nWrote ipcc_uncertainty_by_island_hour_montecarlo.csv ({len(hourly_out)
 n_neg_mc = int(hourly_out["mc_lower_bound_negative"].sum())
 print(f"Hours with a negative MC lower bound: {n_neg_mc} (by construction of the lognormal, should be 0)")
 
-# --- Compare directly against Approach 1's full-coverage hourly result ---
+# Compare directly against Approach 1's full-coverage hourly result
 a1_path = HERE / "ipcc_uncertainty_by_island_hour_full_coverage.csv"
 if a1_path.exists():
     a1 = pd.read_csv(a1_path)
@@ -183,10 +183,8 @@ if a1_path.exists():
 else:
     print(f"\n{a1_path.name} not found -- skipping Approach 1 vs 2 comparison.")
 
-# ---------------------------------------------------------------------------
 # Monthly and annual roll-ups using the SAME trials (correct treatment of a
 # systematic, fixed-for-the-study parameter uncertainty -- see module docstring).
-# ---------------------------------------------------------------------------
 def rollup(group_cols, label):
     g_contrib_q = pd.DataFrame(Cq, columns=quant_cols)
     g_contrib_q[group_cols] = meta[group_cols].values

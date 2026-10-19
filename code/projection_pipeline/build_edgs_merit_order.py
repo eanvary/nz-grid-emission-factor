@@ -1,5 +1,5 @@
 """
-Module 3 — Step 3: short-run marginal cost per thermal plant, per year, and the
+Module 3: Step 3: short-run marginal cost per thermal plant, per year, and the
 resulting merit order (thermal plants ranked ascending by marginal cost).
 
 Marginal_cost (NZD/MWh) =                                          [brief Step 3]
@@ -22,7 +22,7 @@ Output: output/edgs/edgs_merit_order.parquet
 import numpy as np
 import pandas as pd
 
-from edgs_common import (ASSUMPTIONS_XLSX, OUT_DIR, SCENARIOS, YEARS,
+from edgs_common import (ASSUMPTIONS_XLSX, OUT_DIR, SCENARIOS, 
                          fuel_ef_kg_per_gj, MFE_SOURCE, log_factory)
 
 log, lines = log_factory()
@@ -31,16 +31,12 @@ reg = pd.read_parquet(OUT_DIR / "edgs_plant_register.parquet")
 thermal = reg[reg["dispatch_class"] == "thermal"].copy()
 log(f"Thermal plant-year rows: {len(thermal):,}")
 
-# ---------------------------------------------------------------------------
 # Effective carbon price by scenario x year (NZD/tonne CO2)
-# ---------------------------------------------------------------------------
 cp = pd.read_excel(ASSUMPTIONS_XLSX, sheet_name="Commodity prices")
 cp = cp[(cp["Variable"] == "Effective carbon price") & (cp["Scenario"].isin(SCENARIOS))]
 carbon = cp.set_index(["Scenario", "TimePeriod"])["Value"].to_dict()
 
-# ---------------------------------------------------------------------------
 # Marginal cost
-# ---------------------------------------------------------------------------
 thermal["fuel_ef_kg_per_gj"] = thermal["commodity"].map(fuel_ef_kg_per_gj)
 missing_ef = sorted(thermal.loc[thermal["fuel_ef_kg_per_gj"] == 0, "commodity"].unique())
 if missing_ef:
@@ -71,9 +67,7 @@ thermal["source_detail"] = (
     + "; carbon=Assumptions!Commodity prices[Effective carbon price]"
 )
 
-# ---------------------------------------------------------------------------
 # Sanity: cheapest and dearest thermal in Reference across years
-# ---------------------------------------------------------------------------
 log("\nReference merit order — cheapest & dearest thermal, selected years:")
 for yr in (2024, 2035, 2050):
     s = thermal[(thermal["scenario"] == "Reference") & (thermal["year"] == yr)]
@@ -84,7 +78,7 @@ for yr in (2024, 2035, 2050):
             f"| dearest {hi['plant'][:28]:28s} ${hi['marginal_cost_nzd_per_mwh']:7.1f}/MWh "
             f"(carbon ${lo['carbon_price_nzd_per_t']:.0f}/t)")
 
-# Coal vs gas ordering flips as carbon price changes — report where coal leaves the money
+# Coal vs gas ordering flips as carbon price changes: report where coal leaves the money
 ref = thermal[thermal["scenario"] == "Reference"]
 for yr in (2024, 2050):
     s = ref[ref["year"] == yr]

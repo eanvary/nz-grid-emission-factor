@@ -39,7 +39,7 @@ GEOTHERMAL_FALLBACK_EF_KG_PER_MWH = 76.03  # McLean & Richardson (2019) MW-weigh
 # e.g. "WRK0331 RKA0") since it is the finest-grained identity key the register
 # offers and is unique per physical unit/station even where POC is shared.
 GEOTHERMAL_EF_KG_PER_MWH_BY_PLANTCODE = {
-    # --- Matched to a real McLean & Richardson (2019) station ---
+    # Matched to a real McLean & Richardson (2019) station
     "KAW1101 KAG0": 123.0,   # Kawerau -> their "Kawerau (KGL)" (104 MW, 123 gCO2/kWh)
     "NAP2201 NAP0": 63.0,    # Nga Awa Purua -> their "Nga Awa Purua (NAP)" (141 MW, 63)
     "NAP2202 NTM0": 64.0,    # Nga Tamariki -> their "Ngatamariki" (90 MW, 64)
@@ -51,8 +51,8 @@ GEOTHERMAL_EF_KG_PER_MWH_BY_PLANTCODE = {
     "WRK0331 RKA0": 84.0,    # Rotokawa -> their "Rotokawa" (33 MW, 84)
     "WRK0331 TAA0": 45.0,    # Te Huka (original unit) -> their "Te Huka" (22 MW, 45)
     "WRK2201 WRK0": 21.0,    # Wairakei -> their "Wairakei A&B and binary" (116 MW, 21)
-    # --- No match (post-dates the 2018 study, or an industrial cogen not in their
-    #     station list) -- fallback to the fleet mean, not the old flat 99.996 ---
+    # No match (post-dates the 2018 study, or an industrial cogen not in their
+    #     station list) -- fallback to the fleet mean, not the old flat 99.996
     "KAW0111 TAM0": GEOTHERMAL_FALLBACK_EF_KG_PER_MWH,  # Kawerau (Te Ahi O Maui), commissioned 2018
     "KAW0112 ONU0": GEOTHERMAL_FALLBACK_EF_KG_PER_MWH,  # Norske Skog / Carter Holt Harvey cogen
     "KAW2201 TAM0": GEOTHERMAL_FALLBACK_EF_KG_PER_MWH,  # Kawerau (TOPP2)

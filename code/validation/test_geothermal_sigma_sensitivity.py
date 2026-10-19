@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Sensitivity of the published uncertainty band to one modelling choice: what
 geothermal's relative sigma should be.
@@ -48,7 +47,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 N_TRIALS, SEED = 50_000, 42   # matches run_ipcc_uncertainty_montecarlo.py; see test_montecarlo_trial_convergence.py
 IPCC_CV_LIMIT = 0.30          # 2019 Refinement Vol.1 Ch.3, Approach 1 validity
 
-# --- sigmas, rebuilt exactly as run_ipcc_uncertainty_montecarlo.py does ----
+# Sigmas, rebuilt exactly as run_ipcc_uncertainty_montecarlo.py does
 IPCC_TABLE_2_2 = {
     "CLG": (96100., 92800., 100000.), "GAS": (56100., 54300., 58300.),
     "DSL": (74100., 72600., 74800.), "WOOD": (112000., 95000., 132000.),
@@ -92,7 +91,7 @@ SCENARIOS = [
 print(f"effective station count           : {1 / (w ** 2).sum():.1f}")
 print(f"fallback share of geothermal CO2  : {co2_share_fallback * 100:.1f}%\n")
 
-# --- hourly fuel mix, pivoted to CO2 by fuel ------------------------------
+# Hourly fuel mix, pivoted to CO2 by fuel
 df = pd.read_csv(os.path.join(HERE, "hourly_fuel_mix_uncertainty.csv"),
                  usecols=["island", "date", "hour", "fuel_std", "gen_mwh", "co2_kg"])
 df = df[df.island == "NI"]

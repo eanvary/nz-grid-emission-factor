@@ -20,7 +20,6 @@ the real month-to-month (seasonal/weather-driven) and weekday/weekend
 structure the stylised shapes lacked, at the cost of day-to-day granularity
 within a month.
 """
-import numpy as np
 import pandas as pd
 from pathlib import Path
 
@@ -52,7 +51,7 @@ elec_interp["nz_month"] = ((elec_interp["month"] + 5) % 12) + 1
 log("\nHemisphere-shift check (BDG2 month -> NZ month): "
     + ", ".join(f"{m}->{((m+5)%12)+1}" for m in range(1, 13)))
 
-# --- Build empirical shape: mean kWh by (building, nz_month, is_weekend, hour) ---
+# Build empirical shape: mean kWh by (building, nz_month, is_weekend, hour)
 shape_rows = []
 for b in BUILDINGS:
     g = elec_interp[["nz_month", "is_weekend", "hour", b]].dropna()
@@ -83,12 +82,12 @@ all_shapes = pd.concat([shapes_norm[["building_id", "nz_month", "is_weekend", "h
 all_shapes.to_csv(TABLES / "real_building_shapes_hemisphere_shifted.csv", index=False)
 log(f"\nWrote real_building_shapes_hemisphere_shifted.csv ({len(all_shapes)} rows)")
 
-# --- Sanity: seasonal pattern per building (mean weight by nz_month) ---
+# Sanity: seasonal pattern per building (mean weight by nz_month)
 log("\n=== Mean normalised weight by NZ month, per building (seasonal signature) ===")
 seasonal = all_shapes.groupby(["building_id", "nz_month"])["norm_weight"].sum().unstack("nz_month")
 log(seasonal.round(4).to_string())
 
-# --- Sanity: weekday vs weekend contrast (does this look like a real office?) ---
+# Sanity: weekday vs weekend contrast (does this look like a real office?)
 log("\n=== Weekday vs weekend mean hourly weight, per building ===")
 wnd = all_shapes.groupby(["building_id", "is_weekend"])["norm_weight"].mean().unstack("is_weekend")
 wnd.columns = ["weekday_mean", "weekend_mean"]

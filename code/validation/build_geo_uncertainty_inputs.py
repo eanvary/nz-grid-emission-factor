@@ -44,7 +44,7 @@ g = pd.read_csv(HERE / "geothermal_mclean_richardson_stations.csv")
 mu = (g.mw * g.ef_gco2_kwh).sum() / g.mw.sum()
 SIG_PROXY = math.sqrt((g.mw * (g.ef_gco2_kwh - mu) ** 2).sum() / g.mw.sum()) / mu
 
-# --- step 2: each station's own year-to-year variation in the NZGA series, 2015-2024 ---
+# Each station's own year-to-year variation in the NZGA series, 2015-2024
 basis = pd.read_csv(ROOT / "generation_pipeline" / "geothermal_intensity_nzga.csv")
 pub = basis[(basis.basis == "published") & basis.year.between(2015, 2024) & (basis.station != "NZGA MW-weighted average")]
 var_rows, pooled = [], []
@@ -75,7 +75,7 @@ sig_rows = [{"fuel_std": "GEO", "rel_sigma": SIG_MEASURED, "step": "1", "station
             {"fuel_std": "GEO_PROXY", "rel_sigma": SIG_PROXY, "step": "3-4", "station": "", "s_station": np.nan,
              "source": "McLean and Richardson (2019) 12-station MW-weighted spread (geothermal_mclean_richardson_stations.csv)"}]
 
-# --- step classification per generator-month ---
+# Step classification per generator-month
 held = {(r.station, int(r.year)) for r in basis.itertuples() if "held" in str(r.basis).lower()}
 proxy34 = {(r.station, int(r.year)) for r in basis.itertuples()
            if any(k in str(r.basis).lower() for k in ("proxy", "composite"))}
@@ -119,7 +119,7 @@ print("NI geothermal CO2 share by step and year:")
 print((ni.groupby(["year", "step"]).co2_kg.sum() / ni.groupby("year").co2_kg.sum()).unstack().round(3).to_string())
 shares = m[["island", "year", "month", "group", "sg", "sc"]]
 
-# --- monthly fuel mix with GEO split ---
+# Monthly fuel mix with GEO split
 mm = pd.read_csv(ROOT / "output" / "monthly_fuel_mix_NI_SI.csv")
 geo = mm[mm.fuel_code == "GEO"].merge(shares, on=["island", "year", "month"], how="left")
 geo["group"] = geo.group.fillna("GEO"); geo["sg"] = geo.sg.fillna(1.0); geo["sc"] = geo.sc.fillna(1.0)
@@ -138,7 +138,7 @@ out_m = out_m.sort_values(["island", "year", "month", "fuel_code"])
 out_m.to_csv(HERE / "monthly_fuel_mix_uncertainty.csv", index=False)
 assert abs(out_m.co2_kg.sum() - mm.co2_kg.sum()) < 1e-6 * max(1.0, mm.co2_kg.sum())
 
-# --- hourly fuel mix with GEO split (monthly shares) ---
+# Hourly fuel mix with GEO split (monthly shares)
 hm = pd.read_csv(HERE / "hourly_fuel_mix_NI_SI.csv")
 hm["year"] = hm["date"].str[:4].astype(int)
 hm["month"] = hm["date"].str[5:7].astype(int)

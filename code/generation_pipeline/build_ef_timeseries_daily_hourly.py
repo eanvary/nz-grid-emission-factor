@@ -6,7 +6,6 @@ Dispatched generation plant SCD2 file evaluated monthly per (POC, fuel)).
 
 This does not touch the monthly/annual pipeline or its outputs.
 """
-import re
 from pathlib import Path
 
 import numpy as np
@@ -27,9 +26,7 @@ def log(msg):
     log_lines.append(str(msg))
 
 
-# ---------------------------------------------------------------------------
 # POC -> Island lookup (identical logic to the monthly pipeline)
-# ---------------------------------------------------------------------------
 nsp_files = sorted(NSP_DIR.glob("*_NetworkSupplyPointsTable.csv"))
 nsp_all = pd.concat([pd.read_csv(f, low_memory=False) for f in nsp_files], ignore_index=True)
 nsp_unique = nsp_all.drop_duplicates(
@@ -44,9 +41,7 @@ poc_island = (
 )
 log(f"POC -> Island lookup: {len(poc_island)} POCs")
 
-# ---------------------------------------------------------------------------
 # Thermal SCD2 EF lookup, keyed by (POC, standardised fuel)
-# ---------------------------------------------------------------------------
 plant = pd.read_csv(PLANT_FILE, low_memory=False)
 plant["eff_start"] = pd.to_datetime(plant["effective_start_datetime"], utc=True, errors="coerce")
 # "9999-12-31..." (still-active record) overflows pandas' nanosecond timestamp
@@ -99,10 +94,8 @@ def get_thermal_ef(poc, fuel_std, ref_dt):
 gen_files = sorted(GEN_DIR.glob("*_Generation_MD.csv"))
 
 
-# ---------------------------------------------------------------------------
 # Load each Generation_MD file once, emit both a DAILY row (sum of TP1-48)
 # and 24 HOURLY rows (TP[2h+1]+TP[2h+2]) per POC/fuel/date.
-# ---------------------------------------------------------------------------
 daily_parts = []
 hourly_parts = []
 
@@ -113,7 +106,7 @@ for f in gen_files:
     trading_date_col = {c.lower(): c for c in df.columns}["trading_date"]
     tp_cols = [f"TP{i}" for i in range(1, 49)]
     tp = df[tp_cols].fillna(0).to_numpy(dtype=float)
-    # NZ's DST fall-back day (first Sunday of April) has 50 trading periods —
+    # NZ's DST fall-back day (first Sunday of April) has 50 trading periods: 
     # TP49/TP50 are the extra repeated hour, present as columns on every file
     # (empty/0 on all other days). Excluded from the 24-hour reshape below (that
     # day's wall-clock hours don't map cleanly to a fixed 24-bucket scheme), but
@@ -131,7 +124,7 @@ for f in gen_files:
 
     keep = np.array([isl in ("NI", "SI") for isl in island])
 
-    # --- daily (includes TP49/TP50 where present) ---
+    # Daily (includes TP49/TP50 where present)
     daily_mwh = (tp.sum(axis=1) + tp_extra.sum(axis=1)) / 1000.0
     d = pd.DataFrame({
         "island": island[keep], "date": date[keep], "poc": poc[keep], "gen_code": gen_code[keep],
@@ -139,10 +132,10 @@ for f in gen_files:
     })
     daily_parts.append(d)
 
-    # --- hourly: pair TP(2h+1)+TP(2h+2) -> hour h (0-23); TP49/TP50 folded into
+    # Hourly: pair TP(2h+1)+TP(2h+2) -> hour h (0-23); TP49/TP50 folded into
     # hour 23 (the last hour of the trading day) so the daily hourly-sum still
     # reconciles exactly to the daily total above, without adding a 25th hour
-    # bucket that would break every downstream consumer's fixed 24-hour/day shape. ---
+    # bucket that would break every downstream consumer's fixed 24-hour/day shape.
     hour_mwh = tp.reshape(len(df), 24, 2).sum(axis=2) / 1000.0  # (n, 24)
     hour_mwh[:, 23] += tp_extra.sum(axis=1) / 1000.0  # kWh -> MWh, matching hour_mwh's units
     n = len(df)
@@ -196,10 +189,8 @@ for name, d in [("daily", daily_raw), ("hourly", hourly_raw)]:
     log(f"{name}: {len(d):,} generator-level rows, {d['gen_mwh'].sum()/1e6:.2f} TWh total")
 daily_raw, hourly_raw = frames["daily"], frames["hourly"]
 
-# ---------------------------------------------------------------------------
 # Aggregate to island level. Columns after total_CO2_kg are additions (2026-09-28): filled
 # generation, CO2 carried by estimated factors, and the Stratford bound series.
-# ---------------------------------------------------------------------------
 EXTRA_AGG = dict(filled_gen_MWh=("filled_gen_mwh", "sum"), CO2_kg_estimated=("co2_kg_estimated", "sum"),
                  total_CO2_kg_stratford_ccgt=("co2_kg_bound_ccgt", "sum"),
                  total_CO2_kg_stratford_peaker=("co2_kg_bound_peaker", "sum"),
@@ -243,9 +234,7 @@ hourly_out.to_csv(OUT_DIR / "hourly_emission_factor_NI_SI.csv", index=False)
 log(f"Wrote: hourly_emission_factor_NI_SI.csv ({len(hourly_out)} rows, "
     f"{hourly_out['datetime'].min()} to {hourly_out['datetime'].max()})")
 
-# ---------------------------------------------------------------------------
 # Consistency checks: daily sums must reconcile to monthly; hourly to daily
-# ---------------------------------------------------------------------------
 log("\n=== CONSISTENCY CHECKS ===")
 monthly_existing = pd.read_csv(OUT_DIR / "monthly_emission_factor_NI_SI.csv")
 

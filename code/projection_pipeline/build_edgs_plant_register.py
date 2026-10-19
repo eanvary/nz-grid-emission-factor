@@ -1,5 +1,5 @@
 """
-Module 2 — Step 2: plant register + commissioning/retirement calendar.
+Module 2: Step 2: plant register + commissioning/retirement calendar.
 
 From Generation Stack (all plants, existing + generic future) build, per scenario
 x year 2024-2050, the set of ACTIVE plants with island, capacity, tech->commodity
@@ -32,9 +32,7 @@ gs_all = pd.read_excel(ASSUMPTIONS_XLSX, sheet_name="Generation Stack")
 gem = pd.read_excel(RESULTS_XLSX, sheet_name="GEM build schedule")
 
 
-# ---------------------------------------------------------------------------
 # Retirement / biomass-conversion matcher (brief Section 2)
-# ---------------------------------------------------------------------------
 def match_retirement(plant_name, rules):
     """Return (retire_year, convert) for a plant given a scenario's rules.
     retire_year: first year the plant is NO LONGER available (np.inf if never).
@@ -54,9 +52,7 @@ def match_retirement(plant_name, rules):
     return np.inf, None
 
 
-# ---------------------------------------------------------------------------
 # Build per-scenario, per-year active plant register
-# ---------------------------------------------------------------------------
 records = []
 si_thermal_report = {}
 
@@ -105,9 +101,7 @@ for scenario in SCENARIOS:
 reg = pd.DataFrame.from_records(records)
 log(f"Plant register: {len(reg):,} scenario-year-plant rows")
 
-# ---------------------------------------------------------------------------
 # Reports
-# ---------------------------------------------------------------------------
 # SI thermal? (drives whether SI EF can be > 0)
 si_thermal = reg[(reg["island"] == "SI") & (reg["dispatch_class"] == "thermal")]
 for scenario in SCENARIOS:
@@ -118,7 +112,7 @@ log("\nSI thermal capacity (max MW across years) by scenario:")
 for sc, mw in si_thermal_report.items():
     log(f"  {sc}: {mw:.0f} MW" + ("  -> SI EF can be >0" if mw > 0 else "  -> SI EF ~ 0 (all-renewable)"))
 
-# Thermal capacity trajectory (national) — sanity vs retirements
+# Thermal capacity trajectory (national): sanity vs retirements
 log("\nNational thermal capacity (MW) by scenario, selected years:")
 for scenario in SCENARIOS:
     s = reg[(reg["scenario"] == scenario) & (reg["dispatch_class"] == "thermal")]
@@ -133,9 +127,7 @@ for scenario, yr_gone in [("Reference", 2038), ("Innovation", 2033)]:
              & (reg["plant"].str.contains("Huntly Unit 5"))]
     log(f"Retirement check — {scenario} Huntly U5 rows in {yr_gone} (expect 0): {len(u5)}")
 
-# ---------------------------------------------------------------------------
-# GEM build schedule (authoritative new-build island tag) — normalise + write
-# ---------------------------------------------------------------------------
+# GEM build schedule (authoritative new-build island tag): normalise + write
 gem_out = gem.rename(columns={
     "Commissioning_Year": "year", "Value": "capacity_mw", "Island": "island_full",
     "Technology_Type": "technology_type", "Commodity": "commodity",

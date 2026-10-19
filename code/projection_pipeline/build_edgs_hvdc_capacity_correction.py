@@ -1,5 +1,5 @@
 """
-Follow-up brief H — cap the required inter-island transfer at REAL HVDC capacity and test
+Follow-up brief H: cap the required inter-island transfer at REAL HVDC capacity and test
 whether NI's published consumption-side EF (Brief B) is understated in scenario-years where
 the "required" transfer (Briefs C/D/F/G) exceeds what the cable can physically carry.
 
@@ -125,7 +125,7 @@ for scenario in SCENARIOS:
         if not (flagged_import.any() or flagged_export.any()):
             continue  # scenario-year unaffected; skip (leave untouched, per the brief)
 
-        # ---- already-dispatched NI thermal generation + total NI thermal capacity, this hour/year ----
+        # Already-dispatched NI thermal generation + total NI thermal capacity, this hour/year
         gth = g[(g.island == "NI") & (g.fuel_commodity.isin(THERMAL_COMMODITIES))]
         thermal_dispatched = gth.groupby("datetime_hour")["generation_mwh"].sum().reindex(dt, fill_value=0.0).to_numpy()
         mplants = merit_s[merit_s.year == year].sort_values("merit_rank")
@@ -199,7 +199,7 @@ for scenario in SCENARIOS:
                               "capacity_mw": cap, "shortfall_mw": abs(transfer_to_NI[h]) - cap,
                               "spare_thermal_mw": np.nan, "orig_co2_kg": np.nan, "corrected_co2_kg": np.nan})
 
-        # ---- recompute NI consumption EF for this scenario-year (affected hours corrected, rest untouched) ----
+        # Recompute NI consumption EF for this scenario-year (affected hours corrected, rest untouched)
         t = targets[(targets.scenario == scenario) & (targets.year == year)]
         demand_twh = float(t[t.metric == "annual_demand"]["value"].iloc[0])
         island_demand_NI = demand_twh * 1e6 * ni_share * w_ni  # same denominator as Module 7 Step 1

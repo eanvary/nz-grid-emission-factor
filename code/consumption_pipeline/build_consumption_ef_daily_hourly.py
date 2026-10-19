@@ -33,17 +33,13 @@ def log(msg):
     log_lines.append(str(msg))
 
 
-# ---------------------------------------------------------------------------
 # Generation-side, straight from the root pipeline's own output
-# ---------------------------------------------------------------------------
 gen_daily = pd.read_csv(ROOT_OUT / "daily_emission_factor_NI_SI.csv", parse_dates=["date"])
 gen_hourly = pd.read_csv(ROOT_OUT / "hourly_emission_factor_NI_SI.csv", parse_dates=["date", "datetime"])
 log(f"Loaded generation-side EF: {len(gen_daily)} daily island-rows, {len(gen_hourly)} hourly island-rows")
 
-# ---------------------------------------------------------------------------
 # HVDC transfer, straight from the root pipeline's own raw-file-based output
 # (MWh already; no unit conversion needed, unlike the monthly/annual GWh files)
-# ---------------------------------------------------------------------------
 hvdc_daily = pd.read_csv(OUT_DIR / "daily_hvdc_transfer_NI_SI.csv", parse_dates=["date"])
 hvdc_daily = hvdc_daily.rename(columns={
     "SI_to_NI_GWh": "SI_to_NI_MWh", "NI_to_SI_GWh": "NI_to_SI_MWh", "net_to_NI_GWh": "net_to_NI_MWh",
@@ -55,9 +51,7 @@ hvdc_hourly = pd.read_csv(OUT_DIR / "hourly_hvdc_transfer_NI_SI.csv", parse_date
 log(f"Loaded HVDC transfer: {len(hvdc_daily)} daily rows, {len(hvdc_hourly)} hourly rows")
 
 
-# ---------------------------------------------------------------------------
 # Consumption balance (identical formulas to the monthly/annual script)
-# ---------------------------------------------------------------------------
 def build_consumption(gen_df, hvdc_df, group_keys):
     ni = gen_df[gen_df.island == "NI"].set_index(group_keys)
     si = gen_df[gen_df.island == "SI"].set_index(group_keys)
@@ -103,9 +97,7 @@ hourly_cons = build_consumption(gen_hourly_k, hvdc_hourly_k, ["date", "hour"])
 hourly_cons["datetime"] = hourly_cons["date"] + pd.to_timedelta(hourly_cons["hour"], unit="h")
 hourly_cons = hourly_cons.sort_values("datetime").reset_index(drop=True)
 
-# ---------------------------------------------------------------------------
 # Quality checks
-# ---------------------------------------------------------------------------
 log("\n=== QUALITY CHECKS ===")
 for name, d in [("daily", daily_cons), ("hourly", hourly_cons)]:
     gen_total = d["NI_generation_MWh"] + d["SI_generation_MWh"]
@@ -123,9 +115,7 @@ chk = daily_to_hourly.join(daily_cons.set_index("date")[["NI_consumption_MWh", "
 max_h2d = (chk["NI_consumption_MWh_h"] - chk["NI_consumption_MWh_d"]).abs().max()
 log(f"Hourly consumption sums to daily exactly: max |NI diff| = {max_h2d:.6f} MWh (expect ~0)")
 
-# ---------------------------------------------------------------------------
 # Outputs
-# ---------------------------------------------------------------------------
 daily_out = daily_cons[[
     "date", "NI_consumption_MWh", "NI_CO2_consumed_kg", "NI_EF_consumption", "NI_EF_generation",
     "SI_consumption_MWh", "SI_CO2_consumed_kg", "SI_EF_consumption", "SI_EF_generation",

@@ -21,7 +21,7 @@ TABLES.mkdir(parents=True, exist_ok=True)
 
 # 6 real office buildings, chosen for climate/site diversity across BDG2's
 # available sites (all Northern Hemisphere -- see hemisphere-shift note in
-# step 2). Sizes chosen in the 5,000-15,000 sqm range to stay broadly
+# . Sizes chosen in the 5,000-15,000 sqm range to stay broadly
 # comparable to the NZ NABERS office cohort used in the main assessment.
 BUILDINGS = [
     "Bull_office_Chantel",   # US/Central,  9,655 sqm

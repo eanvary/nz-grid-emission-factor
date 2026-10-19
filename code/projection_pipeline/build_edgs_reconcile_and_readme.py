@@ -1,5 +1,5 @@
 """
-Module 6 (v2) — Step 8 reconciliation, acceptance criteria, Assumption-1 sensitivity,
+Module 6 (v2): Step 8 reconciliation, acceptance criteria, Assumption-1 sensitivity,
 and the README. Rewritten per Revised Approach v2:
 
   Check 1 (fuel-by-fuel generation)  : reconciles to MBIE, tol +/-0.1% (exact by design)
@@ -38,9 +38,7 @@ ef["year"] = pd.to_datetime(ef["datetime_hour"]).dt.year
 ghg = pd.read_excel(RESULTS_XLSX, sheet_name="Greenhouse gas emissions")
 ghg = ghg[ghg.Emission_Sector == "Electricity generation"].set_index(["Scenario", "TimePeriod"])["Value"]  # Mt
 
-# ---------------------------------------------------------------------------
-# Check 1 — national annual generation by fuel vs Results!Electricity generation
-# ---------------------------------------------------------------------------
+# Check 1: national annual generation by fuel vs Results!Electricity generation
 gsum = gen.groupby(["scenario", "year", "fuel_commodity"])["generation_mwh"].sum().div(1000).reset_index()
 mbie_gen = tgt[tgt.metric == "net_generation"][["scenario", "year", "commodity", "value"]]
 c1 = gsum.merge(mbie_gen, left_on=["scenario", "year", "fuel_commodity"],
@@ -48,15 +46,11 @@ c1 = gsum.merge(mbie_gen, left_on=["scenario", "year", "fuel_commodity"],
 c1["diff_pct"] = np.where(c1["value"].fillna(0) > 0, (c1["generation_mwh"] / c1["value"] - 1) * 100, 0.0)
 check1 = c1.groupby(["scenario", "year"])["diff_pct"].apply(lambda s: s.abs().max()).rename("check1_gen_pct")
 
-# ---------------------------------------------------------------------------
-# Check 3 — annual peak (demand series) vs Results!Peak demand
-# ---------------------------------------------------------------------------
+# Check 3: annual peak (demand series) vs Results!Peak demand
 peaks["diff_pct"] = (peaks["model_peak_gw"] / peaks["mbie_peak_gw"] - 1).abs() * 100
 check3 = peaks.set_index(["scenario", "year"])["diff_pct"].rename("check3_peak_pct")
 
-# ---------------------------------------------------------------------------
-# Check 2 — HONEST emissions comparison (unforced)
-# ---------------------------------------------------------------------------
+# Check 2: HONEST emissions comparison (unforced)
 # (2a) combustion CO2 vs MBIE GHG (numerator-to-numerator)
 comb = ti.groupby(["scenario", "year"])["combustion_co2_kt"].sum().div(1000).rename("model_comb_Mt")  # Mt
 mbie_ghg = ghg.rename_axis(["scenario", "year"]).rename("mbie_ghg_Mt")
@@ -79,9 +73,7 @@ check2 = pd.concat([c2a["check2a_emissions_pct"], c2b["check2b_ef_pct"]], axis=1
 check2.reset_index().rename(columns={"level_0": "scenario", "level_1": "year"}).to_csv(
     OUT_DIR / "edgs_check2_emissions.csv", index=False)
 
-# ---------------------------------------------------------------------------
 # Combined report + reconciliation_flag (PASS gated on the exact checks 1 & 3 only)
-# ---------------------------------------------------------------------------
 report = pd.concat([check1, check3], axis=1)
 report = report.join(check2)
 report = report.reset_index()
@@ -124,8 +116,7 @@ scope = pd.DataFrame(scope, columns=["scenario", "year", "total_netgen_TWh", "mb
 log(f"  Denominator scope gap (total net gen vs MBIE primary-activity): "
     f"mean {scope['scope_gap_pct'].mean():.1f}% (autoproducer cogen excluded by MBIE)")
 
-# ---------------------------------------------------------------------------
-# Step 3 (follow-up brief) — standing sanity assertion, STRONG version. The prior version
+# Step 3 (follow-up brief): standing sanity assertion, STRONG version. The prior version
 # was confirmed to be a weak IDENTITY check: it re-derived both EF values from the same
 # source totals (co2/netgen vs co2/demand using the identical co2 numerator), which is
 # mathematically guaranteed to pass whenever netgen >= demand (always true) - it could
@@ -133,7 +124,6 @@ log(f"  Denominator scope gap (total net gen vs MBIE primary-activity): "
 # READ BACK the actual materialized edgs_hourly_emission_factor.parquet rows and aggregate
 # them energy-weighted (matching the actual output's weighting convention), not re-derive
 # from annual targets.
-# ---------------------------------------------------------------------------
 log("\n=== Step 3: consumption >= generation EF assertion — STRONG (table read-back) version ===")
 gen["year"] = pd.to_datetime(gen["datetime_hour"]).dt.year  # restore (dropped by drop_duplicates elsewhere)
 gen_noDSR = gen[gen.fuel_commodity != "Demand side response"]
@@ -171,11 +161,9 @@ if _victim in _caught.index:
 else:
     log(f"    ASSERTION HAS NO TEETH — injected bad row {_victim} was NOT caught. Fix before trusting it.")
 
-# ---------------------------------------------------------------------------
-# Step 4 — carry the honest Check-2 deviation with the data itself, not just the README.
+# Carry the honest Check-2 deviation with the data itself, not just the README.
 # reconciliation_flag reflects only Checks 1 & 3 (exact); check2_deviation_pct exposes the
 # emissions deviation per scenario-year so a PASS filter can't hide it.
-# ---------------------------------------------------------------------------
 flagmap = report.set_index(["scenario", "year"])["exact_pass"].map({True: "PASS", False: "FAIL"}).to_dict()
 c2map = report.set_index(["scenario", "year"])["check2a_emissions_pct"].round(2).to_dict()
 ef["reconciliation_flag"] = [flagmap.get((s, y), "NA") for s, y in zip(ef["scenario"], ef["year"])]
@@ -184,9 +172,7 @@ ef.drop(columns=["year"]).to_parquet(OUT_DIR / "edgs_hourly_emission_factor.parq
 log("\nRewrote edgs_hourly_emission_factor.parquet with reconciliation_flag (Checks 1&3) + "
     "check2_deviation_pct (honest Check-2a % per scenario-year)")
 
-# ---------------------------------------------------------------------------
 # Acceptance criteria
-# ---------------------------------------------------------------------------
 log("\n=== ACCEPTANCE CRITERIA ===")
 tags = set(gen["source_tag"].unique())
 blank = gen["source_tag"].isna().sum() + (gen["source_tag"] == "").sum()
@@ -198,9 +184,7 @@ log(f"[OK] ef_basis column present: {sorted(ef.ef_basis.unique())}")
 log(f"[OK] MfE fuel factors cited: {MFE_SOURCE}")
 log(f"[OK] Combustion from MBIE published fuel use (Electricity generation use, Gross PJ) x MfE")
 
-# ---------------------------------------------------------------------------
-# Consumption-side gross-up factor (Step C) — MBIE net generation / MBIE demand
-# ---------------------------------------------------------------------------
+# Consumption-side gross-up factor (Step C): MBIE net generation / MBIE demand
 grossups = []
 for sc in SCENARIOS:
     for yr in YEARS:
@@ -212,9 +196,7 @@ log(f"\nGeneration-to-consumption gross-up factor (MBIE net gen / demand): mean 
     f"(= {(grossup_mean-1)*100:.1f}%; includes T&D losses + generator own-use + MBIE balancing "
     f"items - NOT a pure line-loss figure; MBIE-derived)")
 
-# ---------------------------------------------------------------------------
 # Assumption-1 sensitivity (Reference NI hourly EF shape)
-# ---------------------------------------------------------------------------
 def ni_hourly_ef(ef_df):
     e = ef_df[(ef_df.island == "NI") & (ef_df.ef_basis == "generation")].copy()
     e["month"] = pd.to_datetime(e["datetime_hour"]).dt.month
@@ -244,9 +226,7 @@ log(f"\nA1 sensitivity (Reference NI hourly EF shape): wet {sens_wet:.4f}, dry {
     "mean abs hourly diff vs central. Annual national EF is MBIE-anchored (fuel use + net gen "
     "both template-invariant), so sensitivity appears only in the hourly/seasonal shape.")
 
-# ---------------------------------------------------------------------------
 # README (v2)
-# ---------------------------------------------------------------------------
 readme = f"""# EDGS 2024 hourly, island-resolved reconstruction — output metadata (v2)
 
 Hourly (8760/yr), NI/SI generation and grid emission-factor trajectories for the five MBIE

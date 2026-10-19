@@ -15,7 +15,7 @@ name, but does state EDGS scenarios directly feed Transpower's transmission-inve
 approval process (Capex IM) - relevant institutional context, not independent corroboration
 of this specific number. Full detail: README_EDGS_hourly.md, edgs_hvdc_sensitivity_summary.csv.
 
-Module 7 (follow-up brief B) — island-resolved consumption-side emission factor.
+Module 7 (follow-up brief B): island-resolved consumption-side emission factor.
 
 Adds ef_basis='consumption', island='NI'/'SI' rows to edgs_hourly_emission_factor.parquet,
 alongside the existing 'National' consumption row (kept unchanged, additive only).
@@ -90,9 +90,7 @@ HVDC_SOURCE = ("Transpower, \"HVDC link upgrade programme\" (transpower.co.nz/hv
               "Commission decision independently cite the 1400 MW figure), expected complete "
               "the early 2030s - not assumed here (1200 MW used throughout 2024-2050).")
 
-# ---------------------------------------------------------------------------
 # Load prerequisites
-# ---------------------------------------------------------------------------
 targets = pd.read_parquet(OUT_DIR / "edgs_annual_targets.parquet")
 dem_shape = pd.read_parquet(OUT_DIR / "edgs_shape_demand.parquet")
 dem_shape = dem_shape[dem_shape["template_year"] == 2021]  # matches dispatch.py's CENTRAL_TEMPLATE
@@ -150,9 +148,7 @@ def map_weights(cal, wtab, template_year=2021):
 w_ni_base = dem_shape[dem_shape.island == "NI"][["month", "day", "hour", "weight"]]
 w_si_base = dem_shape[dem_shape.island == "SI"][["month", "day", "hour", "weight"]]
 
-# ---------------------------------------------------------------------------
-# Step 4 — historical validation (run once, before trusting the forward method)
-# ---------------------------------------------------------------------------
+# Historical validation (run once, before trusting the forward method)
 log("=== Step 4: historical validation (2021-2025) ===")
 cons = pd.read_csv(ROOT / "Consumption_Island" / "output" / "hourly_consumption_EF_NI_SI.csv")
 implied_transfer_NI = cons["NI_consumption_MWh"] - (cons["NI_consumption_MWh"] - cons["net_to_NI_MWh"])
@@ -177,9 +173,7 @@ HIST_VALIDATION_NOTE = (
     f"construction, not evidence). Independent plausibility check: real SI->NI export direction "
     f"in {si_export_share:.0f}% of hours matches known SI hydro surplus.")
 
-# ---------------------------------------------------------------------------
 # Steps 1-3, 5-6: per scenario-year hourly island consumption
-# ---------------------------------------------------------------------------
 gen["year"] = pd.to_datetime(gen["datetime_hour"]).dt.year
 ef["year"] = pd.to_datetime(ef["datetime_hour"]).dt.year
 
@@ -201,17 +195,17 @@ for scenario in SCENARIOS:
         w_ni = map_weights(cal, w_ni_base)
         w_si = map_weights(cal, w_si_base)
 
-        # ---- Step 1: island demand (EF denominator only) ----
+        # Island demand (EF denominator only)
         island_demand_NI = demand_mwh * ni_share * w_ni
         island_demand_SI = demand_mwh * (1 - ni_share) * w_si
 
-        # ---- actual per-island generation (existing, unmodified) ----
+        # Actual per-island generation (existing, unmodified)
         g = gen[(gen.scenario == scenario) & (gen.year == year)]
         g_NI = g[g.island == "NI"].groupby("datetime_hour")["generation_mwh"].sum().reindex(dt, fill_value=0.0).to_numpy()
         g_SI = g[g.island == "SI"].groupby("datetime_hour")["generation_mwh"].sum().reindex(dt, fill_value=0.0).to_numpy()
         nat_gen = g_NI + g_SI
 
-        # ---- Step 2: island generation-level load, renormalised to actual nat_gen(t) ----
+        # Island generation-level load, renormalised to actual nat_gen(t)
         # One hour/year has zero valid demand-shape weight (the DST spring-forward transition
         # hour, last Sunday of September, NZ clocks skip 23:00-23:59 - the SAME documented
         # artifact as the historical pipeline's hourly EF table). At that hour only, fall back
@@ -229,19 +223,19 @@ for scenario in SCENARIOS:
         island_genload_NI = nat_gen * raw_share_NI / share_sum
         island_genload_SI = nat_gen * raw_share_SI / share_sum
 
-        # ---- Step 3: required transfer + symmetry check ----
+        # Required transfer + symmetry check
         transfer_to_NI = island_genload_NI - g_NI
         transfer_to_SI = island_genload_SI - g_SI
         max_asym = np.abs(transfer_to_NI + transfer_to_SI).max()
         symmetry_report.append({"scenario": scenario, "year": year, "max_asymmetry_mwh": max_asym})
 
-        # ---- Step 5: capacity check ----
+        # Capacity check
         viol = np.abs(transfer_to_NI) > HVDC_CAPACITY_MW
         if viol.any():
             capacity_flags.append({"scenario": scenario, "year": year, "n_hours": int(viol.sum()),
                                    "max_mw": float(np.abs(transfer_to_NI).max())})
 
-        # ---- Step 6: emissions attribution by exporting island ----
+        # Emissions attribution by exporting island
         import_NI = np.clip(transfer_to_NI, 0, None)
         export_NI = np.clip(-transfer_to_NI, 0, None)
         import_SI = np.clip(transfer_to_SI, 0, None)
@@ -278,9 +272,7 @@ for scenario in SCENARIOS:
             "emission_factor_kg_co2e_per_kwh": ef_SI, "reconciliation_flag": "pending",
             "check2_deviation_pct": np.nan, "source_detail": detail}))
 
-# ---------------------------------------------------------------------------
 # Reports
-# ---------------------------------------------------------------------------
 sym = pd.DataFrame(symmetry_report)
 log(f"\n=== Step 3: transfer symmetry check (135 scenario-years) ===")
 log(f"  Max |transfer_to_NI + transfer_to_SI| across all scenario-years: "
@@ -316,9 +308,7 @@ if rec.diff_pct.abs().max() > 1e-6:
 else:
     log("  OK — island consumption CO2 sums to the generation-side national CO2 total, exactly.")
 
-# ---------------------------------------------------------------------------
 # Write: append island consumption rows to the existing table (additive only)
-# ---------------------------------------------------------------------------
 cons_out = pd.concat(cons_rows, ignore_index=True)
 # Idempotent: drop any island consumption rows from a PRIOR run of this script before
 # appending fresh ones, so re-running never duplicates rows (national consumption + both
@@ -344,10 +334,8 @@ log(f"\nAdded {len(cons_out):,} island consumption rows to edgs_hourly_emission_
     f"islands: {sorted(combined.island.unique())})")
 (OUT_DIR / "processing_log_island_consumption.txt").write_text("\n".join(lines), encoding="utf-8")
 
-# ---------------------------------------------------------------------------
 # Append a section to the shared README (Module 6 writes the base document; this module
 # runs after it and appends, rather than duplicating Module 6's f-string logic here).
-# ---------------------------------------------------------------------------
 n_cap_flag_years = len(capacity_flags)
 max_transfer_mw = max((c["max_mw"] for c in capacity_flags), default=0.0)
 readme_addendum = f"""

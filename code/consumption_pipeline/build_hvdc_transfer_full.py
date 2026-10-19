@@ -46,9 +46,7 @@ def log(msg):
     log_lines.append(str(msg))
 
 
-# ---------------------------------------------------------------------------
 # Load all raw HVDC_flows files, normalising pre/post-2020 column casing
-# ---------------------------------------------------------------------------
 files = sorted(GEN_DIR.glob("*_HVDC_flows.csv"))
 log(f"Found {len(files)} raw HVDC_flows files (from {GEN_DIR})")
 
@@ -91,8 +89,8 @@ for f in files:
     d["gwh"] = d[tp_cols].fillna(0).sum(axis=1) / 1e6  # kWh -> GWh
     parts.append(d[["poc", "trading_date", "gwh"]])
 
-    # --- hourly: pair TP(2h+1)+TP(2h+2) -> hour h (0-23); TP49/TP50 folded into
-    # hour 23, same convention as the generation-side hourly pipeline. ---
+    # Hourly: pair TP(2h+1)+TP(2h+2) -> hour h (0-23); TP49/TP50 folded into
+    # hour 23, same convention as the generation-side hourly pipeline.
     tp48 = df.loc[keep, tp_cols_48].fillna(0).to_numpy(dtype=float)
     hour_mwh = tp48.reshape(len(d), 24, 2).sum(axis=2) / 1000.0  # kWh -> MWh, (n,24)
     if "TP49" in df.columns:
@@ -117,9 +115,7 @@ wide = wide.reset_index().rename(columns={"trading_date": "date"})
 wide["year"] = wide["date"].dt.year
 wide["month"] = wide["date"].dt.month
 
-# ---------------------------------------------------------------------------
 # Aggregate & write outputs (daily / monthly / annual / hourly), full 2015-2025
-# ---------------------------------------------------------------------------
 daily = wide[["date", "SI_to_NI_GWh", "NI_to_SI_GWh", "net_to_NI_GWh"]].sort_values("date")
 daily.to_csv(OUT_DIR / "daily_hvdc_transfer_NI_SI.csv", index=False)
 log(f"\nWrote daily_hvdc_transfer_NI_SI.csv ({len(daily)} rows, "
@@ -177,9 +173,7 @@ log(f"\n2015-2025 totals: SI->NI = {total_north:,.0f} GWh, NI->SI = {total_south
     f"({(total_north-total_south)/ni_gen.sum()*100:.1f}% of NI's own generation, "
     f"{(total_north-total_south)/si_gen.sum()*100:.1f}% of SI's own generation)")
 
-# ---------------------------------------------------------------------------
 # Figure
-# ---------------------------------------------------------------------------
 fig, ax = plt.subplots(figsize=(13, 4.8))
 ax.bar(monthly["period"], monthly["SI_to_NI_GWh"], width=20, color=NAVY, label="SI → NI (northward)")
 ax.bar(monthly["period"], -monthly["NI_to_SI_GWh"], width=20, color=TEAL, label="NI → SI (southward)")

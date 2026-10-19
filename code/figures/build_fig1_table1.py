@@ -1,7 +1,7 @@
 """
 Fig. 1 (evidence map) and Table 1 (magnitude register) for the "Where, when,
 and which future" manuscript. Both are built entirely from
-analysis/LITERATURE_AXIS_REGISTER.csv — no quantitative literal in this file
+analysis/LITERATURE_AXIS_REGISTER.csv: no quantitative literal in this file
 is a substantive result; the only numeric literals below are layout
 constants (sizes, coordinates, dpi, marker geometry).
 """
@@ -13,7 +13,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from matplotlib.patches import Circle, RegularPolygon, Rectangle
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +23,7 @@ FIGS.mkdir(parents=True, exist_ok=True)
 TABLES.mkdir(parents=True, exist_ok=True)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from journal_palette import set_journal_style, CATEGORICAL, LINE_STYLES, BASE  # noqa: E402
+from journal_palette import set_journal_style, CATEGORICAL  # noqa: E402
 
 # Journal styling (per journal_palette.py): literature rows = CATEGORICAL[0]
 # (deep navy); this-study rows = CATEGORICAL[1] (amber, print-safe, not the
@@ -39,16 +38,14 @@ reg = pd.read_csv(REG, keep_default_na=False)
 AXES = ["axis_spatial", "axis_temporal", "axis_trajectory"]
 AXIS_LABELS = ["Where\n(spatial)", "When\n(temporal)", "Which future\n(trajectory)"]
 
-# =============================================================================
 # Merge to one row per STUDY for the evidence-map matrix (Fig. 1): some
 # studies contribute two register rows because they report two distinct
 # magnitudes for two DIFFERENT axes (e.g. Li et al. 2023's DA7 row codes
-# temporal=quantified/trajectory=absent, its M7 row codes the reverse — the
+# temporal=quantified/trajectory=absent, its M7 row codes the reverse: the
 # study as a whole is quantified on BOTH axes). A naive "keep first" would
 # silently drop the second axis's coding, so instead take the most-informative
 # state per axis (quantified > discussed > absent) across a study's rows.
 # The full, non-deduped register is used for Table 1 and the column counts.
-# =============================================================================
 STATE_RANK = {"quantified": 2, "discussed": 1, "absent": 0, "": 0}
 
 def merge_group(g):
@@ -77,25 +74,21 @@ this_row = studies[studies["ref_key"] == "this_study"]
 plot_rows = pd.concat([lit, this_row], ignore_index=True)
 n_building_lca_last = (lit["domain"] == "building_lca").sum()  # rule position for the annotation
 
-# =============================================================================
-# Column quantified counts — computed from the FULL register (all rows,
+# Column quantified counts: computed from the FULL register (all rows,
 # including the two-row studies), per the brief: "Compute these counts from
 # the register at run time; do not write them into the code."
-# =============================================================================
 col_counts_all = {a: int((reg[a] == "quantified").sum()) for a in AXES}
 # unique-study counts (what the matrix actually shows) for the annotation line
 col_counts_studies = {a: int((plot_rows[a] == "quantified").sum()) for a in AXES}
 
 # Domain-restricted check (prior literature only, building_lca domain, this_study excluded)
-# -- used only to compose the title text, not written into the figure as a
+# Used only to compose the title text, not written into the figure as a
 # separate hardcoded number; every value below is read from `plot_rows`.
 prior_bldg = lit[lit["domain"] == "building_lca"]
 bldg_quant = {a: int((prior_bldg[a] == "quantified").sum()) for a in AXES}
 bldg_n = len(prior_bldg)
 
-# =============================================================================
-# Figure 1 — evidence map
-# =============================================================================
+# Figure 1: evidence map
 n = len(plot_rows)
 
 # Build explicit y-slots top-down, inserting a one-unit gap after the
@@ -233,11 +226,9 @@ print(f"Column quantified counts (unique studies plotted): {col_counts_studies}"
 print(f"Column quantified counts (all register rows):      {col_counts_all}")
 print(f"Building-LCA-only prior-literature quantified counts (n={bldg_n}): {bldg_quant}")
 
-# =============================================================================
 # Flag 2 self-audit: magnitude_verified counts (rows that assert a magnitude
 # only -- rows with no magnitude_value have nothing to verify and are excluded
 # from this count, same convention as the CSV's own "n/a" value).
-# =============================================================================
 n_yes = int((mag_rows["magnitude_verified"] == "yes").sum())
 n_no = int((mag_rows["magnitude_verified"] == "no").sum())
 pct_verified = 100 * n_yes / (n_yes + n_no) if (n_yes + n_no) else 0
@@ -251,9 +242,7 @@ print("'no' rows:")
 for _, r in mag_rows[mag_rows["magnitude_verified"] == "no"].iterrows():
     print(f"  {r['ref_key']} ({r['authors_short']} {r['year']}, {r['magnitude_axis']}): \"{r['magnitude_value']}\"")
 
-# =============================================================================
-# Table 1 — magnitude register
-# =============================================================================
+# Table 1: magnitude register
 tbl = reg[reg["magnitude_value"].astype(str).str.strip() != ""].copy()
 
 AXIS_TITLE_ORDER = {"spatial": 0, "temporal": 1, "trajectory": 2}

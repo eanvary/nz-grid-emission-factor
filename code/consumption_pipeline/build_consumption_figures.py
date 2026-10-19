@@ -21,9 +21,7 @@ monthly = pd.read_csv(OUT_DIR / "monthly_consumption_EF_NI_SI.csv", parse_dates=
 daily = pd.read_csv(OUT_DIR / "daily_consumption_EF_NI_SI.csv", parse_dates=["date"])
 hourly = pd.read_csv(OUT_DIR / "hourly_consumption_EF_NI_SI.csv", parse_dates=["datetime"])
 
-# ---------------------------------------------------------------------------
-# Figure 1 — Monthly consumption volume, NI vs SI
-# ---------------------------------------------------------------------------
+# Figure 1: Monthly consumption volume, NI vs SI
 fig, ax = plt.subplots(figsize=(11, 4.5))
 ax.plot(monthly["period"], monthly["NI_consumption_MWh"] / 1000, color=NAVY, lw=1.3, alpha=0.5, label="NI monthly")
 ax.plot(monthly["period"], (monthly["NI_consumption_MWh"] / 1000).rolling(12, min_periods=1, center=True).mean(),
@@ -39,9 +37,7 @@ fig.tight_layout()
 fig.savefig(OUT_DIR / "monthly_consumption_volume_NI_SI.png", dpi=150)
 print("saved monthly_consumption_volume_NI_SI.png")
 
-# ---------------------------------------------------------------------------
-# Figure 2 — Daily consumption volume, NI vs SI
-# ---------------------------------------------------------------------------
+# Figure 2: Daily consumption volume, NI vs SI
 fig2, ax2 = plt.subplots(figsize=(11, 4.5))
 ax2.plot(daily["date"], daily["NI_consumption_MWh"] / 1000, color=NAVY, lw=0.6, alpha=0.3, label="NI daily")
 ax2.plot(daily["date"], (daily["NI_consumption_MWh"] / 1000).rolling(30, min_periods=1, center=True).mean(),
@@ -57,9 +53,7 @@ fig2.tight_layout()
 fig2.savefig(OUT_DIR / "daily_consumption_volume_NI_SI.png", dpi=150)
 print("saved daily_consumption_volume_NI_SI.png")
 
-# ---------------------------------------------------------------------------
-# Figure 3 — Monthly consumption-based EF vs generation-based EF, NI vs SI
-# ---------------------------------------------------------------------------
+# Figure 3: Monthly consumption-based EF vs generation-based EF, NI vs SI
 fig3, (ax3a, ax3b) = plt.subplots(2, 1, figsize=(11, 8), sharex=True)
 ax3a.plot(monthly["period"], monthly["NI_EF_generation"], color="#9098A8", lw=1.2, alpha=0.6, label="NI generation-based EF")
 ax3a.plot(monthly["period"], monthly["NI_EF_consumption"], color=NAVY, lw=2, label="NI consumption-based EF")
@@ -78,9 +72,7 @@ fig3.tight_layout()
 fig3.savefig(OUT_DIR / "monthly_consumption_vs_generation_EF_NI_SI.png", dpi=150)
 print("saved monthly_consumption_vs_generation_EF_NI_SI.png")
 
-# ---------------------------------------------------------------------------
-# Figure 4 — Daily consumption-based EF, NI vs SI
-# ---------------------------------------------------------------------------
+# Figure 4: Daily consumption-based EF, NI vs SI
 fig4, ax4 = plt.subplots(figsize=(11, 4.5))
 ax4.plot(daily["date"], daily["NI_EF_consumption"], color=NAVY, lw=0.6, alpha=0.3, label="NI daily")
 ax4.plot(daily["date"], daily["NI_EF_consumption"].rolling(30, min_periods=1, center=True).mean(),
@@ -96,9 +88,7 @@ fig4.tight_layout()
 fig4.savefig(OUT_DIR / "daily_consumption_EF_NI_SI.png", dpi=150)
 print("saved daily_consumption_EF_NI_SI.png")
 
-# ---------------------------------------------------------------------------
-# Figure 5 — Hourly (diurnal) consumption-based EF profile, NI vs SI
-# ---------------------------------------------------------------------------
+# Figure 5: Hourly (diurnal) consumption-based EF profile, NI vs SI
 prof = hourly.groupby("hour")[["NI_EF_consumption", "SI_EF_consumption"]].agg(["mean", "std"])
 fig5, ax5 = plt.subplots(figsize=(7.5, 4.5))
 ax5.plot(prof.index, prof[("NI_EF_consumption", "mean")], color=NAVY, lw=2, marker="o", ms=3, label="NI mean")
@@ -117,9 +107,7 @@ fig5.tight_layout()
 fig5.savefig(OUT_DIR / "hourly_consumption_EF_diurnal_profile_NI_SI.png", dpi=150)
 print("saved hourly_consumption_EF_diurnal_profile_NI_SI.png")
 
-# ---------------------------------------------------------------------------
-# Figure 6 — Annual bar comparison: consumption-based EF, NI vs SI
-# ---------------------------------------------------------------------------
+# Figure 6: Annual bar comparison: consumption-based EF, NI vs SI
 annual = pd.read_csv(OUT_DIR / "annual_consumption_EF_NI_SI.csv")
 years = annual["year"].tolist()
 fig6, ax6 = plt.subplots(figsize=(7, 4))

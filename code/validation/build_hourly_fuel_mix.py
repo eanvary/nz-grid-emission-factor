@@ -106,10 +106,8 @@ fuel_hourly["ef_kg_per_mwh"] = np.where(
 fuel_hourly.to_csv(OUT, index=False)
 print(f"Wrote {len(fuel_hourly):,} rows -> {OUT}")
 
-# ---------------------------------------------------------------------------
 # Verification: sum this new per-fuel table back to (island, date, hour) and
 # compare against the ALREADY-SHIPPED hourly_emission_factor_NI_SI.csv.
-# ---------------------------------------------------------------------------
 print("\nVerifying against shipped hourly_emission_factor_NI_SI.csv...")
 recombined = (
     fuel_hourly.groupby(["island", "date", "hour"])

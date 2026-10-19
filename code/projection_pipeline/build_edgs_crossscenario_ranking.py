@@ -2,7 +2,7 @@
 Brief D's cross-scenario ranking table, generalised (2026-08-12, Brief N).
 
 The original Brief D analysis (README_EDGS_hourly.md) was computed by a one-off session
-script that was never saved to this folder — only its output, edgs_hvdc_crossscenario_
+script that was never saved to this folder: only its output, edgs_hvdc_crossscenario_
 ranking.csv, survived. This script reproduces that exact table from first principles
 (verified: re-running it against the shipped central-2021 baseline exactly reproduces the
 existing edgs_hvdc_crossscenario_ranking.csv to the displayed precision) and generalises it

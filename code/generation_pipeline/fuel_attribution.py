@@ -130,7 +130,7 @@ class FuelAttribution:
         self.huntly = {r.override_id[-6:]: (r.parameter, float(r.value)) for r in hc.itertuples()}
         self.wood_hr = self._wood_heat_rate()
 
-    # ---- register lookups ------------------------------------------------------------
+    # Register lookups
     def _active(self, recs, year, month):
         ref = pd.Timestamp(f"{year}-{month:02d}-15", tz="UTC")
         a = recs[(recs.eff_start <= ref) & (ref < recs.eff_end) & recs.EF_kg_per_MWh.notna()]
@@ -151,7 +151,7 @@ class FuelAttribution:
         gwh = w[w.Variable == "Net electricity generation"].set_index("TimePeriod").Value
         return (pj * 1e6 / (gwh * 1e3)).dropna().to_dict()  # GJ / MWh
 
-    # ---- per-key parts ------------------------------------------------------------------
+    # Per-key parts
     def factor_parts(self, gen):
         """One or two rows per (poc, gen_code, fuel_std, year, month) key present in gen, each
         with fuel_out, share, ef, bound EFs, estimated flag and the rule applied."""
@@ -352,7 +352,7 @@ class FuelAttribution:
         out["co2_kg_estimated"] = np.where(out["estimated"], out["co2_kg"], 0.0)
         return out.drop(columns=["share", "ef_bound_ccgt", "ef_bound_peaker", "ef_bound_glenbrook"])
 
-    # ---- Matahina fill -----------------------------------------------------------------
+    # Matahina fill
     def matahina_fill(self):
         """Trading-period rows for Matahina from Manawa fiscal-year totals (Apr-Mar).
         Returns trading_date, tp (1-48), gen_mwh, override_id. Hydro, EF 0, all flagged.
@@ -409,7 +409,7 @@ class FuelAttribution:
                             rows.append((day, i, day_mwh * s, r.override_id, r.fill_basis))
         return pd.DataFrame(rows, columns=["trading_date", "tp", "gen_mwh", "override_id", "fill_basis"])
 
-    # ---- Huntly 1-4 fill for months missing from Generation_MD ---------------------------
+    # Huntly 1-4 fill for months missing from Generation_MD
     def huntly_fill(self):
         """HUNTLY_FILL_* overrides: value = Genesis quarterly Rankine output (GWh). The missing
         month gets that total minus the metered huntly_1_4 output of the quarter's other months,
@@ -440,7 +440,7 @@ class FuelAttribution:
                         rows.append((day, i, fill_mwh / len(days) * s, r.override_id, r.fill_basis))
         return pd.DataFrame(rows, columns=["trading_date", "tp", "gen_mwh", "override_id", "fill_basis"])
 
-    # ---- Grid_import fill for generators missing from Generation_MD -----------------------
+    # Grid_import fill for generators missing from Generation_MD
     @staticmethod
     def _tp_frame(kind, ym, poc_col, poc, extra=None):
         """Trading-period MWh by date (TP1-TP50) at one POC from one monthly EMI file."""

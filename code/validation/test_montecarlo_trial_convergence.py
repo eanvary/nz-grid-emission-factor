@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 How many Monte Carlo trials does the reported uncertainty band actually need?
 
@@ -32,7 +31,6 @@ the measurement of it.
 
 Run: python test_montecarlo_trial_convergence.py
 """
-import math
 import os
 
 import numpy as np
@@ -44,7 +42,7 @@ HOUR_SEED = 0
 TRIAL_SEEDS = (1, 2, 3)
 TRIAL_COUNTS = (500, 1_000, 2_000, 5_000, 10_000, 50_000, 200_000)
 
-# --- sigmas, rebuilt exactly as run_ipcc_uncertainty_montecarlo.py does ----
+# Sigmas, rebuilt exactly as run_ipcc_uncertainty_montecarlo.py does
 IPCC_TABLE_2_2 = {
     "CLG": (96100., 92800., 100000.), "GAS": (56100., 54300., 58300.),
     "DSL": (74100., 72600., 74800.), "WOOD": (112000., 95000., 132000.),
@@ -65,7 +63,7 @@ mu = (w * g.ef_gco2_kwh).sum()
 _geo_sig = pd.read_csv(os.path.join(HERE, "geo_uncertainty_sigma.csv")).set_index("fuel_std")["rel_sigma"]
 REL_SIGMA.update({k: float(v) for k, v in _geo_sig.items()})  # geothermal by proxy-rule step (build_geo_uncertainty_inputs.py)
 
-# --- hourly fuel mix, pivoted to CO2 by fuel ------------------------------
+# Hourly fuel mix, pivoted to CO2 by fuel
 df = pd.read_csv(os.path.join(HERE, "hourly_fuel_mix_uncertainty.csv"),
                  usecols=["island", "date", "hour", "fuel_std", "gen_mwh", "co2_kg"])
 df = df[df.island == "NI"]

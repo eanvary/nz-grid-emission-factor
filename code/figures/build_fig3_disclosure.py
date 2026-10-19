@@ -16,7 +16,6 @@ reproducible without re-running any regex.
 """
 import re
 import sys
-import textwrap
 import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
@@ -43,7 +42,6 @@ ie = df["Include_Exclude"].astype(str).str.strip()
 inc = df[ie == "Include"].copy()
 assert len(inc) == 68, f"expected 68 included records, got {len(inc)}"
 
-# =============================================================================
 # Row labels: academic author-year citations, not the internal Study_ID code.
 # The workbook's `Authors` field has no single consistent format across its
 # 68 included records (semicolon "Surname, First" lists, comma "and"-joined
@@ -58,7 +56,6 @@ assert len(inc) == 68, f"expected 68 included records, got {len(inc)}"
 # author's surname used in the label appears verbatim inside the raw
 # `Authors` string -- so a transcription slip fails loudly instead of
 # silently shipping a wrong citation.
-# =============================================================================
 CITATION_LABEL = {
     "S001": "Ghose (2017)", "S002": "Ghose et al. (2017a)", "S004": "Bui (2023)",
     "S010": "Dowdell & Berg (2016)", "S011": "Berg et al. (2016)", "S012": "MacGregor et al. (2018)",
@@ -106,13 +103,10 @@ inc["citation_label"] = inc["Study_ID"].map(CITATION_LABEL)
 dup_labels = inc["citation_label"].value_counts()
 assert dup_labels.max() == 1, f"duplicate citation labels remain: {dup_labels[dup_labels > 1].to_dict()}"
 
-# =============================================================================
 # Column 1: Operational carbon quantified -- true where Operational_Carbon
-# begins with "Yes" (covers "Yes", "Yes — 86%...", "Yes (informal...)", etc.)
-# =============================================================================
+# begins with "Yes" (covers "Yes", "Yes: 86%...", "Yes (informal...)", etc.)
 inc["col1_opcarbon"] = inc["Operational_Carbon"].astype(str).str.strip().str.startswith("Yes")
 
-# =============================================================================
 # Column 2: EN 15978 or equivalent WLC-assessment standard referenced.
 # Matching rule (written here verbatim for the provenance file): true if
 # Standards_Referenced contains "15978" in any citation format (EN 15978,
@@ -121,15 +115,12 @@ inc["col1_opcarbon"] = inc["Operational_Carbon"].astype(str).str.strip().str.sta
 # international equivalent to EN 15978), OR explicitly names the "RICS
 # Whole Life Carbon Assessment" methodology (RICS's own WLC standard,
 # built on and referencing EN 15978).
-# =============================================================================
 STD_PATTERN = re.compile(r"15978|21931|RICS\s+Whole\s+Life\s+Carbon", re.I)
 inc["col2_en15978"] = inc["Standards_Referenced"].astype(str).apply(lambda s: bool(STD_PATTERN.search(s)))
 
-# =============================================================================
 # Columns 3-6: hand-coded per Study_ID from a full read of Emission_Factor_Source
 # (see FIG2_FIG3_PROVENANCE.md for the read-through of all 68 records).
 # Default is False for every record; only True cells are listed.
-# =============================================================================
 COL3_GRID_EF_NAMED_TRUE = {
     "S054": "LCAQuick v3.4.3 embedded database (BRANZ CO2NSTRUCT-derived reference-building "
             "factors); EORA MRIO database for consumption-based grid/economy-wide emission factors",
@@ -169,14 +160,12 @@ COL_TITLES = ["Operational\ncarbon\nquantified", "EN 15978 or\nequivalent\nrefer
               "Grid EF source\nnamed\n(specific)", "Spatial\nresolution\nstated",
               "Temporal\nresolution\nstated", "Trajectory\nstated"]
 
-# =============================================================================
 # Platform / row-block classification from LCA_Tool free text.
 # Rule: if a tool is flagged "(primary)" in the text, use that tool. Else
 # check keyword presence in priority order LCAQuick > One Click LCA > eTool.
 # Else, if the text indicates no software was used/named (None detected,
 # Not applicable, Not stated, Not specified, No named, No dedicated, Not a
 # named ...), block = "No tool named". Otherwise block = "Other named tool".
-# =============================================================================
 NO_TOOL_PAT = re.compile(
     r"none detected|not applicable|not stated|not specified|no named|no dedicated|"
     r"not a named|none named|none applied", re.I)
@@ -214,9 +203,7 @@ inc = inc.sort_values(["block_rank", "group_rank", "Study_ID"]).reset_index(drop
 block_counts = inc["platform"].value_counts().reindex(BLOCK_ORDER).fillna(0).astype(int)
 assert block_counts.sum() == 68, f"platform blocks do not sum to 68: {dict(block_counts)}"
 
-# =============================================================================
 # Column totals (n and %), computed at run time
-# =============================================================================
 N = len(inc)
 totals = {c: int(inc[c].sum()) for c in COLS}
 pct = {c: round(100 * totals[c] / N, 1) for c in COLS}
@@ -227,7 +214,6 @@ print("Column totals (n / %):")
 for c, title in zip(COLS, COL_TITLES):
     print(f"  {c}: n={totals[c]}  ({pct[c]}%)")
 
-# =============================================================================
 # Figure -- compact two-panel matrix (v2, redesigned for legibility as an
 # academic figure). The first version used full-column-width bars for
 # "true" cells (reading as a bar chart, not a matrix) in a single very tall
@@ -240,7 +226,6 @@ for c, title in zip(COLS, COL_TITLES):
 #     wide/short (journal-appropriate) rather than tall/narrow. The split
 #     point is chosen at run time to balance the two panels' row counts as
 #     evenly as possible, not hardcoded to a specific block name.
-# =============================================================================
 COL_TITLES_SHORT = ["Operational carbon", "EN 15978+ equivalent", "Grid EF named",
                      "Spatial resolution", "Temporal resolution", "Trajectory"]
 
@@ -319,8 +304,8 @@ def draw_panel(ax, items):
     # two-line labels ran into each other regardless of column spacing
     # (tried twice); angled single-line labels take diagonal, not
     # horizontal, room and don't collide.
-    labels = ax.set_xticklabels(COL_TITLES_SHORT, fontsize=7.4, fontweight="bold",
-                                  rotation=32, ha="left", rotation_mode="anchor")
+    ax.set_xticklabels(COL_TITLES_SHORT, fontsize=7.4, fontweight="bold",
+                       rotation=32, ha="left", rotation_mode="anchor")
     ax.xaxis.tick_top()
     ax.tick_params(axis="x", length=0, pad=2)
     ax.set_yticks([])
@@ -331,9 +316,9 @@ draw_panel(axL, left_items)
 draw_panel(axR, right_items)
 fig.subplots_adjust(wspace=0.45, top=0.66, bottom=0.02)
 
-# --- compact title: one bold headline + one smaller detail line, then the
+# Compact title: one bold headline + one smaller detail line, then the
 # legend on its OWN line below both (not competing with the headline for
-# the same top-right corner, which is what collided on the first attempt) ---
+# the same top-right corner, which is what collided on the first attempt)
 headline = f"Disclosure of carbon method and grid emission factor attributes by reviewed record (n = 68)"
 detail = (f"n={N} · Operational carbon {pct['col1_opcarbon']:.0f}% · EN 15978+ "
           f"{pct['col2_en15978']:.0f}% · Grid EF named {pct['col3_gridef']:.0f}% · "

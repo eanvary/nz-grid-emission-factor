@@ -1,5 +1,5 @@
 """
-Module 5 — Steps 4-8 core: hourly, island-resolved generation + emission factor
+Module 5: Steps 4-8 core: hourly, island-resolved generation + emission factor
 for one or more scenarios, reconciled to MBIE annual national totals.
 
 Method (locked with user; refined after the Reference vertical slice):
@@ -47,8 +47,8 @@ import pandas as pd
 
 from edgs_common import (RESULTS_XLSX, ASSUMPTIONS_XLSX, OUT_DIR, SCENARIOS, YEARS, COMMODITY,
                          RENEWABLE_COMMODITIES, THERMAL_COMMODITIES,
-                         MFE_FUEL_EF_KG_PER_GJ, fuel_ef_kg_per_gj, geothermal_ef_kg_per_mwh,
-                         WOOD_NONBIOGENIC_KG_PER_GJ, WOOD_NONBIOGENIC_SOURCE,
+                         MFE_FUEL_EF_KG_PER_GJ, geothermal_ef_kg_per_mwh,
+                         
                          log_factory)
 
 log, lines = log_factory()
@@ -57,9 +57,7 @@ run_scenarios = [s for s in sys.argv[1:] if s in SCENARIOS] or SCENARIOS
 # sensitivity case (Module 6 sets EDGS_TEMPLATE_YEAR). Non-central runs get a file suffix.
 CENTRAL_TEMPLATE = int(os.environ.get("EDGS_TEMPLATE_YEAR", "2021"))
 
-# ---------------------------------------------------------------------------
 # Load prerequisites
-# ---------------------------------------------------------------------------
 targets = pd.read_parquet(OUT_DIR / "edgs_annual_targets.parquet")
 register = pd.read_parquet(OUT_DIR / "edgs_plant_register.parquet")
 merit = pd.read_parquet(OUT_DIR / "edgs_merit_order.parquet")
@@ -140,9 +138,7 @@ for (sc, yr), g in _geo_reg.groupby(["scenario", "year"]):
                               if g["capacity_mw"].sum() > 0 else np.nan)
 
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
 def year_calendar(year):
     idx = pd.date_range(f"{year}-01-01", f"{year}-12-31 23:00", freq="h")
     return pd.DataFrame({"datetime_hour": idx, "month": idx.month, "day": idx.day, "hour": idx.hour})
@@ -215,9 +211,7 @@ def island_capacity_share(scenario):
     return cap.set_index(["year", "commodity", "island"])["share"].to_dict()
 
 
-# ---------------------------------------------------------------------------
 # Dispatch
-# ---------------------------------------------------------------------------
 gen_rows, ef_rows, recon_log, peak_log = [], [], [], []
 
 for scenario in run_scenarios:
@@ -236,7 +230,7 @@ for scenario in run_scenarios:
         peak_gw = float(t[t["metric"] == "annual_peak"]["value"].iloc[0])
         ni_share = float(ni_share_map.get((scenario, year), 0.61))
 
-        # ---- Renewables (MBIE annual x island cap share x hourly weight) ----
+        # Renewables (MBIE annual x island cap share x hourly weight)
         ren_hourly = {}          # (island, commodity) -> (mwh_array, fallback_note)
         island_ren_total = {"NI": np.zeros(H), "SI": np.zeros(H)}
         for com in RENEWABLE_COMMODITIES:
@@ -268,7 +262,7 @@ for scenario in run_scenarios:
                 ren_hourly[(isl, com)] = (mwh, fb)
                 island_ren_total[isl] += mwh
 
-        # ---- Load series (Step A2). Two DISTINCT, correctly-different quantities: ----
+        # Load series (Step A2). Two DISTINCT, correctly-different quantities:
         #  (i) DEMAND series: energy = MBIE Total electricity demand, peak-calibrated to
         #      MBIE Peak demand. Used ONLY for the Check-3 peak validation (demand-side).
         #  (ii) GENERATION-LEVEL load series: energy = MBIE net generation total (demand +
@@ -289,7 +283,7 @@ for scenario in run_scenarios:
         # (ii) generation-level load for the dispatch residual
         nat_demand = nat_shape * netgen_mwh
 
-        # ---- Assumption 2: DSR/battery daily peak-shave load-shift (capacity-driven) ----
+        # Assumption 2: DSR/battery daily peak-shave load-shift (capacity-driven)
         # MBIE carries DSR/battery only as CAPACITY (never net generation), so this rule
         # is model-original. Each day the fleet discharges up to its rated MW in that day's
         # highest-residual hour and charges the same energy in the lowest-residual hour
@@ -308,7 +302,7 @@ for scenario in run_scenarios:
             base[rows_idx, lo] += shift                              # charge (load)
         dsr_series = residual_pre - residual  # +discharge at peak, -charge at trough; sum ~0
 
-        # ---- Thermal SHAPE from merit fill of residual (capacity-aware) ----
+        # Thermal SHAPE from merit fill of residual (capacity-aware)
         mplants = merit_s[merit_s.year == year].sort_values("merit_rank")
         caps = mplants["capacity_mw"].to_numpy()
         total_cap = caps.sum()
@@ -319,7 +313,7 @@ for scenario in run_scenarios:
             thermal_shape_raw = np.full(H, 1.0)  # degenerate (no residual): flat
         thermal_shape = thermal_shape_raw / thermal_shape_raw.sum()
 
-        # ---- Fuel generation from MBIE annual; CO2 from MBIE fuel USE x MfE (Step B) ----
+        # Fuel generation from MBIE annual; CO2 from MBIE fuel USE x MfE (Step B)
         # Generation per fuel = MBIE annual GWh x thermal shape (reconciles exactly).
         # CO2 per fuel = MBIE published fuel input (Gross PJ) x MfE factor, distributed
         # over the same thermal shape. Heat rate is NOT used here (only for merit ranking).
@@ -341,7 +335,7 @@ for scenario in run_scenarios:
                               "implied_ef_kg_per_mwh": implied_ef,
                               "flag": "MBIE_fueluse_x_MfE"})
 
-        # ---- Wood/biomass non-CO2 (CH4+N2O): TESTED AND ADOPTED (Brief P/Q) ----
+        # Wood/biomass non-CO2 (CH4+N2O): TESTED AND ADOPTED (Brief P/Q)
         # MfE Table 3.4 (Biomass - Manufacturing Use, cited in edgs_common.py) gives a real,
         # non-biogenic CH4+N2O factor for wood combustion that combustion_co2_kg() never
         # applied (Wood is a RENEWABLE_COMMODITY, outside the THERMAL_COMMODITIES loop above,
@@ -375,7 +369,7 @@ for scenario in run_scenarios:
                     if com == "Wood":
                         wood_nonco2_by_island[isl] += wood_co2_yr * (mwh / wood_gen_total)
 
-        # ---- Geothermal fugitive CO2: TESTED, NOT ADOPTED (Step 1/2 diagnostic) ----
+        # Geothermal fugitive CO2: TESTED, NOT ADOPTED (Step 1/2 diagnostic)
         # A cited, capacity-weighted, time-varying geothermal factor (McLean & Richardson
         # 2019 field data, Ngawha=0 from 2024) was computed and trialled here. Result:
         # adding it OVERSHOOTS MBIE's electricity GHG total by ~19-27% (emissions-weighted),
@@ -390,7 +384,7 @@ for scenario in run_scenarios:
         # DSR hourly net series computed above (Assumption 2 load-shift); net annual ~0.
         dsr_hourly = dsr_series
 
-        # ---- Assemble generation rows ----
+        # Assemble generation rows
         for (isl, com), (mwh, fb) in ren_hourly.items():
             gen_rows.append(pd.DataFrame({
                 "datetime_hour": dt, "scenario": scenario, "island": isl,
@@ -415,8 +409,8 @@ for scenario in run_scenarios:
                                   f"load-shift at {dsr_mw:.0f} MW (GEM build schedule capacity); "
                                   "+ = discharge, - = charge; net annual ~0 (matches MBIE DSR net gen=0)")}))
 
-        # ---- Emission factor: combustion (Step B) + geothermal fugitive CO2 (Step 1) ----
-        #      + wood/biomass non-CO2 CH4+N2O (Brief P/Q, adopted) ----
+        # Emission factor: combustion (Step B) + geothermal fugitive CO2 (Step 1)
+        #      + wood/biomass non-CO2 CH4+N2O (Brief P/Q, adopted)
         # Per island: CO2 = thermal combustion (NI only, Module 3/B) + geothermal fugitive
         # (cited, capacity-weighted fleet factor, computed above per island; NOT ADOPTED --
         # geo_co2_by_island stays zero, see the comment above) + wood non-CO2 (cited, MfE
@@ -451,9 +445,7 @@ for scenario in run_scenarios:
 
     log(f"  {scenario}: dispatched {len(YEARS)} years")
 
-# ---------------------------------------------------------------------------
 # Write
-# ---------------------------------------------------------------------------
 gen = pd.concat(gen_rows, ignore_index=True)
 ef = pd.concat(ef_rows, ignore_index=True)
 recon = pd.DataFrame(recon_log)

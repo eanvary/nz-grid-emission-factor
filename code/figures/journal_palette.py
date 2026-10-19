@@ -23,9 +23,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from cycler import cycler
 
-# ---------------------------------------------------------------------------
 # 1. BASE PALETTE (kept from the brand identity, contrast-checked vs white)
-# ---------------------------------------------------------------------------
 # Contrast ratio vs white (WCAG). >=3:1 is the accepted floor for graphical
 # objects / thick lines; text and thin lines should stay above ~4.5:1.
 BASE = {
@@ -44,14 +42,12 @@ BASE = {
                                   # only, never for text or line color
 }
 
-# ---------------------------------------------------------------------------
 # 2. CATEGORICAL SEQUENCE
 # Ordered by descending contrast/luminance separation so the sequence still
 # reads correctly if a reviewer or the printer renders in grayscale, and
 # alternates cool/warm hues so it stays distinguishable for red-green
 # color-vision deficiency (the navy/teal/amber backbone mirrors the
 # Okabe-Ito colorblind-safe logic: blue-family vs orange-family).
-# ---------------------------------------------------------------------------
 CATEGORICAL = [
     BASE["deep_navy"],
     BASE["amber_print"],
@@ -73,14 +69,12 @@ LINE_STYLES = [
     {"linestyle": "--", "marker": "P"},
 ]
 
-# ---------------------------------------------------------------------------
 # 3. CONTINUOUS COLORMAPS (for heatmaps, contour plots, sensitivity grids)
 # Sequential: Cloud -> Teal Light -> Carbon Teal -> Deep Navy
 # Diverging:  Amber(print) -> White -> Carbon Teal  (warm/cool, e.g. energy
 #             increase vs. saving, overheating vs. comfort)
 # Both are built from the checked colors above so they stay legible when
 # a journal downsamples or greyscales the figure.
-# ---------------------------------------------------------------------------
 def seq_cmap():
     return LinearSegmentedColormap.from_list(
         "journal_sequential",
@@ -95,13 +89,11 @@ def div_cmap():
         N=256,
     )
 
-# ---------------------------------------------------------------------------
 # 4. GLOBAL RCPARAMS FOR PUBLICATION FIGURES
 # Sizes are tuned for a single-column figure (~3.5 in / 89 mm wide) at the
-# FINAL print size — not for on-screen or slide viewing. Scale up figsize
+# FINAL print size: not for on-screen or slide viewing. Scale up figsize
 # for double-column (~7 in / 180 mm) figures; keep font sizes as-is so text
 # stays proportionate once placed in the journal template.
-# ---------------------------------------------------------------------------
 def set_journal_style():
     plt.rcParams.update({
         # Fonts: sans-serif family that is bundled with matplotlib

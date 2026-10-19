@@ -117,9 +117,7 @@ TEMPORAL_C, SPATIAL_C, TRAJECTORY_C = CATEGORICAL[0], CATEGORICAL[1], CATEGORICA
 REFERENCE_LINE_C = BASE["muted_slate"]  # palette's own documented use: "reference lines, non-focal annotation"
 SHADE_C = BASE["cloud"]  # palette's own documented use: "shaded zones/bands only"
 
-# =============================================================================
 # Gate: confirm the headline row exists with fit_status == 'full'
-# =============================================================================
 decomp = pd.read_csv(DB_TABLES / "phase3_decomposition_full.csv")
 hl = decomp[(decomp["load_shape"] == "daytime_office") & (decomp["scenario"] == "Reference") &
             (decomp["start_year"] == 2025) & (decomp["study_period_yrs_requested"] == 25)]
@@ -132,10 +130,8 @@ END_YEAR = START_YEAR + PERIOD_YRS - 1
 print(f"Headline row confirmed: start={START_YEAR}, period={PERIOD_YRS}yr, "
       f"fit_status={hl['fit_status']}, order_check_total_matches={hl['order_check_total_matches']}")
 
-# =============================================================================
 # (b) annual island mean per year, headline period -- loaded first since (a)
 # now plots a reference line at (b)'s own first value.
-# =============================================================================
 isl = pd.read_csv(DB_TABLES / "phase3_annual_island_ef.csv")
 b_series = isl[(isl["scenario"] == "Reference") & (isl["island"] == "NI") &
                (isl["year"].between(START_YEAR, END_YEAR))].sort_values("year")
@@ -154,11 +150,9 @@ d_value = hl["E_d_static_base"] / hl["n_years_used"]
 d_value_from_series = c_series[c_series["year"] == START_YEAR]["annual_national_ef"].iloc[0]
 assert abs(d_value - d_value_from_series) < 1e-6, "static base value disagrees with annual_national_ef series"
 
-# =============================================================================
 # (a) 2025 hour-of-week mean profile, NI generation-basis EF -- replaces the
 # single representative week. Mean of ALL occurrences of each (day-of-week,
 # hour-of-day) slot across the full 2025 calendar year (168 slots).
-# =============================================================================
 hourly = pd.read_parquet(HOURLY_EF_PARQUET)
 hourly["datetime_hour"] = pd.to_datetime(hourly["datetime_hour"])
 ni_gen = hourly[(hourly["island"] == "NI") & (hourly["ef_basis"] == "generation") &
@@ -195,7 +189,7 @@ office_shape = shapes[shapes["label"] == "daytime_office"][["dow", "hour", "raw_
 ni_2025_office = ni_2025.merge(office_shape, on=["dow", "hour"], how="left")
 office_weighted_mean_2025 = np.average(ni_2025_office["emission_factor_kg_co2e_per_kwh"], weights=ni_2025_office["raw_intensity"])
 
-# --- occupied hours of the daytime_office profile ---
+# Occupied hours of the daytime_office profile
 # Rule: weekday weight strictly exceeds the shape's own night/evening off-peak
 # tier (0.3). NOTE: the office day-block peak weight is 1.0, exactly equal to
 # (never exceeding) the continuous_24_7 flat weight of 1.0, so "exceeds the
@@ -206,9 +200,7 @@ OCCUPIED_THRESHOLD = 0.3
 office_map = shapes[shapes["label"] == "daytime_office"].set_index(["dow", "hour"])["raw_intensity"]
 occupied_by_dowhour = office_map > OCCUPIED_THRESHOLD
 
-# =============================================================================
 # y-axis range (computed from panel (a)'s NEW data)
-# =============================================================================
 y_max = max(a_vals.max(), b_series["annual_island_ef"].max(), c_series["annual_national_ef"].max(), d_value) * 1.15
 y_min = 0
 y_range = y_max - y_min
@@ -220,9 +212,7 @@ draw_plain_mean = (plain_gap / y_range) >= 0.02
 print(f"Plain-vs-annual-mean gap = {plain_gap:.6f} ({100*plain_gap/y_range:.2f}% of y-range) "
       f"-> {'drawing' if draw_plain_mean else 'omitting'} the plain time-mean line")
 
-# =============================================================================
 # Draw
-# =============================================================================
 fig, axes = plt.subplots(1, 4, figsize=(8.6, 5.6), sharey=True,
                           gridspec_kw={"width_ratios": [1.7, 1, 1, 1]})
 
@@ -299,7 +289,7 @@ for ax in axes:
     ax.tick_params(axis="y", labelsize=7.2)
     ax.grid(axis="y", color="#EEEEEE", lw=0.7, zorder=0)
 
-# --- transition arrows above the panels, colour-matched to the equation ---
+# Transition arrows above the panels, colour-matched to the equation
 fig.canvas.draw()
 renderer = fig.canvas.get_renderer()
 
@@ -322,7 +312,7 @@ for i, (label, color) in enumerate(labels):
     fig.text((x1 + x2) / 2, arrow_y + 0.018, label, ha="center", va="bottom",
               fontsize=8.6, fontweight="bold", color=color)
 
-# --- telescoping identity, colour-matched terms.
+# Telescoping identity, colour-matched terms.
 # matplotlib's mathtext has no \underbrace/\color, so the equation is built
 # as a sequence of separately-coloured text runs placed left to right, each
 # positioned from the rendered width of the run before it (measured via the

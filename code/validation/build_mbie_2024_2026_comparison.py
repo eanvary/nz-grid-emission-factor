@@ -27,10 +27,8 @@ MBIE_PATH = ROOT / "generation_pipeline" / "MBIE_Quarterly_Electricity_Emissions
 
 NEW_MONTHS = ["202601", "202602", "202603", "202604", "202605", "202606", "202607", "202608"]
 
-# ---------------------------------------------------------------------------
-# Step 1: national monthly CO2/generation for the 8 new 2026 months (full scope,
+# National monthly CO2/generation for the 8 new 2026 months (full scope,
 # matching D1's own method exactly -- no autoproducer exclusion).
-# ---------------------------------------------------------------------------
 poc_island = poc_island_map()
 fa = FuelAttribution()
 
@@ -44,9 +42,7 @@ parts = [gen.groupby(["year", "month"]).agg(gen=("gen_mwh", "sum"), co2=("co2_kg
 new_monthly = pd.concat(parts, ignore_index=True)
 print(new_monthly.to_string(index=False))
 
-# ---------------------------------------------------------------------------
-# Step 2: 2024-2025 months from the already-shipped, already-validated output.
-# ---------------------------------------------------------------------------
+# 2024-2025 months from the already-shipped, already-validated output.
 shipped = pd.read_csv(ROOT / "output" / "monthly_emission_factor_NI_SI.csv")
 shipped_national = shipped.groupby(["year", "month"]).agg(
     gen=("total_gen_MWh", "sum"), co2=("total_CO2_kg", "sum")
@@ -61,9 +57,7 @@ qagg = nat.groupby("quarter").agg(gen=("gen", "sum"), co2=("co2", "sum")).reset_
 qagg["qlabel"] = qagg["quarter"].apply(lambda p: f"{qmap[p.quarter]} {str(p.year)[2:]}")
 qagg["ours_kg_per_mwh"] = qagg["co2"] / qagg["gen"]
 
-# ---------------------------------------------------------------------------
-# Step 3: MBIE's own published figures for the same quarters.
-# ---------------------------------------------------------------------------
+# MBIE's own published figures for the same quarters.
 xl = pd.ExcelFile(MBIE_PATH)
 dfm = xl.parse("Electricity EFs", header=None)
 q_labels = dfm.iloc[8, 1:].tolist()

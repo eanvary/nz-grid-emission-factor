@@ -75,10 +75,10 @@ def propagate_group(g):
     })
 
 
-# --- vectorised version of the same logic (the row-iterrows version above is the
+# Vectorised version of the same logic (the row-iterrows version above is the
 # reference/readable form; for 192,864 groups iterrows is too slow, so the actual
 # computation below is a vectorised equivalent, cross-checked against propagate_group
-# on a random sample before trusting it at scale). ---
+# on a random sample before trusting it at scale).
 df["rel_sigma"] = df["fuel_std"].map(REL_SIGMA).fillna(0.0)
 df["is_quantified_combustion"] = df["fuel_std"].isin(REL_SIGMA.keys())
 df["is_zero_ef"] = df["fuel_std"].isin(ZERO_EF_FUELS)
@@ -110,8 +110,8 @@ result["quantified_coverage_pct"] = (quantified_gen.reindex(result.index).fillna
 result["excluded_coverage_pct"] = (excluded_gen.reindex(result.index).fillna(0.0) / result["total_gen_mwh"] * 100.0)
 result = result.reset_index()
 
-# --- cross-check the vectorised path against the reference row-wise function on a
-# random sample of 200 (island,date,hour) groups before trusting it further. ---
+# Cross-check the vectorised path against the reference row-wise function on a
+# random sample of 200 (island,date,hour) groups before trusting it further.
 print("Cross-checking vectorised computation against the reference row-wise function...")
 sample_keys = result.sample(n=min(200, len(result)), random_state=0)[["island", "date", "hour"]]
 max_ef_diff, max_sigma_diff = 0.0, 0.0
@@ -137,7 +137,7 @@ result.to_csv(OUT_HOURLY, index=False)
 print(f"\nWrote {len(result):,} island-hour rows -> {OUT_HOURLY}")
 
 # Daily roll-up (energy-weighted point EF, variance combined assuming hour-independence
-# -- same disclosed simplification as the monthly->annual roll-up already in the report)
+# Same disclosed simplification as the monthly->annual roll-up already in the report)
 result["year"] = pd.to_datetime(result["date"]).dt.year
 daily = result.groupby(["island", "date"]).apply(
     lambda g: pd.Series({

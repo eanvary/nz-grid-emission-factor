@@ -23,11 +23,9 @@ COLUMNS = ["system", "sub_region_unit", "n_sub_regions", "min_intensity", "max_i
            "unit", "national_average", "ratio_max_min", "reference_year", "primary_source",
            "source_type", "verified", "source_url_or_doi", "note"]
 
-# =============================================================================
 # New Zealand -- computed from this study's own tables, headline reference
 # year (2027, Reference scenario, generation-basis), matching the headline
 # case used throughout the rest of this figure set.
-# =============================================================================
 REF_SCENARIO, REF_YEAR = "Reference", 2027
 isl = pd.read_csv(TABLES / "phase3_annual_island_ef.csv")
 nat = pd.read_csv(TABLES / "phase3_annual_national_ef.csv")
@@ -46,9 +44,9 @@ print(f"NZ (computed): NI={ni_val:.6f} kgCO2e/kWh ({ni_val*1000:.2f} g/kWh), "
       f"ratio={'undefined (min=0)' if pd.isna(nz_ratio) else f'{nz_ratio:.1f}'}")
 
 rows = [
-# --- Canada: CER Provincial and Territorial Energy Profiles, 2022 data,
+# Canada: CER Provincial and Territorial Energy Profiles, 2022 data,
 # fetched directly (5 of 13 provinces/territories checked: the ones named
-# in the international scan) ---
+# in the international scan)
 dict(system="Canada", sub_region_unit="province", n_sub_regions=5,
      min_intensity=1.2, max_intensity=660, unit="gCO2e/kWh", national_average=100,
      ratio_max_min=round(660 / 1.2, 1), reference_year=2022,
@@ -62,7 +60,7 @@ dict(system="Canada", sub_region_unit="province", n_sub_regions=5,
           "checked (those named in the scan) -- not an exhaustive 13-jurisdiction scan; BC, "
           "Newfoundland, PEI, New Brunswick and the 3 territories not checked, true national "
           "min/max could differ."),
-# --- USA: EPA eGRID2022 Summary Tables, Table 1, fetched directly ---
+# USA: EPA eGRID2022 Summary Tables, Table 1, fetched directly
 dict(system="USA", sub_region_unit="eGRID subregion", n_sub_regions=22,
      min_intensity=274.6, max_intensity=1479.6, unit="lb/MWh", national_average=823.1,
      ratio_max_min=round(1479.6 / 274.6, 2), reference_year=2022,
@@ -77,12 +75,12 @@ dict(system="USA", sub_region_unit="eGRID subregion", n_sub_regions=22,
           "Cambium 2025' figure -- Cambium is a different, forward-looking NREL dataset, "
           "not eGRID2022 historical output rates; the scan's number does not reproduce "
           "against this primary source and is not used."),
-# --- Australia: DCCEEW NGA Factors 2025, Table 1 -- confirmed directly.
+# Australia: DCCEEW NGA Factors 2025, Table 1 -- confirmed directly.
 # Automated fetching from this session was blocked on every route tried
 # (WebFetch to the PDF/XLSX, in-app Browser); the user downloaded the PDF
 # themselves and it was converted locally with pdf_to_md.py, which recovered
 # Table 1 verbatim, in full agreement with the blog-compiled values used in
-# the first draft of this register. ---
+# the first draft of this register.
 dict(system="Australia", sub_region_unit="state/regional grid", n_sub_regions=8,
      min_intensity=0.20, max_intensity=0.78, unit="kgCO2-e/kWh", national_average=0.62,
      ratio_max_min=round(0.78 / 0.20, 2), reference_year="FY2025-26 (financial year ending June)",
@@ -100,7 +98,7 @@ dict(system="Australia", sub_region_unit="state/regional grid", n_sub_regions=8,
           "blog-compiled values used in the first draft exactly, including the national "
           "average (0.62) and the NT/DKIS and WA-SWIS/NWIS split rows. Data year is a "
           "financial year (ending June), not a calendar year, per the table's own notes."),
-# --- UK: NESO Carbon Intensity API, regional endpoint, fetched live ---
+# UK: NESO Carbon Intensity API, regional endpoint, fetched live
 dict(system="UK", sub_region_unit="DNO region", n_sub_regions=14,
      min_intensity=0, max_intensity=376, unit="gCO2/kWh", national_average=235,
      ratio_max_min=float("nan"), reference_year="2026-08-16 (instantaneous, not annual -- see note)",
@@ -115,7 +113,7 @@ dict(system="UK", sub_region_unit="DNO region", n_sub_regions=14,
           "undefined (min=0) and reported as such rather than computed. 14 genuine DNO "
           "regions used; the API's 3 country-level aggregate rows (England/Scotland/"
           "Wales) excluded."),
-# --- Europe (EU27, country-level): replaces the earlier "Nordic/European
+# Europe (EU27, country-level): replaces the earlier "Nordic/European
 # bidding zones" row. Per-bidding-zone (NO1-NO5/SE1-SE4) intensity is not
 # officially published at that granularity by any single primary agency
 # found (it would have to be computed from ENTSO-E per-zone generation-mix
@@ -145,7 +143,7 @@ dict(system="Europe (EU27, country-level)", sub_region_unit="country", n_sub_reg
           "estimated. Raw CSV independently re-fetched three times (all-countries pull, "
           "a full Sweden/Finland/Denmark row dump, and the EU-27 aggregate row alone) "
           "and all three agree exactly."),
-# --- New Zealand: this study's own tables ---
+# New Zealand: this study's own tables
 dict(system="New Zealand", sub_region_unit="island", n_sub_regions=2,
      min_intensity=round(nz_min_g, 2), max_intensity=round(nz_max_g, 2), unit="gCO2e/kWh",
      national_average=round(nz_nat_g, 2), ratio_max_min=nz_ratio,

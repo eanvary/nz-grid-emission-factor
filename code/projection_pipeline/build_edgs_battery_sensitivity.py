@@ -1,5 +1,5 @@
 """
-Follow-up brief E — quantify the battery/BESS gap as a STANDALONE SENSITIVITY TEST, not a
+Follow-up brief E: quantify the battery/BESS gap as a STANDALONE SENSITIVITY TEST, not a
 pipeline change. This script does NOT modify build_edgs_dispatch.py, edgs_common.py, or any
 shipped output parquet. It reads only the pipeline's existing saved intermediates and
 reconstructs the dispatch residual/peak-shave chain in parallel, swapping the DSR capacity
@@ -49,9 +49,7 @@ TEMPLATE_YEAR = int(os.environ.get("EDGS_TEMPLATE_YEAR", "2021"))
 SUFFIX = "" if TEMPLATE_YEAR == 2021 else f"_tmpl{TEMPLATE_YEAR}"
 log(f"Template year: {TEMPLATE_YEAR} (suffix '{SUFFIX}')")
 
-# ---------------------------------------------------------------------------
-# Step 1: report-stated battery capacity (interpolated, clearly labelled) vs shipped DSR
-# ---------------------------------------------------------------------------
+# Report-stated battery capacity (interpolated, clearly labelled) vs shipped DSR
 def report_battery_mw(scenario, year):
     """MBIE report Table 4 + prose (p.22, p.27-28). ONLY 733 MW/2029 and 1700 MW/2049 (I/E
     only) are MBIE-stated; all other years are this script's own linear interpolation."""
@@ -92,10 +90,8 @@ for yr in (2029, 2049):
     log(gap_df[gap_df.year == yr][["scenario", "dsr_mw_shipped", "report_battery_mw", "ratio"]]
         .round(2).to_string(index=False))
 
-# ---------------------------------------------------------------------------
 # Prerequisites for the residual/dispatch reconstruction (read-only, same sources as
 # build_edgs_dispatch.py; NOT the same code path, but the same math, for comparison)
-# ---------------------------------------------------------------------------
 dem_shape = pd.read_parquet(OUT_DIR / "edgs_shape_demand.parquet")
 dem_shape = dem_shape[dem_shape.template_year == TEMPLATE_YEAR]
 ren_shape_all = pd.read_parquet(OUT_DIR / "edgs_shape_renewables.parquet")
@@ -154,9 +150,7 @@ def peak_shave(residual_pre, dsr_mw, H):
     return residual, residual_pre - residual
 
 
-# ---------------------------------------------------------------------------
 # Per scenario-year: reconstruct residual_pre, run peak-shave under SHIPPED vs REPORT dsr_mw
-# ---------------------------------------------------------------------------
 peakshave_rows = []
 hvdc_rows = []
 ef_rows = []
@@ -208,7 +202,7 @@ for scenario in SCENARIOS:
         res_ship, dsr_series_ship = peak_shave(residual_pre, dsr_ship, H)
         res_rep, dsr_series_rep = peak_shave(residual_pre, dsr_rep, H)
 
-        # --- Step 3.1: peak-shave magnitude/timing ---
+        # 1: peak-shave magnitude/timing
         peak_hr_ship = int(np.argmax(dsr_series_ship))
         peak_hr_rep = int(np.argmax(dsr_series_rep))
         peakshave_rows.append({
@@ -220,7 +214,7 @@ for scenario in SCENARIOS:
             "same_worst_hour": peak_hr_ship == peak_hr_rep,
         })
 
-        # --- Step 3.2: HVDC transfer / capacity check, before vs after ---
+        # 2: HVDC transfer / capacity check, before vs after
         # thermal shape from each residual (same merit-order-capacity-clip logic as dispatch.py)
         mplants = merit[(merit.scenario == scenario) & (merit.year == year)].sort_values("merit_rank")
         total_cap = mplants["capacity_mw"].sum()
@@ -261,7 +255,7 @@ for scenario in SCENARIOS:
             "n_hours_violate_report": int((np.abs(tr_rep) > HVDC_CAPACITY_MW).sum()),
         })
 
-        # --- Step 3.3: EF hourly shape, before vs after ---
+        # 3: EF hourly shape, before vs after
         mfe_thermal_co2_ship = None  # placeholder; use ratio of thermal MWh reshaping as EF proxy
         # Since combustion CO2 per fuel = MBIE fuel-use x MfE, distributed by the SAME thermal
         # shape, the CO2 profile reshapes IDENTICALLY to the thermal generation profile - so
@@ -293,9 +287,7 @@ hv.to_csv(OUT_DIR / f"edgs_battery_sensitivity_hvdc{SUFFIX}.csv", index=False)
 efd = pd.DataFrame(ef_rows)
 efd.to_csv(OUT_DIR / f"edgs_battery_sensitivity_ef{SUFFIX}.csv", index=False)
 
-# ---------------------------------------------------------------------------
 # Summary
-# ---------------------------------------------------------------------------
 log("\n=== Step 3.1: peak-shaving magnitude (total MWh/yr shaved, national) ===")
 log(f"  Total shaved, shipped DSR: {pk.total_shaved_mwh_shipped.sum()/1e6:.2f} TWh/yr-equiv (135 scenario-years)")
 log(f"  Total shaved, report battery: {pk.total_shaved_mwh_report.sum()/1e6:.2f} TWh/yr-equiv")

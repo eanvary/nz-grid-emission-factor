@@ -147,14 +147,14 @@ df["geo_g_per_kWh"] = df.geo_kt / df.geo_GWh.where(df.geo_GWh > 0) * 1000
 df = df.sort_values(["Scenario", "Region", "Period"])
 df.to_csv(OUT / "times_nz3_ef_by_year.csv", index=False, float_format="%.4f")
 
-# --- metered history (this project), by island and national
+# Metered history (this project), by island and national
 hist_isl = pd.read_csv(ROOT / "output" / "annual_emission_factor_NI_SI.csv")
 hist_nat = hist_isl.groupby("year")[["total_CO2_kg", "total_gen_MWh"]].sum().reset_index()
 hist_nat["island"] = "National"
 hist = pd.concat([hist_isl[["island", "year", "total_CO2_kg", "total_gen_MWh"]], hist_nat])
 hist["metered_EF"] = hist.total_CO2_kg / hist.total_gen_MWh  # kg/MWh = g/kWh
 
-# --- comparison 1: national, TIMES-NZ vs MBIE EDGS 2024 published EF vs metered
+# Comparison 1: national, TIMES-NZ vs MBIE EDGS 2024 published EF vs metered
 edgs = pd.read_csv(ROOT / "output" / "edgs" / "edgs_annual_targets.csv")
 edgs = edgs[edgs.metric == "grid_emission_factor"][["scenario", "year", "value"]]
 edgs["EDGS_EF"] = edgs.value * 1000  # kg/kWh -> g/kWh
@@ -169,7 +169,7 @@ cmp = cmp[["Scenario", "edgs_scenario", "Period", "EF_reported", "EF_plus_coal_c
 cmp.to_csv(OUT / "times_nz3_vs_edgs_vs_metered.csv", index=False, float_format="%.2f")
 
 
-# --- comparison 2: island, TIMES-NZ vs this project's EDGS island EF(i), generation basis
+# Comparison 2: island, TIMES-NZ vs this project's EDGS island EF(i), generation basis
 def edgs_island_annual():
     """Annual generation-weighted EF by scenario x island, generation basis (phase1 method)."""
     E = ROOT / "output" / "edgs"
@@ -220,7 +220,7 @@ ic["matched_minus_EDGS"] = ic.EF_total_combustion - ic.EDGS_island_EF
 ic = ic.sort_values(["Scenario", "island", "Period"])
 ic.to_csv(OUT / "times_nz3_vs_edgs_island.csv", index=False, float_format="%.2f")
 
-# --- 2023 scope reconciliation: TIMES-NZ plants vs metered Generation_MD generators
+# 2023 scope reconciliation: TIMES-NZ plants vs metered Generation_MD generators
 # TIMES plant(s) -> metered Gen_Code(s). Plants listed together are one station or scheme.
 PLANT_MAP = [
     (["Glenbrook Steel"], ["glenbrook_kilns"]),

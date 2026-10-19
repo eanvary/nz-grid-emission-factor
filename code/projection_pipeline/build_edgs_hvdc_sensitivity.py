@@ -1,22 +1,22 @@
 """
-Follow-up brief C — is the HVDC capacity violation (Brief B, Step 5: 103/135 scenario-years,
+Follow-up brief C: is the HVDC capacity violation (Brief B, Step 5: 103/135 scenario-years,
 up to 2,662 MW by 2050 vs the cited 1,200 MW Cook Strait capacity) a genuine finding or an
 artifact of this pipeline's own simplifications? Tests three candidate artifacts as genuine
 re-runs (not qualitative reasoning), each producing a comparable violation count/magnitude to
 the BASELINE (Module 7's shipped result), then a COMBINED re-run with all three fixes together.
 
-  Sensitivity A (Step 2) — DSR/battery island split: currently 100% of DSR net effect is
+  Sensitivity A (Step 2): DSR/battery island split: currently 100% of DSR net effect is
     booked to NI (edgs_hourly_generation.parquet); GEM build schedule capacity is actually
     ~48/52 NI/SI (Reference/Growth/Constraint/Environmental: 244.8 NI / 266.6 SI MW;
     Innovation: 244.8 NI / 248.8 SI MW). Re-allocates the EXISTING national DSR hourly
     series by each scenario-year's GEM capacity share (a documented approximation: the
     peak-shave TIMING pattern stays national/residual-driven, only the ISLAND SPLIT of that
     pattern changes - a full independent per-island DSR re-dispatch is out of scope here).
-  Sensitivity B (Step 3) — solar shape artifact: the raw EA/EMI data has no Solar fuel code
+  Sensitivity B (Step 3): solar shape artifact: the raw EA/EMI data has no Solar fuel code
     before 2024 (Brief B finding), so the shipped central template (2021) falls back to a
     flat 24-hour profile. Re-runs using the 2024 template's REAL diurnal solar shape for
     both islands instead.
-  Sensitivity C (Step 4) — uniform loss-ratio bounding: Module 7's actual (corrected)
+  Sensitivity C (Step 4): uniform loss-ratio bounding: Module 7's actual (corrected)
     formula renormalises island generation-level load to real national generation, so the
     national loss/gross-up ratio CANCELS OUT of the island split and does not directly
     drive the transfer magnitude. To give this simplification a genuine test, a
@@ -92,11 +92,9 @@ def map_weights(cal, wtab):
 w_ni_base = dem_shape_2021[dem_shape_2021.island == "NI"][["month", "day", "hour", "weight"]]
 w_si_base = dem_shape_2021[dem_shape_2021.island == "SI"][["month", "day", "hour", "weight"]]
 
-# ---------------------------------------------------------------------------
 # PERFORMANCE: pre-group the 16.5M-row generation table ONCE, by (scenario,year,island)
 # total generation and (scenario,year) DSR/Solar-by-island series, instead of re-filtering
 # the full table on every one of the ~1000+ calls the naive per-scenario-year loop makes.
-# ---------------------------------------------------------------------------
 log("Pre-grouping generation table (one pass)...")
 totgen_by_sy_isl = (gen.groupby(["scenario", "year", "island", "datetime_hour"])["generation_mwh"]
                     .sum().unstack("datetime_hour"))
@@ -182,9 +180,7 @@ def solar_adjustment_for(scenario, year, dt):
     return new_NI - cur_NI, new_SI - cur_SI
 
 
-# ---------------------------------------------------------------------------
 # Run baseline + sensitivities for all 135 scenario-years (using precomputed lookups)
-# ---------------------------------------------------------------------------
 def flag(tr):
     return np.abs(tr).max(), int((np.abs(tr) > HVDC_CAPACITY_MW).sum())
 
@@ -202,11 +198,11 @@ for scenario in SCENARIOS:
         g_NI = lookup_gen(scenario, year, "NI", dt)
         g_SI = lookup_gen(scenario, year, "SI", dt)
 
-        # --- BASELINE ---
+        # BASELINE
         tr_base = compute_transfer(dt, ni_share, w_ni, w_si, g_NI, g_SI)
         max_base, n_base = flag(tr_base)
 
-        # --- Sensitivity A: DSR split 48/52 (GEM) instead of 100% NI ---
+        # Sensitivity A: DSR split 48/52 (GEM) instead of 100% NI
         dsr_vals = dsr_series_for(scenario, year, dt)
         if dsr_vals is not None:
             share = dsr_share[scenario]
@@ -217,18 +213,18 @@ for scenario in SCENARIOS:
         tr_a = compute_transfer(dt, ni_share, w_ni, w_si, g_NI, g_SI, gNI_adj=gNI_adj, gSI_adj=gSI_adj)
         max_a, n_a = flag(tr_a)
 
-        # --- Sensitivity B: real 2024 solar shape instead of flat baseload ---
+        # Sensitivity B: real 2024 solar shape instead of flat baseload
         sNI, sSI = solar_adjustment_for(scenario, year, dt)
         tr_b = compute_transfer(dt, ni_share, w_ni, w_si, g_NI, g_SI, gNI_adj=sNI, gSI_adj=sSI)
         max_b, n_b = flag(tr_b)
 
-        # --- Sensitivity C: loss-differential bounding, +/-10% ---
+        # Sensitivity C: loss-differential bounding, +/-10%
         tr_c1 = compute_transfer(dt, ni_share, w_ni, w_si, g_NI, g_SI, ni_delta=+0.10, si_delta=0.0)
         tr_c2 = compute_transfer(dt, ni_share, w_ni, w_si, g_NI, g_SI, ni_delta=0.0, si_delta=+0.10)
         max_c1, n_c1 = flag(tr_c1)
         max_c2, n_c2 = flag(tr_c2)
 
-        # --- COMBINED: A + B together ---
+        # COMBINED: A + B together
         tr_comb = compute_transfer(dt, ni_share, w_ni, w_si, g_NI, g_SI,
                                    gNI_adj=gNI_adj + sNI, gSI_adj=gSI_adj + sSI)
         max_comb, n_comb = flag(tr_comb)
@@ -245,9 +241,7 @@ for scenario in SCENARIOS:
 df = pd.DataFrame(rows)
 df.to_csv(OUT_DIR / f"edgs_hvdc_sensitivity_summary{SUFFIX}.csv", index=False)
 
-# ---------------------------------------------------------------------------
 # Summary
-# ---------------------------------------------------------------------------
 log("\n=== HVDC capacity violation sensitivity summary (135 scenario-years) ===")
 for tag, maxcol, ncol in [
     ("BASELINE (Module 7 shipped)", "max_mw_baseline", "n_hours_baseline"),

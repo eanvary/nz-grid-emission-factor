@@ -64,18 +64,14 @@ def log(msg):
     log_lines.append(str(msg))
 
 
-# ---------------------------------------------------------------------------
-# Step 1 — Generation-side, straight from the root pipeline's own output
-# ---------------------------------------------------------------------------
+# Generation-side, straight from the root pipeline's own output
 gen_monthly = pd.read_csv(ROOT_OUT / "monthly_emission_factor_NI_SI.csv")
 gen_annual = pd.read_csv(ROOT_OUT / "annual_emission_factor_NI_SI.csv")
 log(f"Loaded generation-side EF: {len(gen_monthly)} monthly rows, {len(gen_annual)} annual rows "
     f"(years {gen_annual['year'].min()}-{gen_annual['year'].max()})")
 
-# ---------------------------------------------------------------------------
-# Step 2 — HVDC inter-island transfer, straight from the root pipeline's own
+# HVDC inter-island transfer, straight from the root pipeline's own
 # raw-file-based output (GWh -> MWh for consistency with generation units)
-# ---------------------------------------------------------------------------
 hvdc_monthly_raw = pd.read_csv(OUT_DIR / "monthly_hvdc_transfer_NI_SI.csv")
 hvdc_monthly = hvdc_monthly_raw.rename(columns={
     "SI_to_NI_GWh": "SI_to_NI_MWh", "NI_to_SI_GWh": "NI_to_SI_MWh", "net_to_NI_GWh": "net_to_NI_MWh",
@@ -92,9 +88,7 @@ for c in ["SI_to_NI_MWh", "NI_to_SI_MWh", "net_to_NI_MWh"]:
 
 log(f"Loaded HVDC transfer: {len(hvdc_monthly)} monthly rows, {len(hvdc_annual)} annual rows")
 
-# ---------------------------------------------------------------------------
-# Step 3 — Consumption balance
-# ---------------------------------------------------------------------------
+# Consumption balance
 def build_consumption(gen_df, hvdc_df, group_keys):
     ni = gen_df[gen_df.island == "NI"].set_index(group_keys)
     si = gen_df[gen_df.island == "SI"].set_index(group_keys)
@@ -141,10 +135,8 @@ monthly_cons = monthly_cons.sort_values("period").reset_index(drop=True)
 
 annual_cons = build_consumption(gen_annual, hvdc_annual, ["year"]).sort_values("year").reset_index(drop=True)
 
-# ---------------------------------------------------------------------------
-# Step 4 — Quality checks (energy- and emissions-conservation identities,
+# Quality checks (energy- and emissions-conservation identities,
 # which must hold exactly by construction; any discrepancy indicates a bug)
-# ---------------------------------------------------------------------------
 log("\n=== QUALITY CHECKS ===")
 chk = annual_cons.copy()
 chk["gen_total"] = chk["NI_generation_MWh"] + chk["SI_generation_MWh"]
@@ -188,9 +180,7 @@ log("2. Island-level CO2/EF is NOT exactly resolution-independent, BY DESIGN, no
     "cross-resolution CO2 reconciliation would require abandoning that "
     "independently-computed-per-resolution design.")
 
-# ---------------------------------------------------------------------------
 # Outputs
-# ---------------------------------------------------------------------------
 monthly_out = monthly_cons[[
     "year", "month", "period",
     "NI_consumption_MWh", "NI_CO2_consumed_kg", "NI_EF_consumption", "NI_EF_generation",

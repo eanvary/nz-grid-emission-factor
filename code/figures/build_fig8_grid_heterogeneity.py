@@ -31,10 +31,8 @@ OI = {"blue": CATEGORICAL[0], "vermillion": CATEGORICAL[1]}
 
 reg = pd.read_csv(REG, keep_default_na=True)
 
-# =============================================================================
 # Unit harmonisation -> gCO2e/kWh. Conversion factor applied per row, printed
 # for the record.
-# =============================================================================
 LB_MWH_TO_G_KWH = 453.59237 / 1000  # 1 lb = 453.59237 g; 1 MWh = 1000 kWh
 KG_KWH_TO_G_KWH = 1000
 
@@ -71,19 +69,15 @@ for _, r in reg.iterrows():
 # recompute ratio from the harmonised (or original, unit-invariant) values
 reg["ratio_recomputed"] = reg["max_g"] / reg["min_g"]
 
-# =============================================================================
 # Sort: literature rows by descending ratio (NaN ratios -- UK, undefined
 # min=0 -- sort last among literature rows); NZ pinned to the bottom,
 # visually separated.
-# =============================================================================
 is_nz = reg["system"] == "New Zealand"
 lit = reg[~is_nz].sort_values("ratio_max_min", ascending=False, na_position="last")
 nz = reg[is_nz]
 plot_rows = pd.concat([lit, nz], ignore_index=True)
 
-# =============================================================================
 # Draw
-# =============================================================================
 n = len(plot_rows)
 row_h = 1.0
 gap_before_nz = 1.0

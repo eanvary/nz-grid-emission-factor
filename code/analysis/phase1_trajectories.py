@@ -23,13 +23,11 @@ log_lines = []
 def log(m):
     print(m); log_lines.append(str(m))
 
-# ---------------------------------------------------------------------------
 # Annual generation-weighted mean EF, projected series, all scenario x island x
 # ef_basis x year. Weight = hourly generation (island's own for generation-side;
 # for consumption-side, weight by the island's implied consumption volume -- but
 # since exact consumption MWh isn't in the EF table, use generation as the
 # weight for both bases as a working approximation and flag this explicitly).
-# ---------------------------------------------------------------------------
 ef = pd.read_parquet(EDGS / "edgs_hourly_emission_factor.parquet")
 ef["year"] = ef["datetime_hour"].dt.year
 
@@ -56,9 +54,7 @@ annual = (efw.groupby(["scenario", "island", "ef_basis", "year"])
 annual.to_csv(TABLES / "phase1_annual_trajectory_projected.csv", index=False)
 log(f"Wrote phase1_annual_trajectory_projected.csv ({len(annual)} rows)")
 
-# ---------------------------------------------------------------------------
 # Historical annual (generation-weighted), 2021-2025, generation-side, NI/SI
-# ---------------------------------------------------------------------------
 hist_ef = pd.read_csv(HIST / "hourly_emission_factor_NI_SI.csv")
 hist_ef["datetime_hour"] = pd.to_datetime(hist_ef["date"]) + pd.to_timedelta(hist_ef["hour"], unit="h")
 hist_ef["ef_kg_per_kwh"] = hist_ef["EF_kg_per_MWh"] / 1000.0
@@ -72,10 +68,8 @@ hist_annual.to_csv(TABLES / "phase1_annual_trajectory_historical.csv", index=Fal
 log(f"\nWrote phase1_annual_trajectory_historical.csv ({len(hist_annual)} rows)")
 log(hist_annual.pivot(index="year", columns="island", values="gen_weighted_mean_ef").to_string())
 
-# ---------------------------------------------------------------------------
 # Rate of decline: annualised % change, generation-side, by scenario x island,
 # 2024-2050 (projected series only -- comparable basis across all 5 scenarios).
-# ---------------------------------------------------------------------------
 log("\n=== Rate of decline (CAGR), generation-side EF, 2024->2050, projected ===")
 gen_side = annual[annual["ef_basis"] == "generation"].copy()
 rates = []
@@ -90,10 +84,8 @@ rates_df = pd.DataFrame(rates).sort_values(["island", "scenario"])
 log(rates_df.to_string(index=False))
 rates_df.to_csv(TABLES / "phase1_cagr_by_scenario_island.csv", index=False)
 
-# ---------------------------------------------------------------------------
 # Inflection points: rolling 3-yr slope sign changes, generation-side, National
 # (the single blended index most relevant for a "headline" trajectory read).
-# ---------------------------------------------------------------------------
 log("\n=== Inflection points (rolling 3-yr slope sign change), National generation-side EF ===")
 nat = annual[(annual["island"] == "National") & (annual["ef_basis"] == "consumption")].copy()
 # National ships consumption-basis only (per Phase 0 schema note) -- use that as
@@ -109,12 +101,10 @@ for scen in sorted(nat["scenario"].unique()):
     infl_years = g["year"].iloc[1:][changes.values].tolist()
     log(f"  {scen}: inflection (slope sign change) years = {infl_years}")
 
-# ---------------------------------------------------------------------------
 # Data-driven percentile thresholds: pooled distribution of all projected
 # generation-side annual EF values (5 scenarios x 2 islands x 27 years = 270
 # values) defines percentile bands; report, for each scenario x island, the
 # first year the trajectory drops below the pooled 25th/10th/5th percentile.
-# ---------------------------------------------------------------------------
 log("\n=== Data-driven percentile thresholds (pooled across all scenario x island x year, generation-side) ===")
 pooled = gen_side["gen_weighted_mean_ef"].dropna()
 pcts = {p: pooled.quantile(p / 100) for p in [75, 50, 25, 10, 5]}
@@ -131,11 +121,9 @@ crossing_df = pd.DataFrame(crossing_rows).sort_values(["island", "scenario"])
 log(crossing_df.to_string(index=False))
 crossing_df.to_csv(TABLES / "phase1_percentile_crossing_years.csv", index=False)
 
-# ---------------------------------------------------------------------------
 # Scenario divergence: cross-scenario spread by year (generation-side, NI and
 # SI separately), and the year spread becomes "material" (data-driven: exceeds
 # its own 2024-2030 baseline spread by >2x, a simple, stated, reproducible rule).
-# ---------------------------------------------------------------------------
 log("\n=== Scenario divergence over time (generation-side), spread = max-min across 5 scenarios ===")
 for isl in ["NI", "SI"]:
     sub = gen_side[gen_side["island"] == isl]

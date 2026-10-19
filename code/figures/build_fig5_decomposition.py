@@ -82,11 +82,9 @@ def load_case(start_year, period, label):
 headline = load_case(2025, 25, "headline (2025/25yr)")
 compare = load_case(2027, 10, "comparison (2027/10yr)")
 
-# =============================================================================
 # Gate: sign and ranking must agree before drawing. This is exactly the
 # check Flag 1 asked for -- a genuine mismatch here would be a finding, not
 # a presentation problem, and the script must stop rather than draw over it.
-# =============================================================================
 h_total, c_total = headline["mid"]["Total error\n(E$_d$ − E$_a$)"], compare["mid"]["Total error\n(E$_d$ − E$_a$)"]
 sign_agrees = (h_total < 0) == (c_total < 0)
 
@@ -112,10 +110,8 @@ if not (sign_agrees and ranking_agrees):
 
 print("\nBoth starting points give the same sign and the same component ranking -- proceeding to draw.")
 
-# =============================================================================
 # Draw -- paired bars per category: headline (2025/25yr, full weight) above,
 # comparison (2027/10yr, subordinate: reduced alpha + hatch) below.
-# =============================================================================
 fig, ax = plt.subplots(figsize=(7.6, 5.2))
 n_cat = len(CATS)
 y_group = np.arange(n_cat)[::-1] * 1.3  # extra vertical room per category for the paired bars
@@ -168,7 +164,7 @@ exceeds = abs(spatial_mid) > abs(total_mid)
 title = "Error components of the static national treatment, North Island daytime office, Reference trajectory"
 ax.set_title(title, fontsize=10.5, loc="left", pad=32)
 
-# --- caption addendum, composed at run time from both rows' own values ---
+# Caption addendum, composed at run time from both rows' own values
 addendum = (f"Headline: {int(headline['row']['start_year'])} start, "
             f"{int(headline['row']['study_period_yrs_requested'])}yr "
             f"({h_total:+.0f} kgCO$_2$e/m$^2$, {headline['row']['total_error_pct_of_Ea']:+.0f}% of E$_a$). "

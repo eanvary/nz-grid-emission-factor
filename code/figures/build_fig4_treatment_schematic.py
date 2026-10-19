@@ -43,9 +43,7 @@ set_journal_style()
 BASELINE_C = BASE["steel_blue"]
 TEMPORAL_C, SPATIAL_C, TRAJECTORY_C = CATEGORICAL[0], CATEGORICAL[1], CATEGORICAL[2]
 
-# =============================================================================
 # Gate: confirm the headline row exists with fit_status == 'full'
-# =============================================================================
 decomp = pd.read_csv(TABLES / "phase3_decomposition_full.csv")
 hl = decomp[(decomp["load_shape"] == "daytime_office") & (decomp["scenario"] == "Reference") &
             (decomp["start_year"] == 2025) & (decomp["study_period_yrs_requested"] == 25)]
@@ -58,9 +56,7 @@ END_YEAR = START_YEAR + PERIOD_YRS - 1
 print(f"Headline row confirmed: start={START_YEAR}, period={PERIOD_YRS}yr, "
       f"fit_status={hl['fit_status']}, order_check_total_matches={hl['order_check_total_matches']}")
 
-# =============================================================================
 # Panel data -- all real, all read from tables/ or the hourly EDGS parquet
-# =============================================================================
 # (a) one representative week of hourly NI generation-basis EF, start year --
 # the first full Mon-Sun week of the start year, so the choice is a fixed,
 # reproducible rule rather than a cherry-picked window.
@@ -97,9 +93,7 @@ assert abs(d_value - d_value_from_series) < 1e-6, "static base value disagrees w
 y_max = max(a_vals.max(), b_series["annual_island_ef"].max(), c_series["annual_national_ef"].max(), d_value) * 1.15
 y_min = 0
 
-# =============================================================================
 # Draw
-# =============================================================================
 fig, axes = plt.subplots(1, 4, figsize=(10.2, 4.8), sharey=True)
 
 def tag(ax, text, color):
@@ -150,7 +144,7 @@ for ax in axes:
     ax.tick_params(axis="y", labelsize=7.2)
     ax.grid(axis="y", color="#EEEEEE", lw=0.7, zorder=0)
 
-# --- transition arrows above the panels, colour-matched to the equation ---
+# Transition arrows above the panels, colour-matched to the equation
 fig.canvas.draw()
 renderer = fig.canvas.get_renderer()
 
@@ -173,7 +167,7 @@ for i, (label, color) in enumerate(labels):
     fig.text((x1 + x2) / 2, arrow_y + 0.018, label, ha="center", va="bottom",
               fontsize=8.6, fontweight="bold", color=color)
 
-# --- telescoping identity, colour-matched terms.
+# Telescoping identity, colour-matched terms.
 # matplotlib's mathtext has no \underbrace/\color, so the equation is built
 # as a sequence of separately-coloured text runs placed left to right, each
 # positioned from the rendered width of the run before it (measured via the
@@ -222,7 +216,7 @@ legend_elems = [
 fig.legend(handles=legend_elems, loc="upper left", bbox_to_anchor=(1.0, 0.98),
            frameon=False, fontsize=8.0, borderaxespad=0)
 
-# --- Flag 1, item 2: marginal note naming the two start years used
+# Flag 1, item 2: marginal note naming the two start years used
 # elsewhere in the paper, in the same rounded-box "tag" style as the
 # per-panel annotations above, so a reader moving between this Methods
 # figure and the Results figures (which now show both 2025 and 2027) is

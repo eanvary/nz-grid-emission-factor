@@ -1,5 +1,5 @@
 """
-Follow-up brief R2 — wire Brief R's efficiency lever into the HOURLY dispatch, not just the
+Follow-up brief R2: wire Brief R's efficiency lever into the HOURLY dispatch, not just the
 annual national total. Standalone: reads only existing shipped parquets + Brief R's own CSV
 output, writes only new CSVs. Does not modify build_edgs_dispatch.py, edgs_common.py,
 build_edgs_efficiency_sensitivity.py, or any shipped output parquet.
@@ -47,15 +47,11 @@ from edgs_common import OUT_DIR, SCENARIOS, THERMAL_COMMODITIES, log_factory
 
 log, lines = log_factory()
 
-# ---------------------------------------------------------------------------
 # Load: Brief R's annual delta (thermal fuels only, Wood excluded - matches Brief R exactly)
-# ---------------------------------------------------------------------------
 nat = pd.read_csv(OUT_DIR / "edgs_efficiency_sensitivity_summary.csv")
 delta_kt_map = nat.set_index(["scenario", "year"])["co2_delta_kt"].to_dict()  # kt, <=0
 
-# ---------------------------------------------------------------------------
 # Load shipped hourly generation (NI only - all thermal capacity is NI, per Module 2/5)
-# ---------------------------------------------------------------------------
 gen = pd.read_parquet(OUT_DIR / "edgs_hourly_generation.parquet",
                        columns=["scenario", "island", "datetime_hour", "fuel_commodity",
                                 "generation_mwh"])
@@ -82,9 +78,7 @@ ni_thermal["thermal_shape"] = np.where(ni_thermal["annual_thermal_mwh"] > 0,
                                         0.0)
 del gen_ni
 
-# ---------------------------------------------------------------------------
 # Load shipped hourly EF (NI, generation basis) -> reconstruct baseline CO2(t) EXACTLY
-# ---------------------------------------------------------------------------
 ef = pd.read_parquet(OUT_DIR / "edgs_hourly_emission_factor.parquet",
                       columns=["scenario", "island", "datetime_hour", "ef_basis",
                                "emission_factor_kg_co2e_per_kwh"])
@@ -112,9 +106,7 @@ if len(sanity):
     resid = (sanity["new_ef_kg_per_kwh"] - sanity["emission_factor_kg_co2e_per_kwh"]).abs().max()
     log(f"Sanity check (delta_kt==0 rows, should be ~0): max |new_ef - shipped_ef| = {resid:.2e}")
 
-# ---------------------------------------------------------------------------
 # Summary: mean / p99 / max, baseline vs efficiency-adjusted, per scenario-year
-# ---------------------------------------------------------------------------
 rows = []
 for (scenario, year), g in df.groupby(["scenario", "year"]):
     base = g["emission_factor_kg_co2e_per_kwh"]

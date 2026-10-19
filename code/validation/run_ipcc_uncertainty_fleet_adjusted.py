@@ -117,10 +117,8 @@ print(f"NI annual CI% -- fleet-adjusted: min={ni_annual_fleet.min():.2f}% max={n
 print(f"\nWrote ipcc_uncertainty_by_island_month_fleet_adjusted.csv and "
       f"ipcc_uncertainty_by_island_year_fleet_adjusted.csv")
 
-# ---------------------------------------------------------------------------
 # Hourly (vectorised, mirroring run_ipcc_uncertainty_hourly.py's approach --
 # this is the headline resolution now that Finding 4 is closed).
-# ---------------------------------------------------------------------------
 hourly_path = HERE / "hourly_fuel_mix_NI_SI.csv"
 if hourly_path.exists():
     print("\nRunning hourly propagation, both variants (vectorised)...")

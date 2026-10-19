@@ -27,7 +27,6 @@ from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import sys
 
@@ -49,10 +48,8 @@ FUEL_LABELS = {
     "CLG": "Coal", "DSL": "Diesel", "SOL": "Solar", "WOOD": "Wood", "ELE": "Other/elec",
 }
 
-# ---------------------------------------------------------------------------
-# 1 & 2 — Monthly / daily total generation, NI vs SI
-# (re-uses the already-validated outputs of the EF pipelines — no recompute)
-# ---------------------------------------------------------------------------
+# 1 & 2: Monthly / daily total generation, NI vs SI
+# (re-uses the already-validated outputs of the EF pipelines: no recompute)
 monthly = pd.read_csv(OUT_DIR / "monthly_emission_factor_NI_SI.csv", parse_dates=["period"])
 daily = pd.read_csv(OUT_DIR / "daily_emission_factor_NI_SI.csv", parse_dates=["date"])
 
@@ -84,14 +81,12 @@ fig2.tight_layout()
 fig2.savefig(OUT_DIR / "daily_generation_NI_SI.png", dpi=150)
 print("saved daily_generation_NI_SI.png")
 
-# ---------------------------------------------------------------------------
 # Rebuild per-(POC, fuel) totals over the full period, joined to plant identity, for the
 # per-plant figures. Since 2026-09-29 generation, fills and factors come from the shared
 # attribution module (fuel_attribution.py): generator-level factors, Huntly coal/gas split,
 # flagged fills (Huntly Sep 2020, norskeskog 2015-2019, Matahina Oct 2021-Dec 2025), so the
 # totals equal the EF pipeline's. Plant names come from the module's register copy; this
 # script no longer reads the register itself.
-# ---------------------------------------------------------------------------
 from fuel_attribution import FuelAttribution, poc_island_map  # noqa: E402
 
 fa = FuelAttribution()
@@ -147,9 +142,7 @@ plant_agg.to_csv(OUT_DIR / "plant_level_generation_emissions_2015_2025.csv", ind
 print(f"saved plant_level_generation_emissions_2015_2025.csv ({len(plant_agg)} plant x fuel rows, "
       f"{plant_agg['total_gen_MWh'].sum()/1e6:.2f} TWh total)")
 
-# ---------------------------------------------------------------------------
-# 3 — Fleet-wide bubble chart: generation vs intensity vs total emissions
-# ---------------------------------------------------------------------------
+# 3: Fleet-wide bubble chart: generation vs intensity vs total emissions
 fig3, ax3 = plt.subplots(figsize=(10, 6.5))
 size_scale = 4000 / plant_agg["total_CO2_kt"].max()
 fuel_order = ["HYD", "WIN", "SOL", "GEO", "GAS", "CLG", "DSL", "WOOD", "ELE"]
@@ -190,9 +183,7 @@ fig3.tight_layout()
 fig3.savefig(OUT_DIR / "plant_landscape_generation_vs_intensity.png", dpi=150)
 print("saved plant_landscape_generation_vs_intensity.png")
 
-# ---------------------------------------------------------------------------
-# 4 — Top-15 plants by generation: bars (generation) + markers (EF)
-# ---------------------------------------------------------------------------
+# 4: Top-15 plants by generation: bars (generation) + markers (EF)
 top15 = (
     plant_agg.groupby("plant_name")
     .agg(total_gen_GWh=("total_gen_GWh", "sum"), total_CO2_kt=("total_CO2_kt", "sum"))

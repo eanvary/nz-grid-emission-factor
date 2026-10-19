@@ -1,5 +1,5 @@
 """
-Follow-up brief T — replace the FLAT solar-shape fallback with the real observed 2024 NI solar
+Follow-up brief T: replace the FLAT solar-shape fallback with the real observed 2024 NI solar
 diurnal/seasonal shape, as a STANDALONE SENSITIVITY TEST. Standalone: reads only existing
 shipped parquets, writes only new CSVs. Does not modify build_edgs_dispatch.py, edgs_common.py,
 or any shipped output parquet.
@@ -77,9 +77,7 @@ log, lines = log_factory()
 CENTRAL_TEMPLATE = 2021
 COMMODITY_TO_STD = {com: std for com, (std, _) in COMMODITY.items()}
 
-# ---------------------------------------------------------------------------
 # Load prerequisites (identical sources to build_edgs_dispatch.py)
-# ---------------------------------------------------------------------------
 targets = pd.read_parquet(OUT_DIR / "edgs_annual_targets.parquet")
 register = pd.read_parquet(OUT_DIR / "edgs_plant_register.parquet")
 merit = pd.read_parquet(OUT_DIR / "edgs_merit_order.parquet")
@@ -126,9 +124,7 @@ def wood_nonco2_kg(scenario, year):
     return pj * 1e6 * WOOD_NONBIOGENIC_KG_PER_GJ if pj else 0.0
 
 
-# ---------------------------------------------------------------------------
 # Helpers (byte-for-byte reproductions of build_edgs_dispatch.py's own helpers)
-# ---------------------------------------------------------------------------
 def year_calendar(year):
     idx = pd.date_range(f"{year}-01-01", f"{year}-12-31 23:00", freq="h")
     return pd.DataFrame({"datetime_hour": idx, "month": idx.month, "day": idx.day, "hour": idx.hour})
@@ -159,21 +155,17 @@ def island_capacity_share(scenario):
     return cap.set_index(["year", "commodity", "island"])["share"].to_dict()
 
 
-# ---------------------------------------------------------------------------
 # Core dispatch reconstruction, run TWICE per scenario-year: baseline (flat solar,
 # reproducing the shipped pipeline exactly) and adjusted (real 2024 NI solar shape).
-# ---------------------------------------------------------------------------
 def run(scenario, year, use_real_solar_shape):
     cal = year_calendar(year)
     H = len(cal)
     cap_share = island_capacity_share(scenario)
-    reg_s = register[register["scenario"] == scenario]
     merit_s = merit[(merit["scenario"] == scenario) & (merit["year"] == year)].sort_values("merit_rank")
 
     t = targets[(targets["scenario"] == scenario) & (targets["year"] == year)]
     annual_gen = t[t["metric"] == "net_generation"].set_index("commodity")["value"]
     demand_twh = float(t[t["metric"] == "annual_demand"]["value"].iloc[0])
-    peak_gw = float(t[t["metric"] == "annual_peak"]["value"].iloc[0])
     ni_share = float(ni_share_map.get((scenario, year), 0.61))
 
     island_ren_total = {"NI": np.zeros(H), "SI": np.zeros(H)}
@@ -256,9 +248,7 @@ def run(scenario, year, use_real_solar_shape):
     return cal["datetime_hour"].to_numpy(), ef_ni, ni_gen, ni_co2
 
 
-# ---------------------------------------------------------------------------
-# Step 0: sanity check the reconstruction (baseline mode) against the shipped parquet
-# ---------------------------------------------------------------------------
+# Sanity check the reconstruction (baseline mode) against the shipped parquet
 ship_ef = pd.read_parquet(OUT_DIR / "edgs_hourly_emission_factor.parquet",
                            columns=["scenario", "island", "datetime_hour", "ef_basis",
                                     "emission_factor_kg_co2e_per_kwh"])
@@ -274,9 +264,7 @@ if resid > 1e-6:
     log("WARNING: reconstruction does not match shipped baseline - results below are unreliable")
 del ship_ef, ship_ni
 
-# ---------------------------------------------------------------------------
 # Run baseline vs adjusted for all 135 scenario-years
-# ---------------------------------------------------------------------------
 rows = []
 for scenario in SCENARIOS:
     for year in YEARS:

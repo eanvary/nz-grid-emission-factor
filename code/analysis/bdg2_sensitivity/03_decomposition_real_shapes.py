@@ -37,9 +37,7 @@ STUDY_PERIODS = [10, 25, 30, 50]
 START_YEARS = [2025, 2027, 2030]
 HEADLINE_START = 2027
 
-# ---------------------------------------------------------------------------
 # Load NZ hourly EF (read-only, shipped file -- never modified)
-# ---------------------------------------------------------------------------
 ef = pd.read_parquet(EDGS / "edgs_hourly_emission_factor.parquet")
 ef = ef[(ef["ef_basis"] == "generation") & (ef["island"] == BUILDING_ISLAND)].copy()
 ef["year"] = ef["datetime_hour"].dt.year
@@ -49,17 +47,13 @@ ef["is_weekend"] = ef["dow"] >= 5
 ef["hour"] = ef["datetime_hour"].dt.hour
 log(f"Loaded {len(ef)} NI generation-side hourly EF rows (read-only from shipped output)")
 
-# ---------------------------------------------------------------------------
 # Load real BDG2 shapes (already hemisphere-shifted to nz_month in step 02)
-# ---------------------------------------------------------------------------
 shapes = pd.read_csv(TABLES / "real_building_shapes_hemisphere_shifted.csv")
 SHAPE_LABELS = shapes["building_id"].unique().tolist()
 log(f"Real shapes: {SHAPE_LABELS}")
 
-# ---------------------------------------------------------------------------
 # Precompute load-weighted annual EF for every (shape, scenario, year) --
 # treatment (a), the only one that needs real hourly detail.
-# ---------------------------------------------------------------------------
 cache = {}
 for shape_label in SHAPE_LABELS:
     shp = shapes[shapes["building_id"] == shape_label][["nz_month", "is_weekend", "hour", "norm_weight"]].rename(
@@ -76,18 +70,14 @@ for shape_label in SHAPE_LABELS:
         cache[(shape_label, scenario, year)] = val
     log(f"  cached shape={shape_label}: {len(res)} (scenario,year) entries")
 
-# ---------------------------------------------------------------------------
 # Load treatments (b)/(c)/(d) source data -- READ-ONLY reuse of the main
 # assessment's shape-independent annual island/national EF tables.
-# ---------------------------------------------------------------------------
 annual_island = pd.read_csv(MAIN_TABLES / "phase3_annual_island_ef.csv")
 annual_island_ni = annual_island[annual_island["island"] == BUILDING_ISLAND]
 annual_national = pd.read_csv(MAIN_TABLES / "phase3_annual_national_ef.csv")
 log(f"\nRead (read-only) {MAIN_TABLES / 'phase3_annual_island_ef.csv'} and phase3_annual_national_ef.csv")
 
-# ---------------------------------------------------------------------------
 # Feasibility (same 2050-horizon truncation rule as the main assessment)
-# ---------------------------------------------------------------------------
 FEASIBLE = {}
 for start_year in START_YEARS:
     for L in STUDY_PERIODS:

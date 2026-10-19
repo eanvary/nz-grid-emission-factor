@@ -1,5 +1,5 @@
 """
-Follow-up brief R — thermal PLANT EFFICIENCY improvement, as a STANDALONE SENSITIVITY TEST,
+Follow-up brief R: thermal PLANT EFFICIENCY improvement, as a STANDALONE SENSITIVITY TEST,
 not a pipeline change. This script does NOT modify build_edgs_dispatch.py, edgs_common.py,
 build_edgs_plant_register.py, or any shipped output parquet. It reads only the pipeline's
 existing saved intermediates and recomputes combustion CO2 in parallel under a counterfactual
@@ -85,19 +85,15 @@ log(f"Derived compound annual gas heat-rate improvement: {GAS_ANNUAL_IMPROVEMENT
     f"(applied {BASE_YEAR}->2050, cumulative {1-(1-GAS_ANNUAL_IMPROVEMENT)**(2050-BASE_YEAR):.1%} "
     f"by 2050)")
 
-# ---------------------------------------------------------------------------
 # Load shipped baseline (reconciled thermal fuel/CO2, per scenario-year-fuel)
-# ---------------------------------------------------------------------------
 recon = pd.read_parquet(OUT_DIR / "edgs_thermal_intensity.parquet")
 # Combustion-only rows (exclude the Wood non-CO2 row: efficiency has no meaning for a
 # fixed non-biogenic CH4+N2O factor untouched by this sensitivity)
 base = recon[recon["flag"] == "MBIE_fueluse_x_MfE"].copy()
 MFE_EF = {k: v[0] for k, v in MFE_FUEL_EF_KG_PER_GJ.items()}
 
-# ---------------------------------------------------------------------------
 # Apply cumulative efficiency factor to fuel input; recompute CO2 from the SAME MfE
 # constant the shipped pipeline uses. Generation (mbie_gwh) is untouched throughout.
-# ---------------------------------------------------------------------------
 def efficiency_factor(fuel, year):
     rate = EFFICIENCY_RATE_BY_FUEL.get(fuel, 0.0)
     yrs = max(0, year - BASE_YEAR)
@@ -118,11 +114,9 @@ detail = base[detail_cols].sort_values(["scenario", "year", "fuel"])
 detail.to_csv(OUT_DIR / "edgs_efficiency_sensitivity.csv", index=False)
 log(f"\nWrote edgs_efficiency_sensitivity.csv ({len(detail):,} rows)")
 
-# ---------------------------------------------------------------------------
 # National summary: combustion CO2 delta per scenario-year (Mt, %) + implied
 # generation-side EF delta (using the SAME MBIE net-generation denominator the
 # shipped pipeline's generation EF uses, i.e. total generation is unaffected).
-# ---------------------------------------------------------------------------
 targets = pd.read_parquet(OUT_DIR / "edgs_annual_targets.parquet")
 netgen = (targets[targets["metric"] == "net_generation"]
           .groupby(["scenario", "year"])["value"].sum().rename("netgen_gwh"))  # GWh, all commodities
@@ -142,9 +136,7 @@ nat = nat.sort_values(["scenario", "year"])
 nat.to_csv(OUT_DIR / "edgs_efficiency_sensitivity_summary.csv", index=False)
 log(f"Wrote edgs_efficiency_sensitivity_summary.csv ({len(nat):,} scenario-year rows)")
 
-# ---------------------------------------------------------------------------
 # Report
-# ---------------------------------------------------------------------------
 log("\nNational combustion CO2 delta vs shipped baseline, by scenario, selected years:")
 for scenario in SCENARIOS:
     s = nat[nat["scenario"] == scenario].set_index("year")

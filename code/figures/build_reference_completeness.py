@@ -6,7 +6,7 @@ analysis/REFERENCE_COMPLETENESS_STATUS.csv (ref_key, status, missing_fields).
 
 This is a human checklist, not a fabrication pass: every "missing_fields"
 value below is either (a) the same gap the manuscript integration report
-itself already flagged with an inline **[INCOMPLETE — VERIFY]** or
+itself already flagged with an inline **[INCOMPLETE: VERIFY]** or
 **[VERIFY ...]** tag, or (b) a genuine mismatch found by reading the
 corresponding *_PROVENANCE.md file next to the reference-list entry. No
 missing DOI, author, or volume number is invented anywhere in this file.

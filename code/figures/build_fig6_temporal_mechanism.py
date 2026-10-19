@@ -36,9 +36,7 @@ SCENARIO_ORDER = ["Constraint", "Environmental", "Growth", "Innovation", "Refere
 SCEN_COLORS = {s: CATEGORICAL[i] for i, s in enumerate(SCENARIO_ORDER)}
 SCEN_STYLES = {s: LINE_STYLES[i] for i, s in enumerate(SCENARIO_ORDER)}
 
-# =============================================================================
 # Step 1 item 1 -- verify the caption bug directly, print the four values
-# =============================================================================
 vd = pd.read_csv(TABLES / "phase1_variance_decomp_by_island.csv")
 vd_ni_ref = vd[(vd["scenario"] == "Reference") & (vd["island"] == "NI")].sort_values("year")
 endpoints = vd_ni_ref[vd_ni_ref["year"].isin([2024, 2050])]
@@ -53,19 +51,15 @@ print(f"eta2_season: {season_2024*100:.1f}% (2024) -> {season_2050*100:.1f}% (20
 print("The '73%->14%' claim mixes eta2_month(2024) with eta2_season(2050) -- NOT reproduced here.")
 print("This figure plots eta2_season and eta2_hour consistently at both endpoints.\n")
 
-# =============================================================================
 # Main panel data
-# =============================================================================
 main_years = vd_ni_ref["year"]
 main_season = vd_ni_ref["eta2_season"] * 100
 main_hour = vd_ni_ref["eta2_hour"] * 100
 
-# =============================================================================
 # Inset panel data -- diurnal persistence, all 5 trajectories, NI only.
 # SI is excluded: its corr_vs_2024 is undefined (NaN) throughout, because
 # SI's near-zero generation-side EF makes the correlation degenerate --
 # confirmed directly from the table, not assumed.
-# =============================================================================
 dsp = pd.read_csv(TABLES / "phase1_diurnal_shape_persistence.csv")
 dsp_ni = dsp[dsp["island"] == "NI"].copy()
 si_all_nan = dsp[dsp["island"] == "SI"]["corr_vs_2024"].isna().all()
@@ -73,12 +67,10 @@ print(f"SI corr_vs_2024 all-NaN (confirms NI-only restriction): {si_all_nan}")
 min_corr = dsp_ni["corr_vs_2024"].min()
 print(f"Minimum diurnal correlation across all NI scenario-years: {min_corr:.4f}")
 
-# =============================================================================
 # Peak-hour check, per Step 3 -- NI only (SI's peak hour is a different,
 # structurally distinct value -- 0 vs 9 -- because SI's EF profile is
 # near-flat/noise-dominated; annotating a "peak hour" for SI would not be
 # meaningful, and the main panel above is itself NI-scoped).
-# =============================================================================
 dp = pd.read_csv(TABLES / "phase1_diurnal_profiles.csv")
 dp_ni = dp[dp["island"] == "NI"]
 peak = dp_ni.loc[dp_ni.groupby(["scenario", "year"])["emission_factor_kg_co2e_per_kwh"].idxmax()]
@@ -87,9 +79,7 @@ peak_identical = len(distinct_peaks) == 1
 print(f"Distinct NI peak hours across all scenario-years: {distinct_peaks} "
       f"(identical: {peak_identical})")
 
-# =============================================================================
 # Draw
-# =============================================================================
 fig, ax = plt.subplots(figsize=(6.6, 4.2))
 ax.plot(main_years, main_season, color=SEASONAL_C, lw=2.2, linestyle=LINE_STYLES[1]["linestyle"])
 ax.plot(main_years, main_hour, color=DIURNAL_C, lw=2.2, linestyle=LINE_STYLES[0]["linestyle"])
@@ -103,7 +93,7 @@ ax.set_xlim(2023, 2054)
 ax.yaxis.set_major_formatter(mticker.PercentFormatter())
 ax.set_title("Marginal variance shares of the hourly emission factor, North Island, Reference trajectory, 2024–2050", fontsize=10.5, loc="left")
 
-# --- inset: the null result. Placed in the upper-right corner of the main
+# Inset: the null result. Placed in the upper-right corner of the main
 # panel, which is blank in the data (seasonal has already dropped below 25%
 # by ~2032 and diurnal never rises above ~8%), so the inset cannot obscure
 # either main-panel series or its direct labels.

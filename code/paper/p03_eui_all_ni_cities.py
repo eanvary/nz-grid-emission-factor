@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Energy use intensity cohort for Paper 3, with every North Island city in the NABERSNZ data (16 October 2026).
 Same filters as analysis_paper/scripts/phase3_eui_derivation_v2.py (pre-2004 construction, Whole Building rating,
 gas share <= 5%, rated area and electricity use > 0), but the island is assigned from a complete city list: the

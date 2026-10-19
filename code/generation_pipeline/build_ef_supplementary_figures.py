@@ -33,9 +33,7 @@ fuel_monthly = pd.read_csv(OUT_DIR / "monthly_fuel_mix_NI_SI.csv")
 
 yr_min, yr_max = int(annual["year"].min()), int(annual["year"].max())
 
-# ---------------------------------------------------------------------------
-# 1 — Annual generation-weighted EF bar chart, NI vs SI
-# ---------------------------------------------------------------------------
+# 1: Annual generation-weighted EF bar chart, NI vs SI
 years = sorted(annual["year"].unique())
 ni_ef = annual[annual.island == "NI"].set_index("year")["EF_kg_per_MWh"].reindex(years)
 si_ef = annual[annual.island == "SI"].set_index("year")["EF_kg_per_MWh"].reindex(years)
@@ -60,9 +58,7 @@ fig.tight_layout()
 fig.savefig(OUT_DIR / "annual_EF_bar_NI_SI.png", dpi=150)
 print("saved annual_EF_bar_NI_SI.png")
 
-# ---------------------------------------------------------------------------
-# 2 — Daily EF, NI vs SI, with 30-day rolling average
-# ---------------------------------------------------------------------------
+# 2: Daily EF, NI vs SI, with 30-day rolling average
 fig2, ax2 = plt.subplots(figsize=(16, 5))
 for isl, colour in [("NI", NAVY), ("SI", TEAL)]:
     d = daily[daily.island == isl].sort_values("date")
@@ -77,9 +73,7 @@ fig2.tight_layout()
 fig2.savefig(OUT_DIR / "daily_EF_variation_NI_SI.png", dpi=150)
 print("saved daily_EF_variation_NI_SI.png")
 
-# ---------------------------------------------------------------------------
-# 3 — Average diurnal EF profile, NI vs SI (mean +/- 1 std band by hour)
-# ---------------------------------------------------------------------------
+# 3: Average diurnal EF profile, NI vs SI (mean +/- 1 std band by hour)
 fig3, ax3 = plt.subplots(figsize=(11, 6.5))
 for isl, colour in [("NI", NAVY), ("SI", TEAL)]:
     h = hourly[hourly.island == isl]
@@ -98,9 +92,7 @@ fig3.tight_layout()
 fig3.savefig(OUT_DIR / "hourly_EF_diurnal_profile_NI_SI.png", dpi=150)
 print("saved hourly_EF_diurnal_profile_NI_SI.png")
 
-# ---------------------------------------------------------------------------
-# 4 — Generation mix pie charts, NI vs SI, most recent complete year
-# ---------------------------------------------------------------------------
+# 4: Generation mix pie charts, NI vs SI, most recent complete year
 target_year = fuel_monthly["year"].max()
 fy = (
     fuel_monthly[fuel_monthly["year"] == target_year]

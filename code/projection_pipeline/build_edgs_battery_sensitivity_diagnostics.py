@@ -1,5 +1,5 @@
 """
-Follow-up brief F — confirm Brief E's HVDC "worsening" (101/135 -> 104/135) against the
+Follow-up brief F: confirm Brief E's HVDC "worsening" (101/135 -> 104/135) against the
 reconstruction's own known ~20 MW / 51 MW calibration noise floor, using a CONTINUOUS
 violation-magnitude metric instead of a hard 1,200 MW threshold flag, and test Brief E's
 proposed mechanism (demand-peak vs residual-peak divergence) directly rather than narrating
@@ -35,9 +35,7 @@ TEMPLATE_YEAR = int(os.environ.get("EDGS_TEMPLATE_YEAR", "2021"))
 SUFFIX = "" if TEMPLATE_YEAR == 2021 else f"_tmpl{TEMPLATE_YEAR}"
 log(f"Template year: {TEMPLATE_YEAR} (suffix '{SUFFIX}')")
 
-# ---------------------------------------------------------------------------
 # Same report-battery function as build_edgs_battery_sensitivity.py (not recalibrated)
-# ---------------------------------------------------------------------------
 def report_battery_mw(scenario, year):
     if scenario in ("Innovation", "Environmental"):
         if year <= 2029:
@@ -152,7 +150,7 @@ for scenario in SCENARIOS:
 
         residual_pre = np.clip(nat_demand - nat_ren, 0.0, None)
 
-        # ---- Step 2.1: demand-peak-hour vs residual-peak-hour divergence ----
+        # 1: demand-peak-hour vs residual-peak-hour divergence
         # "demand" here = the generation-level load series (nat_demand), the actual quantity
         # driving the transfer target in this pipeline; "residual" = demand minus renewables,
         # the quantity thermal/DSR actually respond to. Divergence measured in hours (0-23,
@@ -191,7 +189,7 @@ for scenario in SCENARIOS:
         tr_ship = transfer_series(res_ship, dsr_series_ship)
         tr_rep = transfer_series(res_rep, dsr_series_rep)
 
-        # ---- Step 1: continuous violation magnitude (MW-hours over 1200 MW, integrated) ----
+        # Continuous violation magnitude (MW-hours over 1200 MW, integrated)
         mag_ship = float(np.clip(np.abs(tr_ship) - HVDC_CAPACITY_MW, 0, None).sum())
         mag_rep = float(np.clip(np.abs(tr_rep) - HVDC_CAPACITY_MW, 0, None).sum())
 
@@ -210,10 +208,8 @@ for scenario in SCENARIOS:
 df = pd.DataFrame(rows)
 df.to_csv(OUT_DIR / f"edgs_battery_hvdc_continuous_magnitude{SUFFIX}.csv", index=False)
 
-# ---------------------------------------------------------------------------
-# Step 1: robustness verdict vs the known ~20/51 MW single-hour calibration discrepancy,
+# Robustness verdict vs the known ~20/51 MW single-hour calibration discrepancy,
 # rescaled to the same annual-integrated units for a fair comparison.
-# ---------------------------------------------------------------------------
 log("\n=== Step 1: continuous violation magnitude (MW-hours/yr over 1200 MW) ===")
 tot_ship = df.continuous_mag_MWh_shipped.sum()
 tot_rep = df.continuous_mag_MWh_report.sum()
@@ -270,9 +266,7 @@ log(f"  Actual total change: {tot_change:+,.0f} MWh vs rescaled noise-floor rang
 verdict_1 = "ROBUST" if (abs(tot_change) > noise_floor_scaled_max * 135 and n_pos > 2 * n_neg) else "NOT CLEARLY DISTINGUISHABLE FROM NOISE"
 log(f"\n  VERDICT (Step 1): {verdict_1}")
 
-# ---------------------------------------------------------------------------
-# Step 2: mechanism test - correlate hour_divergence against continuous_mag_change
-# ---------------------------------------------------------------------------
+# Mechanism test - correlate hour_divergence against continuous_mag_change
 log("\n=== Step 2: mechanism test (demand-peak vs residual-peak divergence) ===")
 log(f"  Hour divergence distribution: {df.hour_divergence.value_counts().sort_index().to_dict()}")
 same_hour = df[df.hour_divergence == 0]

@@ -40,20 +40,16 @@ decomp_full = decomp_full.merge(
     t1[["load_shape", "scenario", "start_year", "study_period_yrs_requested", "pct_breakdown_unstable"]],
     on=["load_shape", "scenario", "start_year", "study_period_yrs_requested"], how="left")
 
-# =============================================================================
 # Count strip: negative-error combinations per trajectory, out of the FULL
 # 120-row factorial (all load shapes, all periods)
-# =============================================================================
 neg_counts = decomp_full.groupby("scenario").apply(
     lambda g: pd.Series({"n_negative": int((g["total_error_d_minus_a"] < 0).sum()), "n_total": len(g)}),
     include_groups=False)
 print("=== Per-trajectory negative-error count strip (full 120-row factorial) ===")
 print(neg_counts.to_string())
 
-# =============================================================================
 # Panel data: daytime_office, 25yr nominal (same subset as the original
 # fig3_scenario_dependence_sign_flip), minus rows flagged unstable
-# =============================================================================
 s25 = decomp_full[(decomp_full["load_shape"] == "daytime_office") &
                    (decomp_full["study_period_yrs_requested"] == 25)].copy()
 n_total_subset = len(s25)
@@ -94,7 +90,7 @@ ax.set_xticks(x)
 ax.set_xticklabels(scenario_order, fontsize=9.5)
 ax.set_ylabel("Total error, $E_d - E_a$ (% of full-resolution $E_a$)")
 
-# --- count strip beneath each trajectory group ---
+# Count strip beneath each trajectory group
 y_strip = ax.get_ylim()[0] - 0.16 * (ax.get_ylim()[1] - ax.get_ylim()[0])
 for i, scen in enumerate(scenario_order):
     n_neg = int(neg_counts.loc[scen, "n_negative"])

@@ -2,7 +2,6 @@
 Check-2 gap: ROOT CAUSE FOUND AND CONFIRMED (supersedes the "genuinely unexplained" status).
 
 THE CAUSE
----------
 MBIE's published `Greenhouse gas emissions` / Emission_Sector='Electricity generation' series
 INCLUDES GEOTHERMAL FUGITIVE CO2. The pipeline's Check-2a comparator is combustion-only, so it
 is structurally missing that term. MBIE states this explicitly in its own report:
@@ -14,14 +13,12 @@ is structurally missing that term. MBIE states this explicitly in its own report
        emissions section. Local copy: reference_data/electricity-demand-and-generation-scenarios-report-2024.pdf
 
 WHY IT HITS ENVIRONMENTAL AND INNOVATION HARDEST
-------------------------------------------------
 Those two scenarios (a) build the most new geothermal and (b) retire fossil fastest. The
 geothermal term therefore GROWS while the total it is divided into SHRINKS, so the same
 absolute quantity becomes a large percentage error. It is a denominator effect on top of a
 real missing term -- not a defect specific to those scenarios.
 
 WHY THE PREVIOUS ROUND WRONGLY REJECTED GEOTHERMAL
---------------------------------------------------
 The previous test applied a UNIFORM fleet factor (61-64 g/kWh, Ngawha-corrected) to the WHOLE
 geothermal fleet and found it overshot the gap by 2-7x. That is reproduced here (spec B below:
 every uniform-factor variant is WORSE than adding nothing). What actually fits is the same
@@ -30,7 +27,6 @@ factor applied ONLY to geothermal build ABOVE the 2024 fleet baseline. The earli
 along with the intercept is what left the gap looking unexplained.
 
 EVIDENCE (each test reproduced by this script)
-----------------------------------------------
  T1 Arithmetic proof: in 59/135 scenario-years MBIE's GHG EXCEEDS the maximum possible
     fossil-only total (coal@100 + gas@58 + diesel@80 kg/GJ, generous physical maxima).
     A non-fossil term is proven, not inferred. First occurrence: 2032 (Env/Innov).
@@ -47,7 +43,6 @@ EVIDENCE (each test reproduced by this script)
     Richardson 2019). MBIE appears to assign new geothermal build the current fleet average.
 
 LIMITATION, STATED
-------------------
 Only the INCREMENTAL coefficient is identifiable. The existing-fleet (2024 baseline) geothermal
 level is collinear with the fossil factors and cannot be separated from this data; the fit puts
 it at 0, which is not physically true (MBIE's own statement implies otherwise) but is the
@@ -58,7 +53,6 @@ is calibrated on, and applies to, the PROJECTION series only.
 
 Outputs: edgs_check2_geothermal_resolution.csv, edgs_check2_geothermal_summary.txt
 """
-import numpy as np
 import pandas as pd
 from scipy.optimize import lsq_linear
 
@@ -66,7 +60,7 @@ from edgs_common import RESULTS_XLSX, OUT_DIR, MFE_FUEL_EF_KG_PER_GJ, log_factor
 
 log, lines = log_factory()
 
-# --------------------------------------------------------------------------- data
+# Data
 eg = pd.read_excel(RESULTS_XLSX, sheet_name="Electricity generation")
 ghg = pd.read_excel(RESULTS_XLSX, sheet_name="Greenhouse gas emissions")
 efs = pd.read_excel(RESULTS_XLSX, sheet_name="Emission factors")
@@ -91,7 +85,7 @@ BASE_GEO_PJ = float(P[P.TimePeriod == 2024].Geothermal.iloc[0])   # 263.474 PJ, 
 P["geo_new_PJ"] = (P.Geothermal - BASE_GEO_PJ).clip(lower=0)
 log(f"2024 geothermal heat-input baseline (common to all scenarios): {BASE_GEO_PJ:.3f} PJ")
 
-# --------------------------------------------------------- T1: arithmetic proof
+# T1: arithmetic proof
 log("\n=== T1: is a NON-FOSSIL term in MBIE's total arithmetically PROVEN? ===")
 log("    upper bound = coal x 100 + gas x 58 + diesel x 80 kg/GJ (generous physical maxima)")
 P["max_fossil_kt"] = P.Coal * 100 + P["Natural gas"] * 58 + P.Diesel * 80
@@ -101,7 +95,7 @@ log(f"  {len(t1)}/135 scenario-years EXCEED the max-plausible fossil-only total"
 log(t1.groupby("Scenario").agg(n=("excess_kt", "size"), first_year=("TimePeriod", "min"),
                                max_excess_kt=("excess_kt", "max")).round(1).to_string())
 
-# ------------------------------------------- T2: natural experiment at 2032
+# T2: natural experiment at 2032
 log("\n=== T2: 2032 natural experiment (Rankine->biomass in Env/Innov; Constraint = control) ===")
 for sc in ["Environmental", "Innovation", "Growth", "Reference", "Constraint"]:
     a = P[(P.Scenario == sc) & (P.TimePeriod == 2031)].iloc[0]
@@ -112,7 +106,7 @@ for sc in ["Environmental", "Innovation", "Growth", "Reference", "Constraint"]:
 log("  -> Env 3.00, Innov 2.97, Growth 3.06 kg/GJ: three independent scenarios, one coefficient.")
 log("     Constraint (no geothermal step) shows no residual step -> wood is NOT the carrier.")
 
-# ------------------------------------------------------------- T3/T4: fits
+# T3/T4: fits
 def fit(train, cols=FOSSIL + ["geo_new_PJ"],
         lo=(80, 48, 60, 0), hi=(100, 58, 80, 20)):
     r = lsq_linear(train[cols].values, (train.mbie_ghg_Mt * 1000).values, bounds=(list(lo), list(hi)))
@@ -149,7 +143,7 @@ wb = (P.err_before_pct.abs() * P.mbie_ghg_Mt).sum() / P.mbie_ghg_Mt.sum()
 wa = (P.err_after_pct.abs() * P.mbie_ghg_Mt).sum() / P.mbie_ghg_Mt.sum()
 log(f"\n  EMISSIONS-WEIGHTED |err|: {wb:.2f}%  ->  {wa:.2f}%")
 
-# ------------------------------------ uniform-factor specs (the earlier round's test)
+# Uniform-factor specs (the earlier round's test)
 log("\n=== T6: reproduce WHY the earlier uniform-fleet-factor test failed ===")
 for k in [0.8, 1.0, 1.35, 2.4]:   # 2.4 kg/GJ ~ 61 g/kWh, the earlier cited factor
     e = 100 * (P.mbie_ghg_Mt * 1000 - (P.fossil_kt + k * P.Geothermal)) / (P.mbie_ghg_Mt * 1000)
@@ -161,7 +155,7 @@ log("  -> every uniform variant is WORSE than adding nothing. That is the earlie
 log("     reproduced. The factor is right; applying it to the whole fleet instead of the")
 log("     increment is what made it overshoot by 2-7x.")
 
-# --------------------------------------------- consequence for the emission factor
+# Consequence for the emission factor
 log("\n=== T7: consequence for the published EF (what this costs an LCA) ===")
 gcols = [c for c in P.columns if c.startswith("g_") and c != "g_Demand side response"]
 P["gen_GWh"] = P[gcols].sum(axis=1)

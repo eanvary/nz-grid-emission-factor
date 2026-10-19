@@ -1,5 +1,5 @@
 """
-Module 1 — Step 1: extract MBIE annual national targets (direct transcription;
+Module 1: Step 1: extract MBIE annual national targets (direct transcription;
 no assumption). Every value here is source_tag = MBIE_annual_disaggregated.
 
 For each scenario x year (2024-2050):
@@ -25,9 +25,7 @@ def read_sheet(name):
     return pd.read_excel(RESULTS_XLSX, sheet_name=name)
 
 
-# ---------------------------------------------------------------------------
 # 1a. Total electricity demand (TWh)
-# ---------------------------------------------------------------------------
 dem = read_sheet("Total electricity demand")
 dem = dem[(dem["TimePeriod"].between(YMIN, YMAX)) & (dem["Scenario"].isin(SCENARIOS))]
 dem_rows = pd.DataFrame({
@@ -38,9 +36,7 @@ dem_rows = pd.DataFrame({
 log(f"Total electricity demand: {len(dem_rows)} rows "
     f"({dem_rows['value'].min():.1f}-{dem_rows['value'].max():.1f} TWh)")
 
-# ---------------------------------------------------------------------------
-# 1b. Peak demand (GW) — Variable 'New Zealand peak load'
-# ---------------------------------------------------------------------------
+# 1b. Peak demand (GW): Variable 'New Zealand peak load'
 pk = read_sheet("Peak demand")
 pk = pk[(pk["TimePeriod"].between(YMIN, YMAX)) & (pk["Scenario"].isin(SCENARIOS))
         & (pk["Variable"] == "New Zealand peak load")]
@@ -51,9 +47,7 @@ pk_rows = pd.DataFrame({
 })
 log(f"Peak demand: {len(pk_rows)} rows ({pk_rows['value'].min():.2f}-{pk_rows['value'].max():.2f} GW)")
 
-# ---------------------------------------------------------------------------
 # 1c. Net electricity generation by fuel (GWh)
-# ---------------------------------------------------------------------------
 gen = read_sheet("Electricity generation")
 gen = gen[(gen["TimePeriod"].between(YMIN, YMAX)) & (gen["Scenario"].isin(SCENARIOS))
           & (gen["Variable"] == "Net electricity generation")]
@@ -70,9 +64,7 @@ log(f"Net generation by fuel: {len(gen_rows)} rows, unit(s)={sorted(gen['Unit'].
 nat = gen_rows.groupby(["scenario", "year"])["value"].sum().reset_index()
 log(f"  National annual generation range: {nat['value'].min()/1000:.1f}-{nat['value'].max()/1000:.1f} TWh")
 
-# ---------------------------------------------------------------------------
-# 1d. Emission factors (kg CO2-e/kWh) — national grid average, cross-check
-# ---------------------------------------------------------------------------
+# 1d. Emission factors (kg CO2-e/kWh): national grid average, cross-check
 ef = read_sheet("Emission factors")
 ef = ef[(ef["TimePeriod"].between(YMIN, YMAX)) & (ef["Scenario"].isin(SCENARIOS))]
 ef_rows = pd.DataFrame({
@@ -83,9 +75,7 @@ ef_rows = pd.DataFrame({
 log(f"Emission factors: {len(ef_rows)} rows "
     f"({ef_rows['value'].min():.4f}-{ef_rows['value'].max():.4f} kg CO2-e/kWh)")
 
-# ---------------------------------------------------------------------------
 # Combine + write
-# ---------------------------------------------------------------------------
 out = pd.concat([dem_rows, pk_rows, gen_rows, ef_rows], ignore_index=True)
 out["source_tag"] = "MBIE_annual_disaggregated"
 out = out[["scenario", "year", "metric", "commodity", "value", "unit",

@@ -8,14 +8,12 @@ and the number on the chart are the same computation, visibly.
 
 Run from anywhere; paths are resolved relative to this file.
 """
-import re
 from pathlib import Path
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.patches import Patch
 
 matplotlib.use("Agg")
 
@@ -24,11 +22,9 @@ ROOT = HERE.parent.parent
 OUT_DIR = HERE / "figures"
 OUT_DIR.mkdir(exist_ok=True)
 
-# ---------------------------------------------------------------------------
 # Palette (as specified) -- bright/print theme: light ground, flat fills, no
 # gradients or shadows ("not shiny"). Accent hues (teal/amber/steel) unchanged
 # from the dark version; only the ground and ink swap to a bright register.
-# ---------------------------------------------------------------------------
 NAVY = "#1A2744"          # ink: titles, axis labels, dark text-on-light
 STEEL_DARK = "#1E2B3D"    # unused as a background here; kept for reference
 STEEL = "#3A4A5C"         # secondary/muted fills (e.g. "excluded" bars)
@@ -77,9 +73,7 @@ def style_axes(ax, title=None):
         ax.set_title(title, color=INK, pad=12)
 
 
-# ===========================================================================
 # Load real data
-# ===========================================================================
 month_df = pd.read_csv(HERE / "ipcc_uncertainty_by_island_month.csv")
 year_df = pd.read_csv(HERE / "ipcc_uncertainty_by_island_year.csv")
 fuel_mix = pd.read_csv(ROOT / "output" / "monthly_fuel_mix_NI_SI.csv")
@@ -88,10 +82,8 @@ ni_year = year_df[year_df["island"] == "NI"].sort_values("year")
 si_year = year_df[year_df["island"] == "SI"].sort_values("year")
 ni_month = month_df[month_df["island"] == "NI"].sort_values(["year", "month"])
 
-# ===========================================================================
 # FIGURE A -- NI point EF + IPCC-propagated 95% CI, annual, 2015-2025
 # Validates: the "±1.34-1.51%" annual-band claim in VALIDATION_REPORT.md Finding 2.
-# ===========================================================================
 fig, ax = plt.subplots(figsize=(10, 5.5))
 x = ni_year["year"].to_numpy()
 y = ni_year["point_ef_kg_per_mwh"].to_numpy()
@@ -126,10 +118,8 @@ fig.tight_layout()
 fig.savefig(OUT_DIR / "py_fig_A_ni_ci_band.png", dpi=180)
 plt.close(fig)
 
-# ===========================================================================
 # FIGURE B -- generation coverage: quantified (combustion) vs excluded (geothermal+)
 # Validates: the "52.2%-75.6%" / "24-48% left OUTSIDE" coverage-gap claim (Finding 3).
-# ===========================================================================
 fig, ax = plt.subplots(figsize=(10, 5.4))
 cov = ni_year["quantified_coverage_pct"].to_numpy()
 excl = 100 - cov
@@ -163,11 +153,9 @@ fig.tight_layout(rect=(0.03, 0.13, 0.97, 1))
 fig.savefig(OUT_DIR / "py_fig_B_coverage_gap.png", dpi=180)
 plt.close(fig)
 
-# ===========================================================================
 # FIGURE C -- distribution of monthly CI width (NI), with dominant-fuel coloring
 # Validates: the "±2.46-5.62% monthly" claim and "GAS dominant in 109/132 months"
 # claim (Finding 2), both in one figure, both counted directly from the data.
-# ===========================================================================
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11.5, 5), gridspec_kw={"width_ratios": [1.3, 1]})
 
 pct = ni_month["ci95_pct_of_point"].dropna().to_numpy()
@@ -200,11 +188,9 @@ fig.tight_layout()
 fig.savefig(OUT_DIR / "py_fig_C_monthly_ci_and_dominant_fuel.png", dpi=180)
 plt.close(fig)
 
-# ===========================================================================
 # FIGURE D -- NI monthly fuel-mix composition (stacked share), showing why
 # geothermal cannot be waved away as immaterial. Validates the ~20-38%
 # geothermal-share premise behind Figure B / Finding 3.
-# ===========================================================================
 ni_fuel = fuel_mix[fuel_mix["island"] == "NI"].copy()
 ni_fuel["period"] = pd.to_datetime(dict(year=ni_fuel["year"], month=ni_fuel["month"], day=1))
 piv = ni_fuel.pivot_table(index="period", columns="fuel_code", values="share_pct", aggfunc="sum").fillna(0.0)
@@ -236,14 +222,12 @@ fig.tight_layout(rect=(0, 0.10, 1, 1))
 fig.savefig(OUT_DIR / "py_fig_D_ni_fuel_mix_composition.png", dpi=180)
 plt.close(fig)
 
-# ===========================================================================
 # FIGURE E -- external cross-check: this project's quarterly EF vs MBIE's own
 # published quarterly national EF. Re-derives the EXISTING Category D1 check
 # (generation_pipeline/validate_ef_database_2015_2025.py, id "D1") from the
 # same two source files that script uses, independently, in this script, so
 # the r and mean|diff| shown are a live re-computation, not a copy-paste of
 # the stored DATA_QUALITY_ASSESSMENT_RESULTS.csv text.
-# ===========================================================================
 mbie_path = ROOT / "generation_pipeline" / "MBIE_Quarterly_Electricity_Emissions_2026Q1.xlsx"
 monthly_ef = pd.read_csv(ROOT / "output" / "monthly_emission_factor_NI_SI.csv")
 
@@ -297,12 +281,10 @@ fig.tight_layout()
 fig.savefig(OUT_DIR / "py_fig_E_mbie_crossvalidation_live.png", dpi=180)
 plt.close(fig)
 
-# ===========================================================================
 # FIGURE F -- hourly-native uncertainty vs. naive rollup (closes Finding 4).
 # Requires build_hourly_fuel_mix.py and run_ipcc_uncertainty_hourly.py to have
 # been run first (they write the three CSVs read below); skipped with a clear
 # message if they haven't, rather than failing confusingly.
-# ===========================================================================
 hourly_ci_path = HERE / "ipcc_uncertainty_by_island_hour.csv"
 daily_ci_path = HERE / "ipcc_uncertainty_by_island_day.csv"
 annual_from_hourly_path = HERE / "ipcc_uncertainty_by_island_year_from_hourly.csv"

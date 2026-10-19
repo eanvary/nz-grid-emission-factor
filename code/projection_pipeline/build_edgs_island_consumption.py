@@ -1,79 +1,78 @@
 """
-VALIDATION UPDATE (follow-up brief C): the Step 5 HVDC capacity violation (103/135
-scenario-years, up to 2,662 MW vs the cited 1,200 MW) was tested against three candidate
-pipeline artifacts (DSR island split, pre-2024 solar shape, uniform loss-ratio) via genuine
-re-runs in build_edgs_hvdc_sensitivity.py, plus checked against MBIE's own report text and a
-per-scenario demand-growth correlation. VERDICT: GENUINE FINDING, not a pipeline artifact.
-Even after correcting the two real simplifications found (DSR 48/52 split + real 2024 solar
-shape), 97/135 scenario-years (72%) still exceed the cited capacity, max transfer 2,391 MW
-(vs the original 2,662 MW - both figures reported, not one replacing the other). The
-loss-ratio bounding test moved violations UP in both directions tested (+10% NI or +10% SI),
-not down - the uniform-loss simplification is not inflating the finding. Violation magnitude
-correlates 0.78-0.96 with national peak demand growth in EVERY scenario individually. MBIE's
-own EDGS report does not mention Cook Strait HVDC or inter-island transmission capacity by
-name, but does state EDGS scenarios directly feed Transpower's transmission-investment
-approval process (Capex IM) - relevant institutional context, not independent corroboration
-of this specific number. Full detail: README_EDGS_hourly.md, edgs_hvdc_sensitivity_summary.csv.
-
-Module 7 (follow-up brief B): island-resolved consumption-side emission factor.
+Module 7: island-resolved consumption-side emission factor.
 
 Adds ef_basis='consumption', island='NI'/'SI' rows to edgs_hourly_emission_factor.parquet,
 alongside the existing 'National' consumption row (kept unchanged, additive only).
 
-METHOD (Steps 1-2, per brief, with one documented fix):
-  Step 1 - island DEMAND(t): MBIE national annual demand x MBIE Island share of demand
-           (NI share; SI = 1-NI share) x each island's OWN historical hourly shape
-           (edgs_shape_demand.parquet, Module 4/Assumption 1). Used ONLY as the EF
-           denominator (Step 6) - no new assumption beyond the already-declared Assumption 1.
-  Step 2 - island GENERATION-LEVEL LOAD(t): the brief's literal formula
-           (island_demand(t) x national_grossup_factor) was tested and found to produce a
-           genuine, non-trivial national hourly imbalance (std ~383 MWh, max ~1713 MWh =~
-           27.6% of mean hourly demand for a sample scenario-year) - NOT rounding-error
-           level. Cause: Module 5's thermal dispatch sets each fuel's ANNUAL total to MBIE's
-           published figure while only the SHAPE (not the absolute level) follows the
-           demand-minus-renewables residual; since 100% of thermal capacity is NI (Module 2),
-           this manifests entirely as a NI-side gap between "demand-shape-scaled load" and
-           "actually dispatched generation" at the national level.
-           FIX (documented, minimal): island generation-level load is renormalised so the
-           NATIONAL total exactly equals ACTUAL national generation(t) (already computed,
-           already reconciled) at every hour, while the ISLAND SPLIT still uses only MBIE's
-           demand share and Assumption 1's per-island shape (the grossup factor cancels out
-           of the split ratio - it was a uniform national scalar). This guarantees Step 3's
-           symmetry check passes at floating-point precision by construction, and does not
-           touch build_edgs_dispatch.py's own generation/combustion calculation.
+Method (numbered as in the log output):
+  Step 1 - island demand(t): MBIE national annual demand x MBIE Island share of demand
+           (NI share; SI = 1-NI share) x each island's own historical hourly shape
+           (edgs_shape_demand.parquet, Module 4/Assumption 1). Used only as the EF
+           denominator (Step 6); no new assumption beyond the already-declared Assumption 1.
+  Step 2 - island generation-level load(t): the direct formula
+           (island_demand(t) x national_grossup_factor) produces a non-trivial national
+           hourly imbalance (std ~383 MWh, max ~1713 MWh =~ 27.6% of mean hourly demand for
+           a sample scenario-year), well above rounding error. Cause: Module 5's thermal
+           dispatch sets each fuel's annual total to MBIE's published figure while only the
+           shape (not the absolute level) follows the demand-minus-renewables residual;
+           since 100% of thermal capacity is NI (Module 2), this shows up entirely as a
+           NI-side gap between "demand-shape-scaled load" and "actually dispatched
+           generation" at the national level.
+           Fix: island generation-level load is renormalised so the national total equals
+           actual national generation(t) (already computed, already reconciled) at every
+           hour, while the island split still uses only MBIE's demand share and Assumption
+           1's per-island shape (the grossup factor cancels out of the split ratio, since it
+           is a uniform national scalar). Step 3's symmetry check then passes at
+           floating-point precision by construction, and build_edgs_dispatch.py's own
+           generation/combustion calculation is untouched.
   Step 3 - required_transfer_to_ISLAND(t) = island_genload(t) - island_generation(t).
-           Sign convention: POSITIVE = net import requirement; NEGATIVE = net export surplus.
-  Step 4 - historical validation (2021-2025): see the printed/logged discussion. FINDING:
-           no independently-metered per-island DEMAND dataset exists in this project (checked:
-           EA_EMI_raw / EA data folders contain only generation-side + plant + NSP data).
-           The historical Consumption pipeline's own "consumption" figures are DEFINED as
+           Sign convention: positive = net import requirement; negative = net export surplus.
+  Step 4 - historical validation (2021-2025): see the printed/logged discussion.
+           No independently-metered per-island demand dataset exists in this project
+           (EA_EMI_raw / EA data folders contain only generation-side + plant + NSP data).
+           The historical Consumption pipeline's own "consumption" figures are defined as
            generation + real metered HVDC transfer (Consumption_Island/build_consumption_ef_*.py:
            "Consumption_NI(t) = Generation_NI(t) + net_to_NI(t)"), so testing
-           demand-minus-generation against net_to_NI_MWh using that data is TAUTOLOGICAL
-           (confirmed: max abs diff ~5e-13, correlation exactly 1.0) - not independent
-           evidence. Reported honestly rather than presented as validation. The one
-           genuinely independent check available: real HVDC direction (SI net-exports to NI
-           in 77% of hours) matches NZ's well-documented SI hydro surplus - a plausibility
-           check only, not a precision validation.
+           demand-minus-generation against net_to_NI_MWh using that data is tautological
+           (max abs diff ~5e-13, correlation exactly 1.0) and is not independent evidence.
+           It is reported as such, not as validation. The one independent check available:
+           real HVDC direction (SI net-exports to NI in 77% of hours) matches NZ's
+           well-documented SI hydro surplus. This is a plausibility check only, not a
+           precision validation.
   Step 5 - HVDC capacity: Transpower, "HVDC link upgrade programme" (accessed 2026-07),
            current rated transfer capacity 1200 MW (cable-limited). An upgrade to 1400 MW
            (a fourth submarine cable) received Commerce Commission approval 18 June 2026
-           ($1.1bn Cook Strait cable investment, Stage 1) - cable replacement/installation
-           expected to complete in the early 2030s (verified, Brief D: both Transpower's own page and
-           the Commerce Commission's approval decision cite this figure independently).
+           ($1.1bn Cook Strait cable investment, Stage 1), with cable replacement/installation
+           expected to complete in the early 2030s (Transpower's own page and the Commerce
+           Commission's approval decision both cite this figure independently).
            1200 MW is used throughout 2024-2050 as the currently-operational figure
            (conservative; does not assume the upgrade's in-service date, which postdates
            several scenario-years' first violations reported below).
-  Step 6 - emissions attributed by EXPORTING island's generation-side EF (physically
-           correct: emissions occur where generation happens). National reconciliation
-           (CO2_consumed_NI + CO2_consumed_SI == national combustion CO2) is a MANDATORY
+  Step 6 - emissions attributed by the exporting island's generation-side EF (emissions
+           occur where generation happens). National reconciliation
+           (CO2_consumed_NI + CO2_consumed_SI == national combustion CO2) is a mandatory
            check, not a rounding note.
 
-KNOWN LIMITATION (carried over, not fixed here): Assumption 2's DSR/battery is booked
-100% to NI in the existing generation table even though GEM build schedule capacity is
-~48%/52% NI/SI. This is the separately-flagged "battery/BESS capacity gap" priority (see
-README), not addressed in this module; island generation_NI(t) therefore already includes
-this known simplification via the existing edgs_hourly_generation.parquet.
+HVDC capacity result: the Step 5 violation (103/135 scenario-years, up to 2,662 MW vs the
+cited 1,200 MW) was tested against three candidate pipeline artifacts (DSR island split,
+pre-2024 solar shape, uniform loss-ratio) by re-running in build_edgs_hvdc_sensitivity.py,
+and checked against MBIE's own report text and a per-scenario demand-growth correlation. It
+is a real finding, not a pipeline artifact. After correcting the two simplifications found
+(DSR 48/52 split + real 2024 solar shape), 97/135 scenario-years (72%) still exceed the
+cited capacity, max transfer 2,391 MW (vs 2,662 MW uncorrected; both figures are reported).
+The loss-ratio bounding test moved violations up in both directions tested (+10% NI or +10%
+SI), not down, so the uniform-loss simplification is not inflating the finding. Violation
+magnitude correlates 0.78-0.96 with national peak demand growth in every scenario
+individually. MBIE's own EDGS report does not mention Cook Strait HVDC or inter-island
+transmission capacity by name, but does state EDGS scenarios directly feed Transpower's
+transmission-investment approval process (Capex IM). That is institutional context, not
+independent corroboration of this specific number. Detail: edgs_hvdc_sensitivity_summary.csv.
+
+Known limitation (not fixed here): Assumption 2's DSR/battery is booked 100% to NI in the
+existing generation table even though GEM build schedule capacity is ~48%/52% NI/SI. This
+is the battery/BESS capacity gap tested separately in build_edgs_battery_sensitivity.py;
+island generation_NI(t) therefore already includes this simplification via the existing
+edgs_hourly_generation.parquet.
 """
 import numpy as np
 import pandas as pd
@@ -108,7 +107,7 @@ def year_calendar(year):
 
 
 def map_weights(cal, wtab, template_year=2021):
-    """Weekday-aligned template mapping (Brief W, 2026-09-16) -- identical logic to
+    """Weekday-aligned template mapping: identical logic to
     build_edgs_dispatch.map_weights so the consumption denominator uses the same template
     day as the dispatch demand series. Each projected day takes the template day with the
     same weekday nearest to the same calendar date (shift <= 3 days)."""
@@ -207,7 +206,7 @@ for scenario in SCENARIOS:
 
         # Island generation-level load, renormalised to actual nat_gen(t)
         # One hour/year has zero valid demand-shape weight (the DST spring-forward transition
-        # hour, last Sunday of September, NZ clocks skip 23:00-23:59 - the SAME documented
+        # hour, last Sunday of September, NZ clocks skip 23:00-23:59 - the same documented
         # artifact as the historical pipeline's hourly EF table). At that hour only, fall back
         # to MBIE's annual island share alone (no shape weighting) so the split still sums to
         # 1 exactly and the Step 3 symmetry check holds at true floating-point precision
@@ -310,7 +309,7 @@ else:
 
 # Write: append island consumption rows to the existing table (additive only)
 cons_out = pd.concat(cons_rows, ignore_index=True)
-# Idempotent: drop any island consumption rows from a PRIOR run of this script before
+# Idempotent: drop any island consumption rows from a previous run of this script before
 # appending fresh ones, so re-running never duplicates rows (national consumption + both
 # generation bases are always left untouched).
 existing = ef.drop(columns=["year"])

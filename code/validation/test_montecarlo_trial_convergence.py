@@ -1,11 +1,10 @@
 """
 How many Monte Carlo trials does the reported uncertainty band actually need?
 
-WHY THIS EXISTS (2026-09-23)
-run_ipcc_uncertainty_montecarlo.py originally set N_TRIALS to 10,000. Nothing in the
-script said why. 10,000 is the common round default, so the number was a convention
-rather than a measured choice, and a reported band of 73.2% implies a precision that
-had never been checked.
+Why this test
+10,000 trials is the common round default: a convention rather than a measured choice.
+A reported band such as 73.2% implies a precision that needs checking, so this test
+measures it; run_ipcc_uncertainty_montecarlo.py uses the result (N_TRIALS = 50,000).
 
 Two features of this design make a modest trial count less safe than it looks.
 
@@ -14,8 +13,8 @@ Two features of this design make a modest trial count less safe than it looks.
      common to all hours. Averaging over 96,421 hours cancels none of it. This is the
      usual reason a modest N is safe, and here it does not apply.
 
-  2. Geothermal on proxy-rule steps 3-4 carries a 93.97% sigma (since 2026-09-29 step 1
-     carries 7.07%, NIR 2026, and step 2 7.07% plus the station's own variation), which
+  2. Geothermal on proxy-rule steps 3-4 carries a 93.97% sigma (step 1 carries
+     7.07%, NIR 2026, and step 2 7.07% plus the station's own variation), which
      gives the lognormal a heavy right tail
      exactly where the 2.5 and 97.5 cuts sit. Extreme percentiles of a heavy tail are the
      slowest quantities to settle.

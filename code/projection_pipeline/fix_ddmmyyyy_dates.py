@@ -1,19 +1,19 @@
 """
-fix_ddmmyyyy_dates.py -- Brief ZH-1a data-integrity fix.
+fix_ddmmyyyy_dates.py -- data-integrity fix for the 2015-2019 EMI raw files.
 
 EA_EMI_raw/*_{Grid_import,Grid_export,Embedded_generation,HVDC_flows}.csv for 2015-01
 through 2019-12 use DD/MM/YYYY in their trading-date column; every file from 2020-01
-onward uses ISO YYYY-MM-DD. The RF series' imported date parser
+onward uses ISO YYYY-MM-DD. The regional-feasibility date parser
 (diag_regional_feasibility.melt_tp -> pd.to_datetime(..., format="mixed", dayfirst=False))
 silently mis-parses DD/MM/YYYY whenever day <= 12 and day != month, swapping day and month.
-This was never exercised by RF-1..RF-4 or the original ZH-1 (2021-2025 only, already ISO);
-it surfaced only in ZH-1a's 2015-2019 extension.
+Analyses limited to 2021-2025 never hit this (those files are already ISO); it matters only
+when the record is extended back to 2015-2019.
 
 Fix: rewrite the date column to ISO in place, at the same path, so every imported function
 (melt_tp, load_month, prepare, etc.) works correctly with zero code changes. Originals are
 backed up to EA_EMI_raw_backup_ddmmyyyy_2015_2019/ before any file is touched.
 
-This is a data correction, not a script edit -- no RF-1..RF-4 or ZH-1 script is modified.
+This is a data correction, not a script edit: no analysis script is modified.
 """
 import sys
 from pathlib import Path

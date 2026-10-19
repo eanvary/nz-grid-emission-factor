@@ -74,9 +74,8 @@ this_row = studies[studies["ref_key"] == "this_study"]
 plot_rows = pd.concat([lit, this_row], ignore_index=True)
 n_building_lca_last = (lit["domain"] == "building_lca").sum()  # rule position for the annotation
 
-# Column quantified counts: computed from the FULL register (all rows,
-# including the two-row studies), per the brief: "Compute these counts from
-# the register at run time; do not write them into the code."
+# Column quantified counts: computed from the full register (all rows,
+# including the two-row studies) at run time, not written into the code.
 col_counts_all = {a: int((reg[a] == "quantified").sum()) for a in AXES}
 # unique-study counts (what the matrix actually shows) for the annotation line
 col_counts_studies = {a: int((plot_rows[a] == "quantified").sum()) for a in AXES}
@@ -93,7 +92,7 @@ n = len(plot_rows)
 
 # Build explicit y-slots top-down, inserting a one-unit gap after the
 # building_lca block (where the annotation line sits) and another before
-# this_study (on top of the separator rule already required by the brief) so
+# this_study (in addition to the separator rule above that row) so
 # neither the annotation nor the rule collides with a row.
 GAP_AFTER_BLDG = 1.0
 GAP_BEFORE_THIS_STUDY = 1.0
@@ -120,7 +119,7 @@ MARKER_FOR_BASIS = {"average": "o", "marginal": "^", "both": "s", "": "o"}
 MARKER_SIZE = {"o": 9, "^": 10, "s": 8}
 FILL_MAP = {"quantified": True, "discussed": False, "absent": None}
 
-# Flag 2: a "quantified" cell means this study's magnitude for that axis was
+# Verification weight: a "quantified" cell means this study's magnitude for that axis was
 # extracted into the register. Whether that specific number was itself
 # checked against the primary source (vs. only the compass-scan secondary
 # summary) is a separate fact -- magnitude_verified, from the FULL
@@ -226,7 +225,7 @@ print(f"Column quantified counts (unique studies plotted): {col_counts_studies}"
 print(f"Column quantified counts (all register rows):      {col_counts_all}")
 print(f"Building-LCA-only prior-literature quantified counts (n={bldg_n}): {bldg_quant}")
 
-# Flag 2 self-audit: magnitude_verified counts (rows that assert a magnitude
+# Self-audit: magnitude_verified counts (rows that assert a magnitude
 # only -- rows with no magnitude_value have nothing to verify and are excluded
 # from this count, same convention as the CSV's own "n/a" value).
 n_yes = int((mag_rows["magnitude_verified"] == "yes").sum())
@@ -267,7 +266,7 @@ out = pd.DataFrame({
     "Magnitude verified": tbl["magnitude_verified"].map({"yes": "Yes", "no": "No"}).fillna(tbl["magnitude_verified"]),
 })
 
-# word-count guard (Step 3: keep every cell under twelve words)
+# word-count guard: keep every cell under twelve words
 max_words = out.astype(str).map(lambda s: len(s.split())).max().max()
 print(f"Max words in any Table 1 cell: {max_words} (must be <12)")
 

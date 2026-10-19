@@ -1,5 +1,5 @@
 """
-Module 1: Step 1: extract MBIE annual national targets (direct transcription;
+Module 1: extract MBIE annual national targets (direct transcription;
 no assumption). Every value here is source_tag = MBIE_annual_disaggregated.
 
 For each scenario x year (2024-2050):

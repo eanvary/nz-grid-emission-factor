@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).parent.parent  # repo root (this script now lives in generation_pipeline/, one level deeper -- 2026-08 reorg)
+ROOT = Path(__file__).parent.parent  # repo root (this script lives in generation_pipeline/, one level down)
 NSP_DIR = ROOT / "EA data" / "NSP Tables"
 PLANT_FILE = ROOT / "EA data" / "Dispatched generation plant.csv"
 GEN_DIR = ROOT / "EA_EMI_raw"
@@ -86,8 +86,8 @@ log(f"Recovered {n_recovered} still-active SCD2 records with 9999-year end dates
     f"(previously parsed to NaT and would never match any lookup date)")
 plant["EF_kg_per_MWh"] = plant["HeatRate"] * plant["EmissionsFactor"] / 1e6
 
-# Item 2 (2026-09-14): replace the register's own flat 99.996 kg/MWh geothermal
-# assumption with real per-station values (McLean & Richardson 2019), falling back
+# Replace the register's flat 99.996 kg/MWh geothermal assumption with
+# real per-station values (McLean & Richardson 2019), falling back
 # to their fleet mean for the 6 POCs their 2018 study doesn't cover -- see
 # geothermal_ef_correction.py for the full mapping and rationale.
 from geothermal_ef_correction import apply_geothermal_ef_correction
@@ -290,7 +290,7 @@ log(f"  NI annual EF by year: {ni_annual.round(1).to_dict()}")
 log(f"  SI annual EF by year: {si_annual.round(1).to_dict()}")
 
 # Outputs
-# Columns after total_CO2_kg are additions (2026-09-28, fuel_attribution.py): filled generation,
+# Columns after total_CO2_kg come from fuel_attribution.py: filled generation,
 # the CO2 carried by estimated factors, and the Stratford combined-cycle / peaker bound series.
 monthly_out = monthly[["island", "year", "month", "period", "EF_kg_per_MWh", "total_gen_MWh", "total_CO2_kg"] + EXTRA_COLS]
 monthly_out.to_csv(OUT_DIR / "monthly_emission_factor_NI_SI.csv", index=False)

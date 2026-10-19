@@ -4,8 +4,8 @@ visually separate: (1) main panel, the seasonal/diurnal variance-share
 shift 2024-2050 (NI, Reference); (2) inset, the null result that diurnal
 shape barely moves across the whole horizon, for all five trajectories.
 
-Correction applied (Step 1 item 1): the seasonal-collapse claim must not
-mix the 2024 MONTH share with the 2050 SEASON share (the "73%->14%" error).
+The seasonal-collapse claim must not mix the 2024 month share with the
+2050 season share (mixing them gives the misleading "73%->14%").
 Both panel series here use eta2_season and eta2_hour consistently across
 both endpoints -- eta2_month is not plotted. All four endpoint values are
 printed for the record.
@@ -36,7 +36,7 @@ SCENARIO_ORDER = ["Constraint", "Environmental", "Growth", "Innovation", "Refere
 SCEN_COLORS = {s: CATEGORICAL[i] for i, s in enumerate(SCENARIO_ORDER)}
 SCEN_STYLES = {s: LINE_STYLES[i] for i, s in enumerate(SCENARIO_ORDER)}
 
-# Step 1 item 1 -- verify the caption bug directly, print the four values
+# Check the endpoint values directly and print all four
 vd = pd.read_csv(TABLES / "phase1_variance_decomp_by_island.csv")
 vd_ni_ref = vd[(vd["scenario"] == "Reference") & (vd["island"] == "NI")].sort_values("year")
 endpoints = vd_ni_ref[vd_ni_ref["year"].isin([2024, 2050])]
@@ -67,7 +67,7 @@ print(f"SI corr_vs_2024 all-NaN (confirms NI-only restriction): {si_all_nan}")
 min_corr = dsp_ni["corr_vs_2024"].min()
 print(f"Minimum diurnal correlation across all NI scenario-years: {min_corr:.4f}")
 
-# Peak-hour check, per Step 3 -- NI only (SI's peak hour is a different,
+# Peak-hour check, NI only (SI's peak hour is a different,
 # structurally distinct value -- 0 vs 9 -- because SI's EF profile is
 # near-flat/noise-dominated; annotating a "peak hour" for SI would not be
 # meaningful, and the main panel above is itself NI-scoped).

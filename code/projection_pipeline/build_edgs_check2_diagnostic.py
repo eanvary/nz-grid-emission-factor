@@ -1,55 +1,50 @@
 """
-Check-2 gap diagnostic (v2, follow-up brief): test the biomass hypothesis, then source and
-test a cited geothermal factor, then investigate the leftover intercept.
+Check-2 gap diagnostic: test the biomass hypothesis, then source and test a cited
+geothermal factor, then examine what is left of the gap. Step labels match the log.
 
-STEP 1: biomass/wood REJECTED (implied ~173 g/kWh, implausible, R2=0.43, coefficient goes
+Step 1: biomass/wood is rejected (implied ~173 g/kWh, implausible, R2=0.43, coefficient goes
 negative once geothermal enters). Geothermal generation correlates with the gap at R2=0.9995
-(regression-implied 77.4 g/kWh). A CITED field-level source was found and tested:
+(regression-implied 77.4 g/kWh). A cited field-level source was found and tested:
 
   McLean, K., Richardson, I. (2019). "Greenhouse Gas Emissions from New Zealand Geothermal
   Power Generation in Context." Proceedings 41st New Zealand Geothermal Workshop, 25-27 Nov
   2019, Auckland. Table: gCO2-eq/kWh(net) by power station, 2018 MW-weighted data. Fleet
-  average 76 g/kWh (2018) -- within 2% of the regression-implied 77.4 g/kWh.
+  average 76 g/kWh (2018), within 2% of the regression-implied 77.4 g/kWh.
   Field range: Wairakei 21, Te Mihi 43, Poihipi 38, Ohaaki 341, Te Huka 45, Rotokawa 84,
   Nga Awa Purua 63, Mokai 52, Ngatamariki 64, Kawerau(KGL) 123, Kawerau(TOPP1) 60, Ngawha 304.
   Ngawha override: Top Energy achieved 100% NCG reinjection, carbon-zero by end 2023 (cited:
-  Ngawha Generation Ltd; ThinkGeoEnergy) -- Ngawha = 0 g/kWh for all EDGS years (2024-2050).
+  Ngawha Generation Ltd; ThinkGeoEnergy), so Ngawha = 0 g/kWh for all EDGS years (2024-2050).
 
-STEP 1 RESULT (decisive, tested by actually adding it to the pipeline and re-running Check 2,
-not just fitting a regression): the cited, capacity-weighted, time-varying geothermal factor
-(~61-64 g/kWh once Ngawha is corrected to 0) predicts geothermal CO2 of ~0.6-0.9 Mt/yr -- but
-the ACTUAL gap it is meant to explain is only ~0.05-0.4 Mt/yr. Adding the cited factor OVERSHOOTS
-MBIE's electricity GHG total by ~19-27% (emissions-weighted), substantially WORSE than
-combustion-only (~6.3%). CONCLUSION: geothermal fugitive CO2, at its real-world cited magnitude,
-is NOT the explanation for the Check-2 gap. The earlier regression's R2=0.9995 reflected
-geothermal generation and the small residual gap co-trending upward over the 27-year projection
-(both increase roughly monotonically with time) -- a correlation-of-trends artifact, not a valid
-causal/magnitude match. NOT adopted in the shipped pipeline (reverted after testing).
+Step 1 result (tested by adding the factor to the pipeline and re-running Check 2, not only
+by fitting a regression): the cited, capacity-weighted, time-varying geothermal factor
+(~61-64 g/kWh once Ngawha is set to 0) predicts geothermal CO2 of ~0.6-0.9 Mt/yr, but the
+actual gap it is meant to explain is only ~0.05-0.4 Mt/yr. Adding the cited factor overshoots
+MBIE's electricity GHG total by ~19-27% (emissions-weighted), worse than combustion-only
+(~6.3%). Geothermal fugitive CO2, at its real-world cited magnitude, does not explain the
+Check-2 gap. The regression's R2=0.9995 reflects geothermal generation and the small residual
+gap both rising roughly monotonically over the 27-year projection: a correlation of trends,
+not a causal or magnitude match. The factor is not used in the pipeline's EF.
 
-STEP 2 (CORRECTED, this round): a prior version of this script tested the geothermal-fit's
-INTERCEPT (~-839 to -858 kt, stable across scenarios) against coal/carbon-price and reported it
-as an "unexplained structural residual." That intercept was a free parameter of the now-REJECTED
-geothermal magnitude hypothesis (Step 1: adding the cited factor overshoots the real gap by
-2-7x) -- it existed only to cancel a spurious geothermal slope, has no independent physical
-meaning, and is RETIRED from this documentation (see the superseded block below, kept only as
-a labelled artifact, not a finding).
+Step 2: the intercept of the geothermal-only fit (~-839 to -858 kt, stable across scenarios)
+is not treated as a finding. It is a free parameter of the rejected geothermal magnitude
+hypothesis (the cited factor overshoots the real gap by 2-7x) and exists only to cancel a
+spurious geothermal slope, so it has no independent physical meaning.
 
-Corrected re-test: coal_gwh, coal_frac, carbon_price, and YEAR (not tested in isolation before)
-regressed directly against the RAW gap_Mt (MBIE GHG - modelled combustion, the real observed
-quantity). Result: coal_gwh R2=0.15, coal_frac R2=0.22, carbon_price R2=0.10 (all weak) --
-YEAR R2=0.63 (clearly the strongest single variable) -- joint (all four) R2=0.76. Time/year
-explains materially more of the gap than any physical driver tested. This is evidence of a slow
-drift, not a fixed missing source, and is NOT confirmed as causal or adopted into the pipeline.
+Instead, coal_gwh, coal_frac, carbon_price and year are each regressed directly against the
+raw gap_Mt (MBIE GHG - modelled combustion, the observed quantity). Result: coal_gwh R2=0.15,
+coal_frac R2=0.22, carbon_price R2=0.10 (all weak); year R2=0.63 (the strongest single
+variable); joint (all four) R2=0.76. Time explains more of the gap than any physical driver
+tested. This points to a slow drift rather than a fixed missing source; it is not confirmed
+as causal and is not used in the pipeline.
 
-THREE HYPOTHESES TESTED AND REJECTED (final status of this line of investigation):
+Three hypotheses tested and rejected:
   1. Implied coal factor drift (89.8->107.8 kg/GJ, 2024-2050): physically inconsistent for a
      fixed fuel; not adopted, though its direction matches the year-trend finding above.
   2. Biomass/wood combustion: implausible fitted factor, weak fit, contradicted by Constraint.
   3. Geothermal fugitive CO2: real, cited, field-level factor sourced and tested at correct
      magnitude; overshoots the actual gap by 2-7x. Not adopted.
-Hypothesis-chasing on this specific residual is DELIBERATELY DEPRIORITISED after this round in
-favour of the battery/BESS capacity gap and the island-resolved consumption-side EF (see
-TODO_island_consumption_EF.md) -- a documented decision, not an unexplained stopping point.
+The gap is reported, not adjusted. build_edgs_check2_geothermal_resolution.py revisits
+geothermal with a factor applied only to new build above the 2024 fleet.
 
 Outputs: edgs_check2_diagnostic.csv (135 rows), edgs_check2_rawgap_test.csv,
   edgs_geothermal_field_weighted_factor.csv, edgs_geothermal_cited_vs_regression.csv,
@@ -145,17 +140,14 @@ log("  DECISION: geothermal fugitive CO2, at its cited real-world magnitude, doe
     "reflected geothermal generation and the small residual gap co-trending upward over the "
     "27-year projection window -- correlation of trends, not a valid causal/magnitude match.")
 
-# Step 2 (SUPERSEDED: retained only as a documented artifact, not a finding).
-# The per-scenario geothermal-only fit's intercept (previously reported as an "~839-858 kt
-# stable structural residual") was a free parameter of the now-REJECTED geothermal magnitude
-# hypothesis (see Step 1 above: the cited factor overshoots the real gap by 2-7x). The
-# intercept existed only to cancel a spurious geothermal slope large enough to pass near the
-# small real gap; it has no independent physical meaning and is NOT a second open finding.
-# Superseded by the raw-gap re-test directly below.
-
-# Step 2 (corrected re-test): coal fraction, carbon price, AND time, regressed directly
-# against the RAW gap_Mt (MBIE GHG - modelled combustion), not any geothermal-regression
-# byproduct. Time/year tested as its own explicit variable (was not isolated last round).
+# Step 2: the geothermal-only fit's intercept (~839-858 kt, stable across scenarios) is
+# not tested. It is a free parameter of the rejected geothermal magnitude hypothesis (Step 1:
+# the cited factor overshoots the real gap by 2-7x) and exists only to cancel a spurious
+# geothermal slope large enough to pass near the small real gap, so it has no independent
+# physical meaning.
+# Coal fraction, carbon price and time are regressed directly against the raw gap_Mt
+# (MBIE GHG - modelled combustion), not any geothermal-regression byproduct. Year is
+# tested as its own variable.
 log("\n=== Step 2 (corrected): coal_gwh, coal_frac, carbon_price, YEAR vs RAW gap_Mt ===")
 cp = pd.read_excel(ASSUMPTIONS_XLSX, sheet_name="Commodity prices")
 cp = cp[cp.Variable == "Effective carbon price"].rename(

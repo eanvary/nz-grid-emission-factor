@@ -8,7 +8,7 @@ Additional figures (does not touch the report or existing pipeline outputs):
      intensity (markers), ranked
 
 Design rationale for (3)/(4), per-plant generation and emissions:
-A flat list of ~90 plants cannot be shown clearly as a single bar chart
+A flat list of ~90 plants cannot be shown legibly as a single bar chart
 without becoming illegible, and showing "generation" and "emissions" as two
 separate bar charts hides the relationship between them (a plant's emissions
 are a function of both how much it runs AND how dirty it is per MWh). A
@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import sys
 
-ROOT = Path(__file__).parent.parent  # repo root (this script now lives in generation_pipeline/, one level deeper -- 2026-08 reorg)
+ROOT = Path(__file__).parent.parent  # repo root (this script lives in generation_pipeline/, one level down)
 GEN_DIR = ROOT / "EA_EMI_raw"
 NSP_DIR = ROOT / "EA data" / "NSP Tables"
 OUT_DIR = ROOT / "output"
@@ -82,11 +82,11 @@ fig2.savefig(OUT_DIR / "daily_generation_NI_SI.png", dpi=150)
 print("saved daily_generation_NI_SI.png")
 
 # Rebuild per-(POC, fuel) totals over the full period, joined to plant identity, for the
-# per-plant figures. Since 2026-09-29 generation, fills and factors come from the shared
+# per-plant figures. Generation, fills and factors come from the shared
 # attribution module (fuel_attribution.py): generator-level factors, Huntly coal/gas split,
 # flagged fills (Huntly Sep 2020, norskeskog 2015-2019, Matahina Oct 2021-Dec 2025), so the
 # totals equal the EF pipeline's. Plant names come from the module's register copy; this
-# script no longer reads the register itself.
+# script does not read the register itself.
 from fuel_attribution import FuelAttribution, poc_island_map  # noqa: E402
 
 fa = FuelAttribution()

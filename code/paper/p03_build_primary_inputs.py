@@ -15,16 +15,16 @@ _combustion_only):
       same method on each alternative shape template's hourly generation
   edgs_hourly_island_load_primary.parquet      island generation-level load (consumption weights)
 
-Primary emissions per hour follow edgs_pipeline/build_edgs_primary_hourly.py exactly: each annual
+Primary emissions per hour follow projection_pipeline/build_edgs_primary_hourly.py exactly: each annual
 consistent-scope component (coal less Glenbrook-class coal, gas, diesel, wood, geothermal) is spread
 over hours in proportion to that fuel's hourly generation; denominator = generation x grid share.
 
-Consumption basis (primary): the island split of edgs_pipeline/build_edgs_island_consumption.py,
+Consumption basis (primary): the island split of projection_pipeline/build_edgs_island_consumption.py,
 Steps 1-3 and 6 (island generation-level load from MBIE's island demand share and each island's
 template demand shape, renormalised to national generation; transfer = load - generation; emissions
 follow the exporting island's generation-side intensity). The denominator is the island's
 generation-level load x grid share, so the consumption and generation bases share one national
-total. This removes the 7.6-7.9% demand/generation mismatch of the shipped combustion-only
+total. This removes the 7.6-7.9% demand/generation mismatch of the released combustion-only
 consumption rows (analysis_paper phase2_wedge_basis_effect_check.csv), which is why no gross-up
 correction is applied downstream.
 """

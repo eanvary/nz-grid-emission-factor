@@ -1,11 +1,11 @@
 """
-Phase 3, items 14-16: four-tier error decomposition + load-shape + scenario/
+Phase 3: four-tier error decomposition + load-shape + scenario/
 start-year sensitivity.
 
-Per user decision (2026-08-02 review):
-  1. Headline series = GENERATION-side EF (NI). Consumption-side (gross-up
+Design choices:
+  1. Headline series = generation-side EF (NI). Consumption-side (gross-up
      corrected for the ~7.7% accounting-basis artefact found in Phase 2 S2.1)
-     run as a ONE-ROW sensitivity check only, not a full re-run.
+     run as a one-row sensitivity check only, not a full re-run.
   2. Headline start year = 2027; sensitivity across {2025, 2027, 2030}.
   3. Three STYLISED load shapes (no BEES/metered data found in project).
   4. Four treatments:
@@ -16,14 +16,14 @@ Per user decision (2026-08-02 review):
            still year-by-year trajectory)
        (d) static base-year NATIONAL EF (held constant for the entire study
            period, at the assessment start year's level)
-     KEY SIMPLIFICATION (exploited deliberately for speed and clarity): since
+     Key simplification (used deliberately for speed and clarity): since
      building load weights within a year always sum to 1, treatments (b),(c),(d)
      collapse to simple ANNUAL SCALARS (the load-weighted average of a constant
-     is that constant) -- only treatment (a) requires genuine hourly load x EF
+     is that constant) -- only treatment (a) requires real hourly load x EF
      computation. This is mathematically exact, not an approximation.
   Decomposition (chosen order): total = d - a = (b-a) [temporal] + (c-b)
-  [spatial] + (d-c) [trajectory]. An ALTERNATE order (spatial-first) is also
-  computed to test order-sensitivity, per the brief's explicit requirement.
+  [spatial] + (d-c) [trajectory]. An alternate order (spatial-first) is also
+  computed to test order-sensitivity.
 """
 import os
 
@@ -36,13 +36,13 @@ EDGS = ROOT / "output" / "edgs"
 TABLES = Path(__file__).resolve().parents[1] / "tables"
 LOGS = Path(__file__).resolve().parents[1] / "logs"
 
-# TEMPLATE PARAMETERISATION (2026-09-20): set EDGS_TEMPLATE_YEAR to re-derive this
+# Template parameterisation: set EDGS_TEMPLATE_YEAR to re-derive this
 # decomposition against a non-central Assumption-1 shape template, matching the
-# convention Modules 5-6 already use. Default 2021 = the shipped central template,
-# and under the default every input and output path is exactly what it was before.
-# Non-central runs read edgs_*_tmpl<year>.parquet and write phase3_*_tmpl<year>.csv,
-# so nothing shipped is overwritten. Added to test whether the spatial > temporal
-# ranking is a property of the grid or an artefact of the template year.
+# convention Modules 5-6 use. Default 2021 = the central template, with the
+# default input and output paths. Non-central runs read edgs_*_tmpl<year>.parquet
+# and write phase3_*_tmpl<year>.csv, so the central outputs are not overwritten.
+# This tests whether the spatial > temporal ranking is a property of the grid or
+# an artefact of the template year.
 TEMPLATE_YEAR = int(os.environ.get("EDGS_TEMPLATE_YEAR", "2021"))
 SUFFIX = "" if TEMPLATE_YEAR == 2021 else f"_tmpl{TEMPLATE_YEAR}"
 
@@ -138,7 +138,7 @@ for shape_label in SHAPE_LABELS:
 def load_weighted_annual_ef(shape_label, scenario, year, source="island"):
     return cache[(shape_label, scenario, year, source)]
 
-# Item 14: headline decomposition (Reference, NI, start=2027, all 4 study
+# Headline decomposition (Reference, NI, start=2027, all 4 study
 # periods, all 3 load shapes) + order-sensitivity check.
 log("\n" + "=" * 70)
 log("ITEM 14: four-tier error decomposition, headline (Reference, NI, start=2027)")

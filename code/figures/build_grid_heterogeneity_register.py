@@ -3,9 +3,9 @@ Build analysis/GRID_HETEROGENEITY_REGISTER.csv -- the source register for
 Fig. 8 (the paper's transferability argument).
 
 Literature rows (Canada, USA, Australia, UK, Nordic) were checked against
-primary sources at build time via WebFetch/WebSearch, not taken from the
-international-scan document (analysis/.../compass_artifact_...md), which is
-treated only as a lead list per the brief. The verification trail for each
+primary sources at build time by web search and direct retrieval, not taken
+from the international-scan document (analysis/.../compass_artifact_...md),
+which is treated only as a lead list. The verification trail for each
 row -- URL fetched, what was found, what failed -- is recorded in the `note`
 column here and in figures/FIG8_PROVENANCE.md.
 
@@ -76,11 +76,10 @@ dict(system="USA", sub_region_unit="eGRID subregion", n_sub_regions=22,
           "not eGRID2022 historical output rates; the scan's number does not reproduce "
           "against this primary source and is not used."),
 # Australia: DCCEEW NGA Factors 2025, Table 1 -- confirmed directly.
-# Automated fetching from this session was blocked on every route tried
-# (WebFetch to the PDF/XLSX, in-app Browser); the user downloaded the PDF
-# themselves and it was converted locally with pdf_to_md.py, which recovered
-# Table 1 verbatim, in full agreement with the blog-compiled values used in
-# the first draft of this register.
+# Automated fetching was blocked on every route tried (direct retrieval of
+# the PDF/XLSX, browser); the PDF was downloaded by hand and converted
+# locally with pdf_to_md.py, which recovered Table 1 verbatim, in full
+# agreement with the blog-compiled values used before.
 dict(system="Australia", sub_region_unit="state/regional grid", n_sub_regions=8,
      min_intensity=0.20, max_intensity=0.78, unit="kgCO2-e/kWh", national_average=0.62,
      ratio_max_min=round(0.78 / 0.20, 2), reference_year="FY2025-26 (financial year ending June)",
@@ -90,11 +89,8 @@ dict(system="Australia", sub_region_unit="state/regional grid", n_sub_regions=8,
      source_type="primary_agency", verified="yes",
      source_url_or_doi="https://www.dcceew.gov.au/sites/default/files/documents/"
                         "national-greenhouse-account-factors-2025.pdf",
-     note="Automated fetching was blocked on every route tried this session (WebFetch to "
-          "4 PDF years and the XLSX -- ECONNRESET every time; in-app Browser direct nav "
-          "and click-through -- denied/silent download; Claude-in-Chrome not connected). "
-          "The user downloaded the PDF directly and it was converted locally with "
-          "pdf_to_md.py (PyMuPDF/pymupdf4llm); Table 1 recovered cleanly and matches the "
+     note="The agency site blocked automated download, so the PDF was downloaded manually "
+          "and converted locally (PyMuPDF). Table 1 matches the "
           "blog-compiled values used in the first draft exactly, including the national "
           "average (0.62) and the NT/DKIS and WA-SWIS/NWIS split rows. Data year is a "
           "financial year (ending June), not a calendar year, per the table's own notes."),
@@ -113,16 +109,15 @@ dict(system="UK", sub_region_unit="DNO region", n_sub_regions=14,
           "undefined (min=0) and reported as such rather than computed. 14 genuine DNO "
           "regions used; the API's 3 country-level aggregate rows (England/Scotland/"
           "Wales) excluded."),
-# Europe (EU27, country-level): replaces the earlier "Nordic/European
-# bidding zones" row. Per-bidding-zone (NO1-NO5/SE1-SE4) intensity is not
+# Europe (EU27, country-level), in place of a "Nordic/European bidding
+# zones" row. Per-bidding-zone (NO1-NO5/SE1-SE4) intensity is not
 # officially published at that granularity by any single primary agency
 # found (it would have to be computed from ENTSO-E per-zone generation-mix
 # data, which is raw generation data, not a published emission-factor
-# table) -- but a second search round found the EEA's own country-level EU27
-# indicator, fetched and independently re-verified twice against the raw
-# CSV (see FIG8_PROVENANCE.md). This is now europe-country-level, fully
-# primary-agency-verified, not a bidding-zone comparison -- a genuine
-# substitution, not a stand-in for the missing row.
+# table). The EEA's own country-level EU27 indicator is used instead,
+# fetched and independently re-verified twice against the raw CSV (see
+# FIG8_PROVENANCE.md). It is a country-level comparison, fully
+# primary-agency-verified, not a bidding-zone one.
 dict(system="Europe (EU27, country-level)", sub_region_unit="country", n_sub_regions=27,
      min_intensity=8, max_intensity=693, unit="gCO2e/kWh", national_average=258,
      ratio_max_min=round(693 / 8, 1), reference_year=2022,

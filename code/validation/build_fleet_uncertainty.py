@@ -5,30 +5,30 @@ Vol 2 Ch 2, Section 2.3.2.2): "it is expected that the uncertainty range associa
 a country-specific value will be smaller than the uncertainty range of the default
 emission factor."
 
-Honest check, not a foregone conclusion: the plant register (EA data/Dispatched generation
+The plant register (EA data/Dispatched generation
 plant.csv, as corrected and loaded by generation_pipeline/fuel_attribution.py: MfE 2025
 combustion factors, heat-rate and decommissioning fixes) gives this project's own EF per
 (POC, fuel). The census printed below counts, per fuel, the distinct POCs and distinct
-register EF values. At the time this script was written (raw register EFs):
+register EF values. With the raw register EFs the census gives:
   - Coal (CLG): 1 distinct POC (Huntly Rankine) -- a single value, zero spread.
   - Diesel (DSL): 1 distinct POC -- likewise zero spread.
   - Gas (GAS): 13 distinct POCs, 8 distinct EF values, 385-560 kg/MWh -- a real fleet.
   - Wood (WOOD): not in the thermal SCD2 register at all.
 So only GAS gets a fleet-specific replacement here. Forcing a "fleet spread" for a
-single-plant fuel would produce a false zero-uncertainty band, not a tighter one --
-worse than IPCC's default, not better -- so CLG/DSL/WOOD explicitly keep the IPCC
-Table 2.2 range from the existing scripts, unchanged.
+single-plant fuel would produce a false zero-uncertainty band, not a tighter one
+(worse than IPCC's default, not better), so CLG/DSL/WOOD keep the IPCC Table 2.2
+range used by the other propagation scripts.
 
 Method: generation-weighted mean and standard deviation of each thermal fuel's per-plant
-per-month EF, as the shipped pipeline assigns it (fuel_attribution.FuelAttribution.attribute:
+per-month EF, as the pipeline assigns it (fuel_attribution.FuelAttribution.attribute:
 generator- and unit-level factors, Huntly 1-4 coal/gas split with the gas portion counted
 under GAS, flagged fills included), weighted by each (POC, generator, year, month) cell's
 own generation -- so a large, heavily-used plant counts more than a rarely-dispatched
 peaker, and a degenerate/undersampled result would show up as a small n or a
 suspiciously tight range, not be hidden. Cells with a zero factor (e.g. Glenbrook, zero
-by the pipeline's own rule) carry no register EF and are left out, as before.
+by the pipeline's own rule) carry no register EF and are left out.
 
-ADOPTED GAS SIGMA (2026-09-29): per-unit factor uncertainty, not fleet dispersion. Since the
+Adopted gas sigma: per-unit factor uncertainty, not fleet dispersion. Since the
 pipeline gives each unit its own factor, the spread between units is known heterogeneity, not
 uncertainty in any unit's factor; using it as the gas sigma double-counts. The adopted value is
   rel_sigma_adopted(GAS) = sqrt(carbon^2 + heatrate^2)

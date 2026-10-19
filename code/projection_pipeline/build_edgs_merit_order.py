@@ -1,8 +1,8 @@
 """
-Module 3: Step 3: short-run marginal cost per thermal plant, per year, and the
+Module 3: short-run marginal cost per thermal plant, per year, and the
 resulting merit order (thermal plants ranked ascending by marginal cost).
 
-Marginal_cost (NZD/MWh) =                                          [brief Step 3]
+Marginal_cost (NZD/MWh) =
       Heat Rate [GJ/GWh] x Fuel delivery cost [NZD/GJ] / 1000       (fuel cost)
     + Variable operating cost [NZD/MWh]                             (var O&M)
     + Fuel EF [kg CO2-e/GJ] x Heat Rate [GJ/GWh] / 1000            (carbon cost)

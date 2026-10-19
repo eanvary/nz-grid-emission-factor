@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).parent.parent  # repo root (this script now lives in generation_pipeline/, one level deeper -- 2026-08 reorg)
+ROOT = Path(__file__).parent.parent  # repo root (this script lives in generation_pipeline/, one level down)
 SCRIPT_DIR = Path(__file__).parent  # generation_pipeline/ itself -- for files that moved alongside this script
 OUT_DIR = ROOT / "output"
 GEN_DIR = ROOT / "EA_EMI_raw"
@@ -34,12 +34,11 @@ def record(check_id, category, description, status, detail=""):
 # Scope (years, month coverage, leap years) is derived from whatever raw files are
 # actually on disk, not hardcoded to 2015-2025 -- this project's raw-data folder is
 # a living series (extended to 2026-08 for the em6 cross-check, docs/validation/
-# build_2026_extension_and_em6_crosscheck.py) and previously-hardcoded "11 years /
-# 132 months" expectations here would permanently FAIL on any legitimate extension,
-# indistinguishable from an actual gap. Instead: build the expected month set as the
-# CONTIGUOUS range from the earliest to the latest month found (so a genuine gap in
-# the middle of the series still fails, exactly as before), and derive every
-# downstream day/hour/year count from that same set.
+# build_2026_extension_and_em6_crosscheck.py), and a hardcoded "11 years / 132 months"
+# expectation would fail on any legitimate extension, indistinguishable from a real
+# gap. The expected month set is therefore the contiguous range from the earliest to
+# the latest month found (so a real gap in the middle of the series still fails),
+# and every downstream day/hour/year count derives from that same set.
 gen_files = sorted(GEN_DIR.glob("*_Generation_MD.csv"))
 hvdc_files = sorted(GEN_DIR.glob("*_HVDC_flows.csv"))
 gen_months = {f.name[:6] for f in gen_files}
@@ -59,7 +58,7 @@ YEARS = sorted({int(ym[:4]) for ym in expected_months})
 LEAP_YEARS = {y for y in YEARS if calendar.isleap(y)}
 scope_label = f"{first_y}-{first_m:02d} to {last_y}-{last_m:02d}"
 
-# A: COMPLETENESS & COVERAGE
+# A. Completeness and coverage
 print("\n" + "=" * 70 + "\nA — COMPLETENESS & COVERAGE\n" + "=" * 70)
 
 record("A1", f"Completeness", f"All Generation_MD monthly files present, no gaps ({scope_label})",
@@ -109,7 +108,7 @@ dup_daily = daily.duplicated(subset=["island", "date"]).sum()
 record("A8", "Completeness", "No duplicate (island, date) rows in daily table",
        "PASS" if dup_daily == 0 else "FAIL", f"{dup_daily} duplicates")
 
-# B: INTERNAL CONSISTENCY & RECONCILIATION
+# B. Internal consistency and reconciliation
 print("\n" + "=" * 70 + "\nB — INTERNAL CONSISTENCY & RECONCILIATION\n" + "=" * 70)
 
 h2d = (hourly.groupby(["island", "date"])
@@ -158,10 +157,10 @@ neg_hvdc = ((hvdc_annual["SI_to_NI_GWh"] < 0) | (hvdc_annual["NI_to_SI_GWh"] < 0
 record("B6", "Consistency", "HVDC directional flow components are non-negative (signs pre-separated)",
        "PASS" if neg_hvdc == 0 else "FAIL", f"{neg_hvdc} negative rows")
 
-# B7 (added ef-database-v1.0.1): the zone (sub-island) database and this island database
-# share generation and factors (fuel_attribution.py), so zone generation and CO2 summed to
-# each island and month must equal the monthly table. v1.0 failed this by up to 22% of annual
-# CO2: blended_ef dropped Huntly 1-4's gas share. Source: the zone build's monthly table,
+# B7: the zone (sub-island) database and this island database share generation and
+# factors (fuel_attribution.py), so zone generation and CO2 summed to each island and
+# month must equal the monthly table. Database v1.0 failed this by up to 22% of annual
+# CO2 (blended_ef dropped Huntly 1-4's gas share). Source: the zone build's monthly table,
 # derived from output/zone_historical/zone_ef_TP_2015_2025.parquet (Generation_MD with fills,
 # genmd_MWh and genmd_MWh x local_intensity) by edgs_pipeline/diag_zh1d_nsp_gapfill.py.
 ZONE_TOL = 1e-4  # 0.01%
@@ -192,7 +191,7 @@ else:
            f"{len(j)} island-months, {n_missing} missing on either side; max relative diff "
            f"generation {gen_err.max():.2e}, CO2 {co2_err.max():.2e} (worst {worst})")
 
-# C: PHYSICAL PLAUSIBILITY & BOUNDS
+# C. Physical plausibility and bounds
 print("\n" + "=" * 70 + "\nC — PHYSICAL PLAUSIBILITY & BOUNDS\n" + "=" * 70)
 
 neg_gen = (hourly["total_gen_MWh"] < 0).sum()
@@ -230,15 +229,15 @@ for fuel, (lo, hi) in benchmarks.items():
 record("C5", "Plausibility", "Fleet-average EF per thermal fuel within literature benchmark ranges",
        "PASS" if not bench_fail else "FAIL", "; ".join(bench_fail) if bench_fail else "all within range")
 
-# D: EXTERNAL CROSS-VALIDATION (MBIE official quarterly national EF)
+# D. External cross-validation (MBIE official quarterly national EF)
 print("\n" + "=" * 70 + "\nD — EXTERNAL CROSS-VALIDATION\n" + "=" * 70)
 
-# Cogeneration scope (revised 2026-09-23). MBIE's published EF is "primary activity"
-# scope and excludes autoproducer/industrial cogeneration; this pipeline includes it.
-# D2 below re-derives the comparison on MBIE's scope so the two are like-for-like.
-# This was previously a hardcoded set of five POC codes. That had two defects. It
-# missed te_rapa (TWH0331, 1.68 TWh, 12% of all cogeneration), and excluding by POC
-# also deleted Patea hydro (1.20 TWh, zero-carbon), because POC HWA1101 carries both
+# Cogeneration scope. MBIE's published EF is "primary activity" scope and excludes
+# autoproducer/industrial cogeneration; this pipeline includes it. D2 below
+# re-derives the comparison on MBIE's scope so the two are like-for-like.
+# A fixed list of POC codes does not work: such a list easily misses te_rapa
+# (TWH0331, 1.68 TWh, 12% of all cogeneration), and excluding by POC also removes
+# Patea hydro (1.20 TWh, zero-carbon), because POC HWA1101 carries both
 # Whareroa cogen and Patea. Removing zero-carbon generation shrinks the denominator
 # without shrinking the numerator, which pushes the computed EF the wrong way.
 # The EMI generation data carries its own Tech_Code field, and "Cogen" is a single
@@ -275,9 +274,9 @@ record("D1", "External-validation",
        f"r={corr_full:.4f}, mean|diff|={mean_abs_diff_full:.1f}% "
        f"(systematic — MBIE excludes autoproducer/cogen sales, this pipeline includes them; see D2)")
 
-# D2 re-derives national totals from the raw EMI files on MBIE's scope. Since 2026-09-28 it
-# uses the pipeline's own attribution module (fuel_attribution.py: generator-level factors,
-# Huntly coal/gas split, Kinleith wood, Matahina fill), so it mirrors the shipped pipeline.
+# D2 re-derives national totals from the raw EMI files on MBIE's scope. It uses the
+# pipeline's own attribution module (fuel_attribution.py: generator-level factors,
+# Huntly coal/gas split, Kinleith wood, Matahina fill), so it mirrors the pipeline.
 from fuel_attribution import FuelAttribution
 fa = FuelAttribution()
 FUEL_STD = {"Coal": "CLG", "CLG": "CLG", "Gas": "GAS", "GAS": "GAS", "Diesel": "DSL", "DSL": "DSL",
@@ -325,9 +324,9 @@ record("D2", "External-validation",
        "year 2015-2025, mean 83% (MBIE_gas_electricity_PJ_2026Q2.csv; D3 GAS-emissions), while the metered "
        "cogeneration series here is grid export only")
 
-# D3 (added 2026-09-28, revised 2026-09-29): fuel-level check against MBIE, cogeneration excluded
-# (MBIE note 2). MBIE is a validation target only; nothing here feeds back into the pipeline.
-# Thresholds fixed 2026-09-28: annual |gap| < 10% in every full year; quarterly r > 0.95.
+# D3: fuel-level check against MBIE, cogeneration excluded (MBIE note 2). MBIE is a
+# validation target only; nothing here feeds back into the pipeline.
+# Thresholds: annual |gap| < 10% in every full year; quarterly r > 0.95.
 #   Coal and geothermal: metered emissions vs MBIE "Electricity CO2-e" Excel rows 13 and 16.
 #   Gas: a FUEL-QUANTITY test, pipeline implied non-cogeneration gas (PJ = gas CO2 / MfE gas factor)
 #   vs MBIE gas data tables "Electricity Generation" (Annual_PJ row 65, Quarterly_PJ row 27; saved
@@ -398,7 +397,7 @@ d3_compare("GAS-emissions", "Gas electricity emissions vs MBIE 'Electricity CO2-
            note="Scope mismatch: MBIE's gas emissions row also covers most cogeneration gas; metered cogeneration is export only")
 pd.DataFrame(d3_detail).to_csv(OUT_DIR / "D3_fuel_level_validation.csv", index=False, float_format="%.3f")
 
-# E6 (added 2026-09-29): completeness. For every POC with generation in both the preceding and the
+# E6: completeness. For every POC with generation in both the preceding and the
 # following month, flag any month with zero or missing generation in Generation_MD. Flags are written
 # to completeness_flags.csv; months covered by a flagged fill (filled_generation_log.csv) are marked.
 _mon = {}
@@ -424,7 +423,7 @@ record("E6", "Temporal", "No POC has a zero/missing month between two months wit
        f"{len(_flags)} flagged POC-months ({int(_flags['filled'].sum()) if len(_flags) else 0} covered by a flagged fill); "
        f"with >=5 GWh in both neighbouring months: {[(p, m) for p, m in zip(_big['poc'], _big['month'])]}; see completeness_flags.csv")
 
-# E: TEMPORAL INTEGRITY
+# E. Temporal integrity
 print("\n" + "=" * 70 + "\nE — TEMPORAL INTEGRITY\n" + "=" * 70)
 
 # NZ's DST transitions are month-fixed (spring-forward late September, fall-back
@@ -465,14 +464,14 @@ record("E3", "Temporal", "DST fall-back day (TP49/TP50) present and now included
        "PASS" if len(fallback_dst_gen) == len(years_with_april) else "WARN",
        f"{len(fallback_dst_gen)} files with a fall-back day found (expected {len(years_with_april)} in-scope Aprils)")
 
-# F: PROVENANCE
+# F. Provenance
 print("\n" + "=" * 70 + "\nF — PROVENANCE\n" + "=" * 70)
 record("F1", "Provenance", "Every raw file's byte size logged and none anomalously small",
        "PASS", f"{len(gen_files)} Generation_MD + {len(hvdc_files)} HVDC_flows files, sizes checked in A3")
 record("F2", "Provenance", "All known pipeline bugs documented with fix date, magnitude, and rationale",
        "PASS", "see EDGS_Pipeline_Complete_Documentation.md Section 8.5 and script NOTES logs")
 
-# G: STATISTICAL OUTLIER SCREEN
+# G. Statistical outlier screen
 print("\n" + "=" * 70 + "\nG — STATISTICAL OUTLIER SCREEN\n" + "=" * 70)
 
 ni_daily_ef = daily[daily.island == "NI"]["EF_kg_per_MWh"].dropna()
@@ -483,7 +482,7 @@ record("G1", "Outliers", "NI daily EF: count of >3xIQR outliers (flagged for man
        "PASS" if len(outliers) < len(ni_daily_ef) * 0.01 else "WARN",
        f"{len(outliers)}/{len(ni_daily_ef)} rows ({len(outliers)/len(ni_daily_ef)*100:.2f}%) beyond 3xIQR")
 
-# H: CONSUMPTION-SIDE & INTER-ISLAND TRANSFER
+# H. Consumption-side and inter-island transfer
 print("\n" + "=" * 70 + "\nH — CONSUMPTION-SIDE & INTER-ISLAND TRANSFER\n" + "=" * 70)
 
 CONS_DIR = ROOT / "Consumption_Island" / "output"
@@ -549,7 +548,7 @@ record("H6", "Consumption", "SI consumption EF is higher in already-identified d
        f"dry-year mean={si_ef_dry:.2f} kg/MWh vs other-year mean={si_ef_other:.2f} kg/MWh")
 
 # H7: cross-script reconciliation. The daily/hourly script and the monthly/annual
-# script are two SEPARATE scripts (Consumption_Island/build_consumption_ef_*.py),
+# script are two separate scripts (consumption_pipeline/build_consumption_ef_*.py),
 # each independently computing the average-mix balance at its own resolution --
 # by design (per NI_SI_Consumption_Emission_Factor_Methodology.docx Section 4:
 # "applied independently at four resolutions... not by averaging a coarser series

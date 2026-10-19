@@ -2,7 +2,7 @@
 Writes DATA_MANIFEST.csv at the repository root: path (relative, forward slashes), size in
 bytes and SHA-256 for every .csv and .parquet file directly in output/ and anywhere under
 output/edgs/. Snapshot folders (names starting "_pre" or "_backup") are skipped: they hold
-superseded copies kept for comparison, not database files. Rerun after any output changes.
+older copies kept for comparison, not database files. Rerun after any output changes.
 """
 import csv
 import hashlib

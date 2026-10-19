@@ -21,7 +21,7 @@ publishes no EF itself, so every variant is a derived quantity:
                   Matches the EDGS island EF(i) on both emission scope (combustion only)
                   and generation scope (total). Used for Module C.
   grid_only       +coal_cogen with distributed solar removed from the denominator (kept for
-                  continuity with the first pass; superseded by grid_supplied).
+                  comparison; grid_supplied is the variant used).
   grid_supplied   +coal_cogen with all embedded generation removed from the denominator and
                   its emissions from the numerator. Embedded = distributed (rooftop) solar plus
                   the six base-year "generic" plants, which TIMES-NZ docs (baseyear.html, 2.6)
@@ -38,8 +38,8 @@ EDGS comparison:
   island    this project's hourly EDGS disaggregation, generation basis, annual
             generation-weighted mean (the phase1_trajectories.py method), recomputed here from
             the current output/edgs/edgs_hourly_*.parquet because the cached
-            analysis_paper/tables/phase1_annual_trajectory_projected.csv predates the
-            2026-09-22 rebuild. Needs pyarrow (run with the Anaconda interpreter).
+            analysis_paper/tables/phase1_annual_trajectory_projected.csv may predate the
+            current parquet files. Needs pyarrow (run with the Anaconda interpreter).
 
 Emissions are CO2-e (MfE factors). The thermal part is fuel PJ x factor, which the script
 verifies (check_thermal_consistency).
@@ -138,7 +138,7 @@ df["EF_grid_supplied"] = ((df.ems_kt + df.coal_cogen_kt - df.emb_kt)
                           / (df.gen_GWh - df.embedded_GWh) * 1000)
 df["EF_grid_supplied_no_addback"] = (df.ems_kt - df.emb_kt) / (df.gen_GWh - df.embedded_GWh) * 1000
 # Combustion scope: geothermal fugitive emissions removed, to match the EDGS projection,
-# which sets geothermal CO2 to zero (edgs_pipeline/build_edgs_dispatch.py, "TESTED, NOT
+# which sets geothermal CO2 to zero (projection_pipeline/build_edgs_dispatch.py, "TESTED, NOT
 # ADOPTED"). Total-generation denominator, so the matched variant for EDGS island EF(i).
 df["EF_total_combustion"] = (df.ems_kt + df.coal_cogen_kt - df.geo_kt) / df.gen_GWh * 1000
 df["addback_effect_total"] = df.EF_plus_coal_cogen - df.EF_reported

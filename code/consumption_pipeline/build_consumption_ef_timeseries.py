@@ -1,19 +1,15 @@
 """
 NI/SI CONSUMPTION-based monthly and annual emission factor database, 2015-2025.
 
-REDESIGNED 2026-08-10 (systematic reliability assessment): this script previously
-maintained its own full, independent copy of the raw EA/EMI ingestion pipeline
-(local EA_EMI_raw/, EA data/ folders duplicating the root pipeline's), which meant
-every bug found and fixed in the root generation/HVDC pipelines (SCD2 9999-year
-timestamp overflow, DST fall-back TP49/TP50 drop, the 2021-2025-only curated HVDC
-report) had to be independently re-discovered and re-fixed here -- and had NOT
-been, until this pass. Rewritten to read the root pipeline's own already-fixed,
-already-extended 2015-2025 outputs as its single source of truth instead of
-re-deriving generation and HVDC transfer from raw files a second time. This
-eliminates the duplicate-bug surface entirely: any future root-pipeline fix or
-extension is inherited here automatically, with no separate re-implementation to
-keep in sync. The old self-contained EA data/ and EA_EMI_raw/ copies in this
-folder are no longer read by this script (left in place, unused, for now).
+Design: this script reads the root pipeline's 2015-2025 outputs as its single
+source of truth rather than re-deriving generation and HVDC transfer from raw
+files a second time. A separate copy of the raw EA/EMI ingestion (local
+EA_EMI_raw/, EA data/ folders) would have to repeat every fix made in the root
+generation/HVDC pipelines (SCD2 9999-year timestamp overflow, DST fall-back
+TP49/TP50 drop, the 2021-2025-only curated HVDC report). Reading the root
+outputs means any root-pipeline fix or extension is inherited here, with no
+separate re-implementation to keep in sync. Any EA data/ or EA_EMI_raw/ copies
+in this folder are not read by this script.
 
 Inputs (root pipeline outputs, already validated -- see
 DATA_QUALITY_ASSESSMENT_FRAMEWORK.md):
@@ -22,7 +18,7 @@ DATA_QUALITY_ASSESSMENT_FRAMEWORK.md):
   output/monthly_hvdc_transfer_NI_SI.csv (this folder) - inter-island transfer by month
   output/annual_hvdc_transfer_NI_SI.csv (this folder)  - inter-island transfer by year
 
-Method (unchanged from the original design; see Consumption_EF_Worked_Example.docx
+Method (see Consumption_EF_Worked_Example.docx
 and NI_SI_Consumption_Emission_Factor_Methodology.docx for the full written
 derivation):
 

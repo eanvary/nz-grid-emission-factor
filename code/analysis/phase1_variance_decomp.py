@@ -1,14 +1,14 @@
 """
-Phase 1, item 7: variance decomposition.
+Phase 1: variance decomposition.
 For each scenario-year, decompose total hourly-EF variance into shares
 "explained" (eta-squared, marginal/between-group variance over total variance)
 by: hour-of-day, day-of-year (proxy: month, to keep groups populated), season,
-and island. This is a SEQUENTIAL, marginal (not orthogonalised) decomposition --
-components are NOT guaranteed to sum to 100% and are order-independent by
-construction (each factor's share is computed against the SAME total variance,
-not residualised against the others). This is stated explicitly as the
-project brief allows ("well-defined... or report order sensitivity") --
-marginal shares avoid the order-sensitivity problem entirely, at the cost of
+and island. This is a sequential, marginal (not orthogonalised) decomposition:
+components are not guaranteed to sum to 100% and are order-independent by
+construction (each factor's share is computed against the same total variance,
+not residualised against the others). The alternative would be an ordered
+decomposition with its order sensitivity reported; marginal shares avoid the
+order-sensitivity problem entirely, at the cost of
 not summing to a clean 100%; any overlap between factors shows up as
 double-counted variance, which is itself informative (it shows how confounded
 the factors are), and is reported alongside.

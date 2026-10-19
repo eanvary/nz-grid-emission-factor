@@ -1,38 +1,40 @@
 """
-Follow-up brief R2: wire Brief R's efficiency lever into the HOURLY dispatch, not just the
-annual national total. Standalone: reads only existing shipped parquets + Brief R's own CSV
-output, writes only new CSVs. Does not modify build_edgs_dispatch.py, edgs_common.py,
-build_edgs_efficiency_sensitivity.py, or any shipped output parquet.
+Hourly version of the thermal-efficiency sensitivity: apply the efficiency lever of
+build_edgs_efficiency_sensitivity.py to the hourly dispatch, not just the annual national
+total. Standalone: reads only existing pipeline parquets + that script's CSV output, writes
+only new CSVs. Does not modify build_edgs_dispatch.py, edgs_common.py,
+build_edgs_efficiency_sensitivity.py, or any pipeline output parquet.
 
-WHY THIS SCRIPT EXISTS: Brief R rescaled only the annual `combustion_co2_kt` total per
-scenario-year-fuel. It could not, by itself, move the hourly "dirty hour" ceiling the user
-flagged (worst-case NI generation EF staying ~flat 2024->2050 in Reference/Growth/Constraint,
-per README's dirty-hours discussion) because that ceiling is set by the HOURLY hourly emission
-factor shape, which Brief R never touched. This script closes that gap: it derives the implicit
-hourly `thermal_shape(t)` directly from the shipped generation parquet (exact, no
-re-simulation needed - see fidelity note below), then re-distributes Brief R's annual CO2
-DELTA across hours using that same shape, exactly mirroring how build_edgs_dispatch.py itself
-distributes thermal CO2 (Step B: "CO2 per fuel = MBIE fuel input x MfE factor, distributed over
-the same thermal shape").
+Why: build_edgs_efficiency_sensitivity.py rescales only the annual `combustion_co2_kt` total
+per scenario-year-fuel. That alone cannot move the hourly "dirty hour" ceiling (worst-case NI
+generation EF staying ~flat 2024->2050 in Reference/Growth/Constraint), because the ceiling is
+set by the hourly emission factor shape, which the annual rescale does not touch. This script
+derives the implicit hourly `thermal_shape(t)` directly from the pipeline's generation parquet
+(exact, no re-simulation needed; see fidelity note below), then re-distributes the annual CO2
+delta across hours using that same shape, mirroring how build_edgs_dispatch.py distributes
+thermal CO2 ("CO2 per fuel = MBIE fuel input x MfE factor, distributed over the same thermal
+shape").
 
-FIDELITY (same class of exactness as Brief H, not Briefs E-G's counterfactual approximation):
+Fidelity (exact, like build_edgs_hvdc_capacity_correction.py, not a counterfactual
+approximation like build_edgs_battery_sensitivity.py):
 build_edgs_dispatch.py sets fuel_hourly[com] = mbie_gwh(com) * 1000 * thermal_shape(t), using
-the SAME thermal_shape array for every thermal fuel (coal/gas/diesel) within a scenario-year
-(see its Step B comment). That means, algebraically, thermal_shape(t) can be recovered EXACTLY
-from the shipped hourly generation data alone:
+the same thermal_shape array for every thermal fuel (coal/gas/diesel) within a scenario-year.
+Algebraically, thermal_shape(t) can therefore be recovered exactly from the pipeline's hourly
+generation data alone:
     thermal_shape(t) = total_thermal_generation_mwh(t) / total_thermal_annual_generation_mwh
-(summed across Coal+Natural gas+Diesel; ratio is identical whichever thermal fuel or their sum
-is used, since they all share the one array) - no re-run of the dispatch script needed, and no
-new approximation error introduced (unlike Briefs F/G's ~20 MW reconstruction discrepancy).
+(summed across Coal+Natural gas+Diesel; the ratio is identical whichever thermal fuel or their
+sum is used, since they all share the one array). No re-run of the dispatch script is needed,
+and no new approximation error is introduced (unlike the ~20 MW reconstruction discrepancy of
+the battery sensitivity scripts).
 
-Baseline hourly CO2(t) is likewise reconstructed EXACTLY from the shipped
+Baseline hourly CO2(t) is likewise reconstructed exactly from the pipeline's
 edgs_hourly_emission_factor.parquet x total island generation(t) (inverting the pipeline's own
-ef = co2/(gen*1000) formula) - not re-simulated.
+ef = co2/(gen*1000) formula), not re-simulated.
 
 Method:
-  delta_kt(scenario, year) = Brief R's efficient_co2_kt - baseline_co2_kt (already computed,
-                              edgs_efficiency_sensitivity_summary.csv; thermal fuels only, Wood
-                              excluded exactly as Brief R excluded it)
+  delta_kt(scenario, year) = efficient_co2_kt - baseline_co2_kt from
+                              edgs_efficiency_sensitivity_summary.csv (thermal fuels only,
+                              Wood excluded, as in build_edgs_efficiency_sensitivity.py)
   new_co2_kg(t) = baseline_co2_kg(t) + thermal_shape(t) x delta_kt(scenario, year) x 1e6
   new_ef(t)     = new_co2_kg(t) / (island_generation_mwh(t) x 1000)      [generation unaffected]
 
@@ -47,11 +49,11 @@ from edgs_common import OUT_DIR, SCENARIOS, THERMAL_COMMODITIES, log_factory
 
 log, lines = log_factory()
 
-# Load: Brief R's annual delta (thermal fuels only, Wood excluded - matches Brief R exactly)
+# Annual CO2 delta from build_edgs_efficiency_sensitivity.py (thermal fuels only, Wood excluded)
 nat = pd.read_csv(OUT_DIR / "edgs_efficiency_sensitivity_summary.csv")
 delta_kt_map = nat.set_index(["scenario", "year"])["co2_delta_kt"].to_dict()  # kt, <=0
 
-# Load shipped hourly generation (NI only - all thermal capacity is NI, per Module 2/5)
+# Pipeline hourly generation (NI only - all thermal capacity is NI, per Module 2/5)
 gen = pd.read_parquet(OUT_DIR / "edgs_hourly_generation.parquet",
                        columns=["scenario", "island", "datetime_hour", "fuel_commodity",
                                 "generation_mwh"])
@@ -78,7 +80,7 @@ ni_thermal["thermal_shape"] = np.where(ni_thermal["annual_thermal_mwh"] > 0,
                                         0.0)
 del gen_ni
 
-# Load shipped hourly EF (NI, generation basis) -> reconstruct baseline CO2(t) EXACTLY
+# Pipeline hourly EF (NI, generation basis) -> reconstruct baseline CO2(t) exactly
 ef = pd.read_parquet(OUT_DIR / "edgs_hourly_emission_factor.parquet",
                       columns=["scenario", "island", "datetime_hour", "ef_basis",
                                "emission_factor_kg_co2e_per_kwh"])
@@ -100,7 +102,7 @@ with np.errstate(divide="ignore", invalid="ignore"):
 log(f"Reconstructed {len(df):,} NI generation-side hourly rows "
     f"({df['scenario'].nunique()} scenarios x {df['year'].nunique()} years)")
 
-# Sanity check: baseline reconstruction should reproduce the shipped EF exactly (0 delta year)
+# Sanity check: baseline reconstruction should reproduce the pipeline EF exactly (0 delta year)
 sanity = df[df["delta_kt"] == 0]
 if len(sanity):
     resid = (sanity["new_ef_kg_per_kwh"] - sanity["emission_factor_kg_co2e_per_kwh"]).abs().max()

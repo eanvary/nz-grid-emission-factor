@@ -1,15 +1,15 @@
 """
-Module 2: Step 2: plant register + commissioning/retirement calendar.
+Module 2: plant register + commissioning/retirement calendar.
 
 From Generation Stack (all plants, existing + generic future) build, per scenario
 x year 2024-2050, the set of ACTIVE plants with island, capacity, tech->commodity
 and (thermal only) heat rate / variable O&M / fuel-delivery cost. Retirement dates
-come from brief Section 2 (report Appendix One). New-build island tags are
+come from the EDGS 2024 report, Appendix One. New-build island tags are
 cross-checked against the GEM build schedule.
 
 source_tag:
   plant attributes                      -> MBIE_annual_disaggregated (Generation Stack)
-  active-year / retirement / biomass    -> calculated (deterministic from A + brief S2)
+  active-year / retirement / biomass    -> calculated (deterministic from Generation Stack + retirement calendar)
 
 Outputs (output/edgs/):
   edgs_plant_register.parquet   long: scenario, year, plant, commodity, dispatch_class,
@@ -32,7 +32,7 @@ gs_all = pd.read_excel(ASSUMPTIONS_XLSX, sheet_name="Generation Stack")
 gem = pd.read_excel(RESULTS_XLSX, sheet_name="GEM build schedule")
 
 
-# Retirement / biomass-conversion matcher (brief Section 2)
+# Retirement / biomass-conversion matcher (EDGS 2024 report, Appendix One)
 def match_retirement(plant_name, rules):
     """Return (retire_year, convert) for a plant given a scenario's rules.
     retire_year: first year the plant is NO LONGER available (np.inf if never).

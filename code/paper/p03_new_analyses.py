@@ -1,5 +1,5 @@
 """
-Paper 03, database v1.0.1 (primary projection): the added analyses and every number the revised
+Paper 03, database v1.0.1 (primary projection): the added analyses and every number the
 text cites, in one traceable pass. Reads the working copy after p03_build_primary_inputs.py and
 p03_run_chain.py. Usage: python p03_new_analyses.py <copy_root> <out_dir>
 
@@ -9,7 +9,7 @@ Writes to <out_dir>:
   screening_bound.csv                 static spatial error bound for other grids (Figure 7 register)
   numbers_for_text.json               every number quoted in the manuscript, with its source
 
-Added analyses (plan of 29 September, A2 to A6):
+Added analyses (A2 to A6):
   A2 South Island building: same demand profiles and trajectories, building island SI.
   A3 Consumption basis: hourly island factor from p03_build_primary_inputs.py (emissions follow
      the exporting island); annual island mean weighted by island load; national as generation.

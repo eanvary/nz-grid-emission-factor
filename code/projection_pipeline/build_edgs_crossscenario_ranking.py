@@ -1,20 +1,17 @@
 """
-Brief D's cross-scenario ranking table, generalised (2026-08-12, Brief N).
+Cross-scenario ranking of HVDC transfer-limit violations, for any Assumption-1 template.
 
-The original Brief D analysis (README_EDGS_hourly.md) was computed by a one-off session
-script that was never saved to this folder: only its output, edgs_hvdc_crossscenario_
-ranking.csv, survived. This script reproduces that exact table from first principles
-(verified: re-running it against the shipped central-2021 baseline exactly reproduces the
-existing edgs_hvdc_crossscenario_ranking.csv to the displayed precision) and generalises it
-to any Assumption-1 template via EDGS_TEMPLATE_YEAR, so Brief D can be re-derived against
-the median-2017 template (PLAN_11YEAR_TEMPLATE_REASSESSMENT.md Step 7) the same way Brief C
-already was.
+Ranks the scenarios by when the required HVDC transfer first exceeds the 1200 MW
+link capacity and how fast it grows afterwards. Against the central 2021 template it
+reproduces edgs_hvdc_crossscenario_ranking.csv to the displayed precision. The template
+is chosen with EDGS_TEMPLATE_YEAR, so the same table can be built for the median-2017
+template.
 
-Method, reverse-engineered from the existing CSV and Brief D's own text:
+Method:
   demand_2050_twh       = MBIE annual demand target, that scenario, 2050
   first_violation_year  = earliest year in 2024-2050 where max_mw_baseline > 1200 MW
                            (max_mw_baseline = edgs_hvdc_sensitivity_summary's baseline
-                           column, i.e. Brief B/Module 7's own transfer-requirement
+                           column, i.e. Module 7's own transfer-requirement
                            reimplementation for this template)
   mw_at_first_violation = max_mw_baseline in that first-violation year
   mw_2050                = max_mw_baseline in 2050

@@ -1,11 +1,10 @@
 """
-Reconstruction of four supplementary EF figures that existed in output/ with
-no corresponding source script anywhere in the repo (annual_EF_bar_NI_SI.png,
+Four supplementary EF figures (annual_EF_bar_NI_SI.png,
 daily_EF_variation_NI_SI.png, hourly_EF_diurnal_profile_NI_SI.png,
-fuel_mix_share_2025_NI_SI.png). Rebuilt here, matching their original visual
-design (confirmed against the pre-existing PNGs backed up in
-output/_backup_2021_2025_only/), against the current 2015-2025 pipeline
-outputs. Does not touch the EF/generation/HVDC pipeline scripts or outputs.
+fuel_mix_share_2025_NI_SI.png), built from the 2015-2025 pipeline outputs
+in the visual design of the 2021-2025 versions (kept in
+output/_backup_2021_2025_only/). Does not touch the EF/generation/HVDC
+pipeline scripts or outputs.
 """
 from pathlib import Path
 
@@ -15,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).parent.parent  # repo root (this script now lives in generation_pipeline/, one level deeper -- 2026-08 reorg)
+ROOT = Path(__file__).parent.parent  # repo root (this script lives in generation_pipeline/, one level down)
 OUT_DIR = ROOT / "output"
 
 NAVY = "#1A2744"

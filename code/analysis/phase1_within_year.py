@@ -1,5 +1,5 @@
 """
-Phase 1, item 5: within-year structure.
+Phase 1: within-year structure.
 Diurnal profiles, weekday/weekend contrast, seasonal patterns, and their
 evolution across the projection horizon; duration curves; zero-thermal-hour
 and high-EF-tail-hour counts over time.

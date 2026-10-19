@@ -2,18 +2,18 @@
 Category G2 uncertainty quantification (IPCC Approach 1 / analytic error propagation)
 for the NI/SI generation-side monthly emission factor.
 
-INPUT (read-only, no pipeline output touched):
+Input (read-only, no pipeline output touched):
     output/monthly_fuel_mix_NI_SI.csv
         columns: island, year, month, fuel_code, gen_mwh, co2_kg, share_pct,
                  weighted_ef_kg_per_MWh
     (this is the finest resolution at which a PER-FUEL generation split is
-    published by this pipeline; the shipped hourly table
-    output/hourly_emission_factor_NI_SI.csv carries only the already-blended
-    total EF, with no per-fuel breakdown, so a genuinely per-fuel uncertainty
-    propagation cannot honestly be built at hourly resolution from the
-    currently shipped outputs -- see the accompanying report, Finding 4.)
+    published by this pipeline; the published hourly table
+    output/hourly_emission_factor_NI_SI.csv carries only the blended
+    total EF, with no per-fuel breakdown, so a per-fuel uncertainty
+    propagation cannot be built at hourly resolution from the published
+    outputs alone. build_hourly_fuel_mix.py builds the per-fuel hourly table.)
 
-METHOD -- IPCC Approach 1 (analytic/first-order error propagation), per
+Method: IPCC Approach 1 (analytic/first-order error propagation), per
 IPCC (2000) Good Practice Guidance and Uncertainty Management in National
 Greenhouse Gas Inventories, Chapter 6, and IPCC (2006) 2019 Refinement Vol 1
 Ch 3. Both PDFs are archived in ../validation_references/.
@@ -57,10 +57,10 @@ Fuel coverage (disclosed, not forced):
     covers FUEL COMBUSTION only; geothermal power-station CO2 originates
     from dissolved gas in the geothermal fluid, not fuel combustion, and is
     not covered by any table in this chapter. No IPCC-cited uncertainty
-    range for it was found in this session's downloaded references. Rather
+    range for it was found in the downloaded references. Rather
     than invent one, GEO's generation share is reported separately as
-    "unquantified coverage" -- see the report's Finding 3 for why this
-    matters and what a correct fix would need.
+    "unquantified coverage". run_ipcc_uncertainty_full_coverage.py adds
+    geothermal from station-level data.
   - ELE              -> EXCLUDED, same reasoning; also negligible share
     (<0.2% in every island-month checked), so the effect on the reported
     coverage gap is immaterial regardless.

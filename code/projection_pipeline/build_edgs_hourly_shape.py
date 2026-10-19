@@ -1,28 +1,24 @@
 """
-Module 4: Step 4 (Assumption 1): build normalised hourly SHAPE templates, by
+Module 4 (Assumption 1): build normalised hourly shape templates, by
 island, from the user's historical EA/EMI data. These are the only non-MBIE,
 non-battery inputs the pipeline uses, and they are Assumption 1.
 
 Produces, for four template years chosen by national hydro (central / median / wet / dry):
   - per (island, renewable fuel) normalised hourly profile  [weight sums to 1/yr]
-  - per island normalised hourly DEMAND profile             [weight sums to 1/yr]
+  - per island normalised hourly demand profile             [weight sums to 1/yr]
 
 Template years (ranked on national hydro TWh from monthly_fuel_mix_NI_SI.csv):
-  central = 2021 (23.34 TWh, originally labelled "median") ; median = 2017 (24.22, true
+  central = 2021 (23.34 TWh) ; median = 2017 (24.22, true
   median of the full 11-year 2015-2025 record) ; wet = 2023 (25.37) ; dry = 2024 (22.73)
-The wet/dry pair is the Assumption-1 sensitivity case (brief Section 4).
+The wet/dry pair is the Assumption-1 sensitivity case.
 
-APPLIED (2026-08-11, Design B of PLAN_11YEAR_TEMPLATE_REASSESSMENT.md): "central" (2021) is
-KEPT, not replaced -- every figure in Briefs B-H of README_EDGS_hourly.md is anchored to it
-and this change is deliberately additive, not destructive. "median" (2017) is ADDED as a 4th,
-genuinely-representative template, re-ranked against the full 11-year 2015-2025 record (2021
-was only ever checked against the 2021-2025 window that existed when it was first chosen, and
-turns out to be the 3rd-driest of 11 years / 18th percentile, not the median). 2023/2024 are
-unaffected by the extension (still correctly the wettest/driest of all 11 years, not just the
-original 5). Adding "median" does not change any previously-shipped number (only the hourly
-TIMING shape depends on which template is selected; annual volume is always MBIE's own
-template-invariant figure). See EDGS_Pipeline_Complete_Documentation.md Section 8.5 and
-README_EDGS_hourly.md Brief K for the original analysis and now Brief M for what changed.
+"central" (2021) remains the reference template, and the results built on it are kept.
+"median" (2017) is a 4th, representative template, ranked against the full 11-year
+2015-2025 record: 2021 was chosen on the 2021-2025 window only and is the 3rd-driest of 11
+years (18th percentile), not the median. 2023/2024 are the wettest/driest of all 11 years,
+not just of 2021-2025. Selecting a template changes only the hourly timing shape; annual
+volume is always MBIE's template-invariant figure, so adding "median" changes no result
+built on "central".
 
 Renewable profiles are rebuilt per-fuel from raw Generation_MD (the existing
 hourly output collapses fuel); demand profiles come from the Consumption
@@ -72,24 +68,20 @@ for f in gen_files:
     df = pd.read_csv(f, low_memory=False)
     tp = df[[f"TP{i}" for i in range(1, 49)]].fillna(0).to_numpy(float)
     hour_mwh = tp.reshape(len(df), 24, 2).sum(axis=2) / 1000.0  # (n,24) pair TPs -> hours
-    # FIX (2026-08-10, found by the systematic reliability assessment, NOT YET picked
-    # up by the currently-shipped edgs_shape_*.parquet -- see
-    # DATA_QUALITY_ASSESSMENT_FRAMEWORK.md): NZ's DST fall-back day (first Sunday of
-    # April) has 50 trading periods; TP49/TP50 were previously dropped entirely,
-    # missing ~3,500-3,900 MWh nationally on that one day in each of 2021/2023/2024.
-    # Folded into hour 23 for the same reason as build_ef_timeseries_daily_hourly.py
-    # (avoids adding a 25th hour bucket that would break the fixed 24-hour/day shape
-    # every downstream consumer of edgs_shape_*.parquet assumes). Negligible in
-    # magnitude (<0.02% of one fuel's one year's total) -- not, by itself, sufficient
-    # reason to trigger a full re-run of the shipped forward pipeline (Modules 5-7 and
-    # every downstream Brief); left as a documented, ready-to-pick-up fix for whoever
-    # next regenerates the shipped output for any other reason.
+    # NZ's DST fall-back day (first Sunday of April) has 50 trading periods. Dropping
+    # TP49/TP50 would miss ~3,500-3,900 MWh nationally on that one day in each of
+    # 2021/2023/2024. They are folded into hour 23 for the same reason as
+    # build_ef_timeseries_daily_hourly.py (a 25th hour bucket would break the fixed
+    # 24-hour/day shape every downstream consumer of edgs_shape_*.parquet assumes).
+    # The effect is negligible (<0.02% of one fuel's one year's total), so
+    # edgs_shape_*.parquet outputs built without this fold were not regenerated for it
+    # alone; it takes effect whenever Modules 4-7 are next re-run.
     if "TP49" in df.columns:
         tp_extra = df[["TP49", "TP50"]].fillna(0).to_numpy(float)
         hour_mwh[:, 23] += tp_extra.sum(axis=1) / 1000.0
-    # Column casing changed pre-2020 (Trading_date -> Trading_Date); the 2015-2025
-    # extension exposed this for the new "median" (2017) template -- same fix as
-    # build_ef_timeseries.py's lower_map, applied here too (2026-08-11).
+    # Column casing differs before 2020 (Trading_date vs Trading_Date), which matters
+    # for the "median" (2017) template; same case-insensitive lookup as
+    # build_ef_timeseries.py's lower_map.
     lower_map = {c.lower(): c for c in df.columns}
     island = pd.Series(df[lower_map["poc_code"]]).map(poc_island).to_numpy()
     fuel = pd.Series(df[lower_map["fuel_code"]]).map(FUEL_STD).fillna(df[lower_map["fuel_code"]]).to_numpy()

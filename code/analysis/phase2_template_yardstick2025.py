@@ -1,23 +1,23 @@
 """
 Phase 2, template selection, robustness check: 2025 alone as the yardstick.
 
-WHY THIS EXISTS (2026-09-27). phase2_template_shape_selection.py scores each
+Why this check. phase2_template_shape_selection.py scores each
 candidate year's timing against the mean of metered 2024 and 2025. That makes
 2024 and 2025 ineligible as templates, since a year scored against itself wins
-by construction. Raised in supervision prep: if recent years are good enough
+by construction. The question it answers: if recent years are good enough
 to be the reference, why not use one as the template?
 
 This re-runs the identical method with 2025 alone as the yardstick, so 2024
 becomes an eligible candidate and can be compared with 2021 on equal terms.
-Nothing shipped is overwritten.
+No released output is overwritten.
 
-Method, unchanged from the shipped script: for each complete metered year,
+Method, as in phase2_template_shape_selection.py: for each complete metered year,
 normalise the NI generation-basis hourly EF by that year's mean, average it by
 hour of day, day of week, hour of week and month of year, and correlate each
 profile with the yardstick year's profile.
 
-INPUTS   output/hourly_emission_factor_NI_SI.csv (metered hourly EF, EA/EMI)
-OUTPUTS  analysis_paper/tables/phase2_template_yardstick2025.csv
+Inputs   output/hourly_emission_factor_NI_SI.csv (metered hourly EF, EA/EMI)
+Outputs  analysis_paper/tables/phase2_template_yardstick2025.csv
          analysis_paper/logs/phase2_template_yardstick2025_log.txt
 """
 import numpy as np

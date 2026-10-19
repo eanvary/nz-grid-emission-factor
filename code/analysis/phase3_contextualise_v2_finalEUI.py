@@ -1,13 +1,10 @@
 """
-Phase 3 item 17, FINAL pass: recompute absolute (kgCO2e/m2) decomposition
-figures using the corrected EUI from phase3_eui_derivation_v2.py (pre-2004,
-Whole Building, NI, electricity-dominant NABERS cohort, n=132).
+Phase 3: absolute (kgCO2e/m2) decomposition figures, using the EUI from
+phase3_eui_derivation_v2.py (pre-2004, Whole Building, NI,
+electricity-dominant NABERS cohort, n=132).
 
-This materialises, as a proper re-runnable script, the calculation that was
-first done inline during the 2026-08-02 review session (flagged during the
-end-to-end reproducibility pass as a gap -- an ad hoc calculation is not
-reproducible). Supersedes phase3_contextualise.py's illustrative-EUI output
-and the intermediate v3 file's inline provenance.
+Kept as a re-runnable script so the calculation is reproducible. Its output
+replaces the illustrative-EUI figures of phase3_contextualise.py.
 """
 import pandas as pd
 from pathlib import Path

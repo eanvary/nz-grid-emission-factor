@@ -1,7 +1,7 @@
 """
-Closes Finding 3's coverage gap: geothermal (24-48% of NI generation) previously excluded
-because IPCC Ch.2 doesn't cover geothermal-fluid emissions and no citable source was in
-hand. This session found one: McLean, K. & Richardson, I. (2019), "Greenhouse Gas Emissions
+Adds geothermal (24-48% of NI generation) to the uncertainty band. IPCC Ch.2 does not
+cover geothermal-fluid emissions, so the source is station data from McLean, K. &
+Richardson, I. (2019), "Greenhouse Gas Emissions
 From Geothermal Power Stations: Context and Opportunities", New Zealand Geothermal
 Association -- 12 real NZ geothermal stations, 2018, MW and gCO2eq/kWh each (archived at
 ../validation_references/McLean_NZGA_GeothermalGHG.pdf). This script:
@@ -14,17 +14,16 @@ Association -- 12 real NZ geothermal stations, 2018, MW and gCO2eq/kWh each (arc
 3. Adds GEO to REL_SIGMA and re-runs the full propagation (monthly, annual, hourly),
    alongside (not replacing) the existing GAS-only fleet-adjusted run.
 4. Separately, as its own distinct, non-conflated observation, reports the geothermal EFs
-   in this project's plant register as the shipped pipeline loads it
-   (generation_pipeline/fuel_attribution.py, FuelAttribution().reg). When this script was
-   written the raw register gave every geothermal POC one flat value (99.996 kg/MWh,
-   identical HeatRate/EmissionsFactor for all registered POCs), ~24% above McLean &
-   Richardson's MW-weighted mean (76 gCO2/kWh). The module's register copy now carries the
-   per-station correction (geothermal_ef_correction.py), and the shipped factors come from
-   the NZGA station intensities (FuelAttribution().nzga), so the observation now prints the
-   corrected per-POC values and the NZGA fleet average instead of the flat-value gap. This
-   is separate from (and not a re-litigation of) the EDGS forward-pipeline's own earlier,
-   already-decided rejection of this same source as a Check-2 gap-filler (a different
-   pipeline, a different use of the data).
+   in this project's plant register as the pipeline loads it
+   (generation_pipeline/fuel_attribution.py, FuelAttribution().reg). The raw register
+   gives every geothermal POC one flat value (99.996 kg/MWh, identical
+   HeatRate/EmissionsFactor for all registered POCs), ~24% above McLean &
+   Richardson's MW-weighted mean (76 gCO2/kWh). The module's register copy carries the
+   per-station correction (geothermal_ef_correction.py), and the pipeline's factors come
+   from the NZGA station intensities (FuelAttribution().nzga), so the observation prints
+   the corrected per-POC values and the NZGA fleet average. This is separate from the
+   EDGS projection pipeline's decision not to use this source as a Check-2 gap-filler
+   (a different pipeline and a different use of the data).
 """
 import math
 import sys
@@ -91,7 +90,7 @@ if fa.nzga:
     print(f"  Shipped factors use NZGA station intensities; NZGA MW-weighted average by year (g/kWh): "
           + ", ".join(f"{y}: {v:.1f}" for y, v in sorted(nz.items())))
 
-# Re-run propagation, monthly + hourly, with GEO now included in REL_SIGMA.
+# Re-run propagation, monthly + hourly, with GEO included in REL_SIGMA.
 IPCC_TABLE_2_2 = {
     "CLG": (96100.0, 92800.0, 100000.0), "GAS": (56100.0, 54300.0, 58300.0),
     "DSL": (74100.0, 72600.0, 74800.0), "WOOD": (112000.0, 95000.0, 132000.0),
@@ -102,8 +101,8 @@ REL_SIGMA_BASE = {f: rel_half_width(*v) for f, v in IPCC_TABLE_2_2.items()}
 
 fleet = pd.read_csv(HERE / "fleet_uncertainty_by_fuel.csv").set_index("fuel_std")["rel_sigma_adopted"].to_dict()
 REL_SIGMA_FULL = dict(REL_SIGMA_BASE)
-REL_SIGMA_FULL["GAS"] = fleet["GAS"]          # rel_sigma_adopted (2026-09-29): sqrt(IPCC Table 2.2 carbon^2 + D3 heat-rate RMS^2); replaces the fleet dispersion (0.0674 pooled, 0.1615 unit-level), which double-counted known unit differences
-_geo_sig = pd.read_csv(HERE / "geo_uncertainty_sigma.csv").set_index("fuel_std")["rel_sigma"]  # build_geo_uncertainty_inputs.py (2026-09-29)
+REL_SIGMA_FULL["GAS"] = fleet["GAS"]          # rel_sigma_adopted: sqrt(IPCC Table 2.2 carbon^2 + D3 heat-rate RMS^2); not the fleet dispersion (0.0674 pooled, 0.1615 unit-level), which would double-count known unit differences
+_geo_sig = pd.read_csv(HERE / "geo_uncertainty_sigma.csv").set_index("fuel_std")["rel_sigma"]  # build_geo_uncertainty_inputs.py
 # geothermal by proxy-rule step: GEO (step 1, NIR 2026 Table 3.2.3, 7.07%), GEO_S2_<station> (step 2,
 # sqrt(7.07%^2 + station year-to-year variation^2)), GEO_PROXY (steps 3-4, McLean & Richardson spread 93.97%)
 REL_SIGMA_FULL.update({k: float(v) for k, v in _geo_sig.items()})

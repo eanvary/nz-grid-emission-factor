@@ -1,5 +1,5 @@
 """
-BDG2 real-data sensitivity test, step 1: extract a small, diverse sample of
+BDG2 real-data sensitivity test (script 1 of 4): extract a small, diverse sample of
 real hourly office-building electricity meters from the Building Data Genome
 Project 2 (Miller et al. 2020, Sci Data 7:368), for use as a REAL (not
 stylised) building load shape in a sensitivity re-run of the Phase 3
@@ -20,8 +20,8 @@ TABLES = ROOT / "tables"
 TABLES.mkdir(parents=True, exist_ok=True)
 
 # 6 real office buildings, chosen for climate/site diversity across BDG2's
-# available sites (all Northern Hemisphere -- see hemisphere-shift note in
-# . Sizes chosen in the 5,000-15,000 sqm range to stay broadly
+# available sites (all Northern Hemisphere; see the hemisphere-shift note in
+# 02_build_real_shapes.py). Sizes chosen in the 5,000-15,000 sqm range to stay broadly
 # comparable to the NZ NABERS office cohort used in the main assessment.
 BUILDINGS = [
     "Bull_office_Chantel",   # US/Central,  9,655 sqm

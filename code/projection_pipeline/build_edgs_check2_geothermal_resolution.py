@@ -1,5 +1,5 @@
 """
-Check-2 gap: ROOT CAUSE FOUND AND CONFIRMED (supersedes the "genuinely unexplained" status).
+Check-2 gap: root cause (geothermal fugitive CO2 on new geothermal build).
 
 THE CAUSE
 MBIE's published `Greenhouse gas emissions` / Emission_Sector='Electricity generation' series
@@ -18,13 +18,13 @@ geothermal term therefore GROWS while the total it is divided into SHRINKS, so t
 absolute quantity becomes a large percentage error. It is a denominator effect on top of a
 real missing term -- not a defect specific to those scenarios.
 
-WHY THE PREVIOUS ROUND WRONGLY REJECTED GEOTHERMAL
-The previous test applied a UNIFORM fleet factor (61-64 g/kWh, Ngawha-corrected) to the WHOLE
-geothermal fleet and found it overshot the gap by 2-7x. That is reproduced here (spec B below:
-every uniform-factor variant is WORSE than adding nothing). What actually fits is the same
-factor applied ONLY to geothermal build ABOVE the 2024 fleet baseline. The earlier regression's
-77.4 g/kWh slope was RIGHT; it was the free intercept that was the artifact. Retiring the slope
-along with the intercept is what left the gap looking unexplained.
+WHY A UNIFORM FLEET FACTOR FAILS
+build_edgs_check2_diagnostic.py applies a uniform fleet factor (61-64 g/kWh, Ngawha-corrected)
+to the whole geothermal fleet and finds it overshoots the gap by 2-7x. That is reproduced here
+(spec B below: every uniform-factor variant is worse than adding nothing). What fits is the
+same factor applied only to geothermal build above the 2024 fleet baseline. The diagnostic
+regression's 77.4 g/kWh slope is right; the free intercept is the artifact. Rejecting the
+slope along with the intercept is what leaves the gap looking unexplained.
 
 EVIDENCE (each test reproduced by this script)
  T1 Arithmetic proof: in 59/135 scenario-years MBIE's GHG EXCEEDS the maximum possible
@@ -143,9 +143,9 @@ wb = (P.err_before_pct.abs() * P.mbie_ghg_Mt).sum() / P.mbie_ghg_Mt.sum()
 wa = (P.err_after_pct.abs() * P.mbie_ghg_Mt).sum() / P.mbie_ghg_Mt.sum()
 log(f"\n  EMISSIONS-WEIGHTED |err|: {wb:.2f}%  ->  {wa:.2f}%")
 
-# Uniform-factor specs (the earlier round's test)
+# Uniform-factor specs (the test in build_edgs_check2_diagnostic.py)
 log("\n=== T6: reproduce WHY the earlier uniform-fleet-factor test failed ===")
-for k in [0.8, 1.0, 1.35, 2.4]:   # 2.4 kg/GJ ~ 61 g/kWh, the earlier cited factor
+for k in [0.8, 1.0, 1.35, 2.4]:   # 2.4 kg/GJ ~ 61 g/kWh, the cited uniform fleet factor
     e = 100 * (P.mbie_ghg_Mt * 1000 - (P.fossil_kt + k * P.Geothermal)) / (P.mbie_ghg_Mt * 1000)
     w = (e.abs() * P.mbie_ghg_Mt).sum() / P.mbie_ghg_Mt.sum()
     log(f"  uniform {k:.2f} kg/GJ on ALL geothermal (~{k*hr:.0f} g/kWh): weighted |err| {w:5.2f}%")

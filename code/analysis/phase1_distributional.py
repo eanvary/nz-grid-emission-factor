@@ -1,5 +1,5 @@
 """
-Phase 1, item 8: distributional characterisation.
+Phase 1: distributional characterisation.
 Skewness, kurtosis, tail ratios, and intermittency (CV) of hourly EF, and a
 formal test of whether the annual mean becomes an increasingly poor summary
 statistic over the projection horizon (mean vs median divergence, CV trend).

@@ -32,8 +32,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from journal_palette import set_journal_style, CATEGORICAL, BASE  # noqa: E402
 
 set_journal_style()
-# Single-ink disclosure matrix (per the original brief: "single ink colour,
-# not a diverging scale") -- CATEGORICAL[0], deep navy.
+# Single-ink disclosure matrix (one ink colour, not a diverging scale):
+# CATEGORICAL[0], deep navy.
 OI = {"blue": CATEGORICAL[0], "vermillion": CATEGORICAL[1],
       "bluish_green": CATEGORICAL[2], "grey": BASE["muted_slate"]}
 
@@ -55,7 +55,7 @@ assert len(inc) == 68, f"expected 68 included records, got {len(inc)}"
 # asserts (a) the label's year matches `Year_Verified` and (b) the first
 # author's surname used in the label appears verbatim inside the raw
 # `Authors` string -- so a transcription slip fails loudly instead of
-# silently shipping a wrong citation.
+# silently printing a wrong citation.
 CITATION_LABEL = {
     "S001": "Ghose (2017)", "S002": "Ghose et al. (2017a)", "S004": "Bui (2023)",
     "S010": "Dowdell & Berg (2016)", "S011": "Berg et al. (2016)", "S012": "MacGregor et al. (2018)",
@@ -143,7 +143,7 @@ COL3_GRID_EF_NAMED_TRUE = {
 COL4_SPATIAL_TRUE = {
     "S203": "Ontario-specific grid-mix emission factor for operational carbon",
 }
-COL5_TEMPORAL_TRUE = {}  # expected empty -- see Step 4 self-audit
+COL5_TEMPORAL_TRUE = {}  # expected empty: no record is coded True for temporal
 COL6_TRAJECTORY_TRUE = {
     "S195": "dynamic LCA framework with time-variant emission factors along a decarbonising grid pathway (Lally et al., 2026)",
     "S055": "MBIE electricity emission-factor scenarios (2016, 2019) for grid decarbonisation "
@@ -214,16 +214,16 @@ print("Column totals (n / %):")
 for c, title in zip(COLS, COL_TITLES):
     print(f"  {c}: n={totals[c]}  ({pct[c]}%)")
 
-# Figure -- compact two-panel matrix (v2, redesigned for legibility as an
-# academic figure). The first version used full-column-width bars for
-# "true" cells (reading as a bar chart, not a matrix) in a single very tall
-# portrait panel (68 rows stacked in one column) -- both fixed here:
-#   - "true" cells are now small square markers (matching the marker
-#     convention already used in fig1_evidence_map.png), immune to axes
+# Figure: compact two-panel matrix, laid out for legibility as an academic
+# figure.
+#   - "true" cells are small square markers, not full-column-width bars
+#     (which would read as a bar chart, not a matrix). This matches the
+#     marker convention used in fig1_evidence_map.png and is immune to axes
 #     aspect distortion because marker size is defined in points, not data
 #     units.
 #   - The 68 rows are split into two side-by-side panels so the figure is
-#     wide/short (journal-appropriate) rather than tall/narrow. The split
+#     wide/short (journal-appropriate) rather than one tall/narrow panel of
+#     68 rows. The split
 #     point is chosen at run time to balance the two panels' row counts as
 #     evenly as possible, not hardcoded to a specific block name.
 COL_TITLES_SHORT = ["Operational carbon", "EN 15978+ equivalent", "Grid EF named",
@@ -251,10 +251,9 @@ print(f"Panel split: left={list(left_blocks)} (n={len(left_df)}), "
 
 # Block group names are shown as their own header ROW (like a sub-heading
 # in a table), not squeezed into a narrow left margin next to the row
-# labels -- the margin approach collided block names into study-ID labels
-# on the first attempt. Column headers get real spacing (COL_SPACING) so
-# 6 two-line labels don't run into each other, which also happened on the
-# first attempt with unit column spacing.
+# labels, where block names collide with study-ID labels. Column headers
+# get real spacing (COL_SPACING) so 6 two-line labels do not run into each
+# other, as they do with unit column spacing.
 COL_SPACING = 1.55
 PER_ROW_IN = 0.150
 n_cols = len(COLS)
@@ -301,8 +300,8 @@ def draw_panel(ax, items):
     ax.set_ylim(-0.8, y_top + 1.6)
     ax.set_xticks(col_x)
     # Angled headers: with 6 columns this close together, horizontal
-    # two-line labels ran into each other regardless of column spacing
-    # (tried twice); angled single-line labels take diagonal, not
+    # two-line labels run into each other regardless of column spacing;
+    # angled single-line labels take diagonal, not
     # horizontal, room and don't collide.
     ax.set_xticklabels(COL_TITLES_SHORT, fontsize=7.4, fontweight="bold",
                        rotation=32, ha="left", rotation_mode="anchor")
@@ -318,7 +317,7 @@ fig.subplots_adjust(wspace=0.45, top=0.66, bottom=0.02)
 
 # Compact title: one bold headline + one smaller detail line, then the
 # legend on its OWN line below both (not competing with the headline for
-# the same top-right corner, which is what collided on the first attempt)
+# the same top-right corner, where the two collide)
 headline = f"Disclosure of carbon method and grid emission factor attributes by reviewed record (n = 68)"
 detail = (f"n={N} · Operational carbon {pct['col1_opcarbon']:.0f}% · EN 15978+ "
           f"{pct['col2_en15978']:.0f}% · Grid EF named {pct['col3_gridef']:.0f}% · "

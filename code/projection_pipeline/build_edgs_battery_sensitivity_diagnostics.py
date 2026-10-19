@@ -1,22 +1,22 @@
 """
-Follow-up brief F: confirm Brief E's HVDC "worsening" (101/135 -> 104/135) against the
-reconstruction's own known ~20 MW / 51 MW calibration noise floor, using a CONTINUOUS
-violation-magnitude metric instead of a hard 1,200 MW threshold flag, and test Brief E's
-proposed mechanism (demand-peak vs residual-peak divergence) directly rather than narrating
-it.
+Diagnostics for build_edgs_battery_sensitivity.py. That script finds the HVDC flag count
+worsening from 101/135 to 104/135 scenario-years under the report battery figures. This
+script checks that change against the reconstruction's own known ~20 MW / 51 MW calibration
+noise floor, using a continuous violation-magnitude metric instead of a hard 1,200 MW
+threshold flag, and tests the proposed mechanism (demand-peak vs residual-peak divergence)
+directly.
 
-This script reuses IDENTICAL reconstruction logic to build_edgs_battery_sensitivity.py (same
-formulas, same inputs, NO recalibration of the known ~20/51 MW discrepancy - that noise floor
-is used AS-IS, as the brief requires) but keeps the full hourly transfer series in memory to
-compute:
-  Step 1 - continuous violation magnitude: sum_t max(0, |transfer(t)| - 1200) MW, per
-           scenario-year, both variants. Compared against the noise floor rescaled to the
-           same annual-integrated units.
-  Step 2 - demand-peak-hour vs residual-peak-hour divergence, correlated against the CHANGE
-           in continuous violation magnitude (report-battery minus shipped-equivalent).
+It reuses the same reconstruction logic as build_edgs_battery_sensitivity.py (same formulas,
+same inputs, no recalibration of the known ~20/51 MW discrepancy; that noise floor is used
+as-is) but keeps the full hourly transfer series in memory to compute:
+  1. continuous violation magnitude: sum_t max(0, |transfer(t)| - 1200) MW, per
+     scenario-year, both variants. Compared against the noise floor rescaled to the
+     same annual-integrated units.
+  2. demand-peak-hour vs residual-peak-hour divergence, correlated against the change
+     in continuous violation magnitude (report-battery minus pipeline-DSR).
 
 Standalone: reads only existing saved parquets, writes only new CSVs. Does not modify
-build_edgs_dispatch.py, edgs_common.py, build_edgs_battery_sensitivity.py, or any shipped
+build_edgs_dispatch.py, edgs_common.py, build_edgs_battery_sensitivity.py, or any pipeline
 output parquet.
 
 Outputs: edgs_battery_hvdc_continuous_magnitude.csv, edgs_battery_mechanism_test.csv
@@ -29,8 +29,8 @@ from edgs_common import ASSUMPTIONS_XLSX, OUT_DIR, SCENARIOS, YEARS, COMMODITY, 
 
 log, lines = log_factory()
 HVDC_CAPACITY_MW = 1200.0
-# TEMPLATE PARAMETERISATION (2026-08-12, Brief N): set EDGS_TEMPLATE_YEAR to re-derive
-# against a different Assumption-1 shape template than the shipped 2021 central one.
+# Template year: set EDGS_TEMPLATE_YEAR to re-derive against a different Assumption-1
+# shape template than the 2021 central one.
 TEMPLATE_YEAR = int(os.environ.get("EDGS_TEMPLATE_YEAR", "2021"))
 SUFFIX = "" if TEMPLATE_YEAR == 2021 else f"_tmpl{TEMPLATE_YEAR}"
 log(f"Template year: {TEMPLATE_YEAR} (suffix '{SUFFIX}')")
@@ -62,7 +62,7 @@ dem_shape = pd.read_parquet(OUT_DIR / "edgs_shape_demand.parquet")
 dem_shape = dem_shape[dem_shape.template_year == TEMPLATE_YEAR]
 ren_shape_all = pd.read_parquet(OUT_DIR / "edgs_shape_renewables.parquet")
 ren_shape = ren_shape_all[ren_shape_all.template_year == TEMPLATE_YEAR]
-# Solar real-shape fix (Brief T, adopted 2026-09-03) - same patch as build_edgs_dispatch.py
+# Real 2024 NI solar shape where the template has none (same rule as build_edgs_dispatch.py)
 REAL_SOLAR_SHAPE = ren_shape_all[(ren_shape_all.template_year == 2024)
                                  & (ren_shape_all.island == "NI") & (ren_shape_all.fuel_std == "SOL")]
 register = pd.read_parquet(OUT_DIR / "edgs_plant_register.parquet")
@@ -223,21 +223,21 @@ n_neg = (df.continuous_mag_change < 0).sum()
 n_zero = (df.continuous_mag_change == 0).sum()
 log(f"  Sign consistency: {n_pos}/135 worsen, {n_neg}/135 improve, {n_zero}/135 unchanged")
 
-# Noise-floor rescale: the known ~20 MW mean / 51 MW max SINGLE-HOUR discrepancy, if it
+# Noise-floor rescale: the known ~20 MW mean / 51 MW max single-hour discrepancy, if it
 # persisted across a comparable number of hours per scenario-year as the median violation
 # duration actually observed, gives the annual-integrated noise floor for a fair comparison.
 hours_per_sy_ship = ((df.continuous_mag_MWh_shipped > 0).sum())  # just for context
 median_violating_hours = None
-# Estimate typical violation-hours per scenario-year from Brief B/C output if available, else
-# use a conservative single-hour-only floor (most conservative: assumes noise affects only 1
-# hour, understating the noise floor) alongside a wider estimate using the known ~9,960 total
-# flagged-hours / 135 scenario-years average duration from Brief C (~74 hours/scenario-year
-# average among flagged years).
+# Typical violation-hours per scenario-year come from the HVDC sensitivity summary
+# (edgs_hvdc_sensitivity_summary.csv). The single-hour floor alone is the lower bound (it
+# assumes noise affects only 1 hour, understating the noise floor); the wider estimate uses
+# the central-2021 ~9,960 total flagged hours (~74 hours/scenario-year average among
+# flagged years).
 noise_floor_1hr_mean = 20.0     # MWh, single hour, mean discrepancy
 noise_floor_1hr_max = 51.0      # MWh, single hour, max discrepancy
-# Rescale using THIS template's own Brief C baseline flagged-hours/scenario-year among
-# violators (2026-08-12: was hardcoded to Brief C's central-2021 9,961/103; now reads the
-# matching {SUFFIX} sensitivity summary so the noise floor is template-consistent).
+# Rescale using this template's own baseline flagged-hours/scenario-year among violators,
+# read from the matching {SUFFIX} HVDC sensitivity summary so the noise floor is
+# template-consistent. The central-2021 9,961/103 is the fallback if that file is missing.
 try:
     _hvdc = pd.read_csv(OUT_DIR / f"edgs_hvdc_sensitivity_summary{SUFFIX}.csv")
     _flagged = _hvdc[_hvdc.max_mw_baseline > HVDC_CAPACITY_MW]
@@ -246,7 +246,7 @@ try:
     avg_violating_hours_baseline = _total_flagged_hours / _n_flagged_sy
     _noise_source = f"this template's own {_total_flagged_hours:,} total flagged hours / {_n_flagged_sy} flagged scenario-years"
 except FileNotFoundError:
-    avg_violating_hours_baseline = 9961 / 103  # fallback: Brief C's central-2021 figure
+    avg_violating_hours_baseline = 9961 / 103  # fallback: central-2021 figure
     _noise_source = "Brief C's central-2021 9,961 total flagged hours / 103 flagged scenario-years (fallback: this template's own edgs_hvdc_sensitivity_summary{SUFFIX}.csv not found)"
 noise_floor_scaled_mean = noise_floor_1hr_mean * avg_violating_hours_baseline
 noise_floor_scaled_max = noise_floor_1hr_max * avg_violating_hours_baseline

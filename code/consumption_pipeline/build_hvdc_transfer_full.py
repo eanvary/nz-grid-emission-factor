@@ -1,16 +1,14 @@
 """
 Inter-island (HVDC, Cook Strait link) power transfer, 2015-2025, from the raw
 EMI "HVDC flows" metered dataset (../EA_EMI_raw/*_HVDC_flows.csv, the root
-pipeline's shared raw-data folder -- this script does NOT keep its own copy),
-replacing the 2021-2025-only curated-report version (build_hvdc_transfer.py,
-which read a hand-exported EMI report file that only covers 2021-2025).
+pipeline's shared raw-data folder; this script keeps no copy of its own),
+rather than the hand-exported EMI report file, which covers only 2021-2025.
 
-RELOCATED 2026-08-10 into Consumption_Island/ (this folder), per user
-direction, as the permanent home for HVDC transfer outputs, since this is the
-data both the consumption-EF calculation (this folder) and the generation-side
-pipeline (root) need. Raw inputs are read from the ROOT-level shared
-EA_EMI_raw/ folder (single source of truth, avoids re-introducing a duplicate,
-potentially-stale local copy) -- only the *output* lives here now.
+The HVDC transfer outputs live in this folder, since both the consumption-EF
+calculation (this folder) and the generation-side pipeline (root) need them.
+Raw inputs are read from the root-level shared EA_EMI_raw/ folder (single
+source of truth, no duplicate local copy that could go stale); only the
+output is written here.
 
 Convention: energy transfer is read at the RECEIVING end's Import (I) flow
 direction at each converter station -- this is the delivered-energy reading,
@@ -31,7 +29,7 @@ ROOT = Path(__file__).parent
 ROOT_ROOT = ROOT.parent  # repo root, one level up
 ROOT_OUT = ROOT_ROOT / "output"       # root pipeline's generation-EF output (read-only from here)
 GEN_DIR = ROOT_ROOT / "EA_EMI_raw"    # shared raw-data folder (single source of truth)
-OUT_DIR = ROOT / "output"             # this folder's own output -- the permanent HVDC home
+OUT_DIR = ROOT / "output"             # this folder's own output (HVDC transfer tables)
 OUT_DIR.mkdir(exist_ok=True)
 
 NAVY = "#1A2744"
@@ -66,19 +64,17 @@ for f in files:
     keep = df[poc_col].isin(["BEN2201", "HAY2201"]) & (df[dir_col] == "I")
     d = df.loc[keep, [poc_col, date_col] + tp_cols].copy()
     d = d.rename(columns={poc_col: "poc", date_col: "trading_date"})
-    # BUG FIXED 2026-09-14 (found while extending this table to 140 months): raw
-    # files switch format partway through the series -- pre-2020 files are
-    # DD/MM/YYYY ("01/04/2015"), 2020-onward files are ISO YYYY-MM-DD
-    # ("2020-04-01"). The previous parse, pd.to_datetime(..., format="mixed",
-    # dayfirst=True), is unsafe for the ISO half: pandas' dayfirst flag still
-    # swaps day/month for "mixed" mode whenever BOTH components are <=12, even
-    # though ISO YYYY-MM-DD is completely unambiguous -- e.g. "2020-04-01" (April
-    # 1) was silently mis-parsed as 2020-01-04 (Jan 4). This corrupted the 1st-12th
-    # of EVERY month in every 2020+ file, scattering that data across up to 12
-    # wrong months of the SAME year (annual totals were coincidentally still
-    # correct -- the swap never crosses a year boundary -- but every daily/hourly/
-    # monthly HVDC figure this pipeline has ever produced was wrong for those
-    # dates). Parse each era with its own explicit, unambiguous format instead.
+    # Date formats: raw files switch format partway through the series.
+    # Pre-2020 files are DD/MM/YYYY ("01/04/2015"), 2020-onward files are ISO
+    # YYYY-MM-DD ("2020-04-01"). One parse with pd.to_datetime(..., format="mixed",
+    # dayfirst=True) is unsafe for the ISO half: pandas' dayfirst flag still
+    # swaps day/month in "mixed" mode whenever both components are <=12, even
+    # though ISO YYYY-MM-DD is unambiguous, so "2020-04-01" (April 1) parses as
+    # 2020-01-04 (Jan 4). That corrupts the 1st-12th of every month in every
+    # 2020+ file, scattering the data across up to 12 wrong months of the same
+    # year (annual totals survive, because the swap never crosses a year
+    # boundary, but daily, hourly and monthly figures do not). Each era is
+    # therefore parsed with its own explicit format.
     parsed_iso = pd.to_datetime(d["trading_date"], format="%Y-%m-%d", errors="coerce")
     parsed_slash = pd.to_datetime(d["trading_date"], format="%d/%m/%Y", errors="coerce")
     d["trading_date"] = parsed_iso.fillna(parsed_slash)

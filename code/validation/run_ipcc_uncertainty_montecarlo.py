@@ -1,13 +1,12 @@
 """
-Approach 2 (Monte Carlo) uncertainty propagation -- the fix flagged (not attempted) in
-run_ipcc_uncertainty_full_coverage.py / VALIDATION_REPORT.md line ~408: Approach 1
-(linear/first-order error propagation) implicitly assumes a symmetric, unbounded Gaussian
-and produces a negative lower 95% bound -- physically impossible for an emission factor --
-in 3,795 of 96,421 NI+SI hours (3.9%) once geothermal's very wide relative uncertainty
+Approach 2 (Monte Carlo) uncertainty propagation. Approach 1 (linear/first-order
+error propagation, run_ipcc_uncertainty_full_coverage.py) implicitly assumes a symmetric,
+unbounded Gaussian and produces a negative lower 95% bound, physically impossible for an
+emission factor, in 3,795 of 96,421 NI+SI hours (3.9%) once geothermal's very wide relative uncertainty
 (93.97%, McLean & Richardson 2019) is included alongside GAS (adopted per-unit sigma, build_fleet_uncertainty.py) and IPCC
 Table 2.2 defaults (CLG, DSL, WOOD).
 
-Since 2026-09-29 geothermal is split by proxy-rule step into independent terms
+Geothermal is split by proxy-rule step into independent terms
 (build_geo_uncertainty_inputs.py): GEO, step 1, at the NIR 2026 measurement uncertainty
 (Table 3.2.3, 7.07%); GEO_S2_<station>, step 2, at sqrt(7.07%^2 + the station's own
 year-to-year variation^2); GEO_PROXY, steps 3-4, at the between-station spread (93.97%).
@@ -30,7 +29,7 @@ uncertainty at monthly/annual resolution by averaging it away).
 Zero-EF fuels (HYD, WIN, SOL) and the near-zero ELE column are held deterministic at their
 point contribution (0), matching Approach 1's treatment.
 
-TRIAL COUNT (raised from 10,000 to 50,000 on 2026-09-23)
+Trial count (50,000)
 Because one multiplier per fuel is held across the whole record, every hour shares the same
 N draws. Monte Carlo error in the 2.5/97.5 percentiles is therefore common to all hours and
 does NOT average away over the 96,421-hour record, which is the usual reason a modest N is
@@ -68,10 +67,10 @@ geo_df = pd.read_csv(HERE / "geothermal_mclean_richardson_stations.csv")
 total_mw = geo_df.mw.sum()
 geo_w_mean = (geo_df.mw * geo_df.ef_gco2_kwh).sum() / total_mw
 geo_w_std = math.sqrt((geo_df.mw * (geo_df.ef_gco2_kwh - geo_w_mean) ** 2).sum() / total_mw)
-# 2026-09-29: geothermal by proxy-rule step, each term drawn independently: step 1 GEO (NIR 2026 Table
+# Geothermal by proxy-rule step, each term drawn independently: step 1 GEO (NIR 2026 Table
 # 3.2.3, 7.07%); step 2 GEO_S2_<station> (7.07% with the station's own year-to-year variation); steps 3-4
 # GEO_PROXY (between-station spread above, 93.97%). See build_geo_uncertainty_inputs.py.
-_geo_sig = pd.read_csv(HERE / "geo_uncertainty_sigma.csv").set_index("fuel_std")["rel_sigma"]  # build_geo_uncertainty_inputs.py (2026-09-29)
+_geo_sig = pd.read_csv(HERE / "geo_uncertainty_sigma.csv").set_index("fuel_std")["rel_sigma"]  # build_geo_uncertainty_inputs.py
 REL_SIGMA.update({k: float(v) for k, v in _geo_sig.items()})  # GEO, GEO_S2_<station>, GEO_PROXY
 
 QUANTIFIED = list(REL_SIGMA.keys())  # CLG, GAS, DSL, WOOD, GEO, GEO_S2_<station>, GEO_PROXY

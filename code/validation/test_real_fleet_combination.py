@@ -1,5 +1,5 @@
 """
-Answers directly: instead of assuming plants combine as an unweighted population spread
+Instead of assuming plants combine as an unweighted population spread
 (build_fleet_uncertainty.py's cross-sectional proxy) or an IPCC-default range, what is the
 REAL combination of the gas fleet's plants, and how much does the REAL blended EF actually
 move because of it?
@@ -16,7 +16,7 @@ Two things computed here, both directly from data, neither assumed:
    counted as gas) -- its empirical standard deviation measures how much the true
    combination has actually varied historically.
 
-IMPORTANT CONCEPTUAL DISTINCTION (read before reusing #2 as an "uncertainty"): the point EF
+Conceptual distinction (read before reusing #2 as an "uncertainty"): the point EF
 for any historical period is not itself uncertain -- it is a deterministic function of which
 real plants ran (known) and their registered EF (taken as ground truth). So the empirical
 std of the real series in #2 measures REAL DISPATCH VOLATILITY, a different quantity from
@@ -56,7 +56,7 @@ print(f"\nTop 2 plants' combined share: {top2_share:.1f}% of all gas generation"
 share_pct.to_csv(OUT, header=["share_pct"])
 
 # 2. Real blended monthly EF, generation-weighted -- reproduces monthly_fuel_mix_NI_SI.csv's
-#    own GAS row exactly, as a cross-check that this script's numbers agree with the shipped one.
+#    own GAS row exactly, as a cross-check that this script's numbers agree with the published table.
 monthly_blend = monthly.groupby(["year", "month"]).apply(
     lambda g: (g["gen_mwh"] * g["ef"]).sum() / g["gen_mwh"].sum(), include_groups=False
 )

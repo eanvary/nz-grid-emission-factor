@@ -1,51 +1,39 @@
 """
 Figure 2 -- PRISMA-ScR flow diagram.
 
-Two things changed in this revision, at the user's request:
+Layout. Every box's height is computed from its wrapped line count
+before the box is placed; a single vertical cursor (`y_top`) then advances
+by that box's true height plus an explicit gap. A box therefore cannot
+start above the bottom of the one before it, however long its text (fixed
+offsets such as `y - 1.3` overlap whenever a box wraps to more lines than
+assumed, as the multi-line "sought for retrieval" -> "assessed / not
+retrieved" pair does). Box padding, inter-stage gaps and the overall width
+are set for a journal figure.
 
-1. Layout bug fix. The previous version placed each box at a FIXED offset
-   below the one before it (e.g. `y - 1.3`), guessed before that box's true
-   wrapped-text height was known. Whenever a box's actual height exceeded
-   the guessed offset (which happened for the multi-line "sought for
-   retrieval" -> "assessed / not retrieved" pair), the next box started
-   before the previous one's bottom edge, producing visible overlap. This
-   version computes every box's height from its wrapped line count FIRST,
-   places it, and only then advances a single "cursor" (`y_top`) by that
-   box's true height plus an explicit gap -- overlap is structurally
-   impossible now, not just less likely. Box padding, inter-stage gaps, and
-   the figure's overall width were also opened up for a less cramped,
-   more "journal figure" feel, per the request to make box size/spacing
-   eye-pleasing.
-
-2. Reconstructed-stage numbers replaced with a new proportional
-   reconstruction, keyed off a mermaid diagram the user supplied as the
-   shape/proportions to follow. Per the user's explicit instruction, the
-   verified totals are NOT replaced by that diagram's own totals -- Records
-   screened (333), Total included (68), and G1/G2/G3 (18/39/11) stay
-   exactly as the extraction workbook gives them, because those are real,
-   measured counts. Every other box in the identification/eligibility
-   funnel is proportionally rescaled from the supplied diagram's own
-   internal rates (database:other-methods split, deduplication rate,
-   title/abstract exclusion rate, not-retrieved rate, and the
-   supplementary-sweep share of the final total) so that the reconstructed
-   funnel's SHAPE matches what was supplied, while its two endpoints land
-   exactly on the two real, verified totals instead of the diagram's own
-   (338 screened / 77 included) totals.
+Reconstructed stages. The verified totals are not rescaled: Records
+screened (333), Total included (68), and G1/G2/G3 (18/39/11) are taken
+exactly as the extraction workbook gives them, because they are measured
+counts. Every other box in the identification/eligibility funnel is
+proportionally rescaled from the internal rates of a reference flow
+diagram (a mermaid flowchart, reproduced below as S): the
+database:other-methods split, deduplication rate, title/abstract
+exclusion rate, not-retrieved rate, and the supplementary-sweep share of
+the final total. The reconstructed funnel's shape follows that diagram,
+while its two endpoints land exactly on the two verified totals instead
+of the diagram's own (338 screened / 77 included).
 
    Because 333->68 is a materially steeper overall funnel than the
-   supplied diagram's own 338->77, no single scale factor can satisfy
-   every one of the diagram's stage rates AND land exactly on both real
-   endpoints at once (an over-determined system) -- one stage necessarily
-   absorbs the shortfall. That stage is "excluded at full-text
-   eligibility assessment": every other reconstructed number below is
-   directly rate-scaled from the supplied diagram, and that one box is
-   solved as the remainder needed to make the funnel reconcile exactly to
-   68. This is stated plainly in the figure's own caption and in
-   figures/FIG2_RECONSTRUCTION_PROVENANCE.md, not hidden -- reconstructed
-   boxes are still marked "(estimated)" with a dashed/hatched border,
-   because presenting an invented screening count with the same visual
-   authority as a measured one would misrepresent this figure's evidence
-   base to readers and reviewers. That distinction does not move.
+   diagram's 338->77, no single scale factor can satisfy every one of the
+   diagram's stage rates and land exactly on both real endpoints at once
+   (an over-determined system), so one stage absorbs the shortfall. That
+   stage is "excluded at full-text eligibility assessment": every other
+   reconstructed number below is rate-scaled from the diagram, and that
+   one box is solved as the remainder needed to make the funnel reconcile
+   exactly to 68. This is stated in the figure's caption and in
+   figures/FIG2_RECONSTRUCTION_PROVENANCE.md. Reconstructed boxes are
+   marked "(estimated)" with a dashed/hatched border, because giving an
+   estimated screening count the same visual authority as a measured one
+   would misrepresent the figure's evidence base.
 """
 import re
 import sys
@@ -69,9 +57,9 @@ set_journal_style()
 OI = {"blue": CATEGORICAL[0], "vermillion": CATEGORICAL[1],
       "bluish_green": CATEGORICAL[2], "grey": BASE["muted_slate"]}
 
-# Source diagram -- verbatim from the mermaid flowchart the user supplied,
-# used ONLY for its internal proportions (not its own totals, which are
-# smaller/different from this project's real, workbook-verified corpus).
+# Source diagram, verbatim from the reference mermaid flowchart, used only
+# for its internal proportions (not its totals, which differ from this
+# project's workbook-verified corpus).
 SOURCE_DIAGRAM = {
     "id_databases": 400, "id_other": 20, "duplicates_removed": 82,
     "screened": 338, "excluded_title_abstract": 238, "sought_for_retrieval": 100,
@@ -102,7 +90,7 @@ pre_dedup_total = id_databases + id_other
 duplicates_removed = pre_dedup_total - VERIFIED_SCREENED
 
 # Downstream funnel (screened -> ... -> included), rate-scaled stage by
-# stage from the supplied diagram's own rates, starting at VERIFIED_SCREENED --
+# stage from the source diagram's rates, starting at VERIFIED_SCREENED --
 ta_excl_rate = S["excluded_title_abstract"] / S["screened"]
 excluded_title_abstract = round(VERIFIED_SCREENED * ta_excl_rate)
 sought_for_retrieval = VERIFIED_SCREENED - excluded_title_abstract
@@ -127,8 +115,8 @@ MANUSCRIPT_STATED = {
     "not_retrieved": not_retrieved, "assessed_for_eligibility": assessed_for_eligibility,
     "excluded_full_text": excluded_full_text, "supplementary_sweep": supplementary_sweep,
     "main_flow_included": main_flow_included,
-    # Verified exclusion-reason breakdown, unchanged from the prior
-    # reconstruction pass (all 265 excluded records; measured, not scaled) --
+    # Verified exclusion-reason breakdown (all 265 excluded records;
+    # measured, not scaled) --
     "excl_residential": 74, "excl_new_construction": 57, "excl_non_nz": 51,
     "excl_no_lca": 44, "excl_duplicate": 2, "excl_other": 37,
 }
@@ -176,8 +164,8 @@ excl_cat_sum = (M["excl_residential"] + M["excl_new_construction"] + M["excl_non
                 M["excl_no_lca"] + M["excl_duplicate"] + M["excl_other"])
 print(f"Verified exclusion-reason categories sum = {excl_cat_sum} (must equal 265); match={excl_cat_sum == 265}")
 
-# Independent re-derivation from the archived workbook -- second code path
-# for the self-audit, unchanged from the prior pass.
+# Independent re-derivation from the archived workbook: a second code path
+# for the self-audit.
 df = pd.read_excel(WB, sheet_name="Extraction")
 total_rows = len(df)
 ie = df["Include_Exclude"].astype(str).str.strip()
@@ -246,8 +234,8 @@ ESTIMATED_NOTE = " (estimated)"
 # advances by a box's true height plus GAP, so a box can never start above
 # the true bottom of the one before it.
 DARK_FILLS = {OI["blue"], OI["bluish_green"], OI["vermillion"]}
-LINE_H = 0.70   # opened up from 0.62 for a less cramped feel
-PAD = 0.60      # opened up from 0.5
+LINE_H = 0.70   # line height, set for a less cramped layout
+PAD = 0.60      # box padding
 GAP = 1.05      # explicit, generous gap between stacked box groups
 
 def box_height(n_lines):

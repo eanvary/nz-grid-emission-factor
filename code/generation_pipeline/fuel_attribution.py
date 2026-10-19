@@ -1,8 +1,8 @@
 """
 Shared fuel and emission-factor attribution for the metered pipeline.
 
-Replaces the per-script lookup that took the unweighted mean of every active register record
-for a (POC, fuel) pair. Factors are resolved by generator code and register unit, with the
+Factors are resolved by generator code and register unit, rather than as the unweighted mean
+of every active register record for a (POC, fuel) pair, with the
 sourced overrides in fuel_attribution_overrides.csv (one row per override, with source, page
 and URL):
 
@@ -22,7 +22,7 @@ and URL):
                       long-term average (not measured). Every value is flagged with its
                       fill_basis; see matahina_fill().
 
-Everything else keeps the previous rule: mean of the active register records for (POC, fuel).
+Everything else takes the mean of the active register records for (POC, fuel).
 Non-thermal fuels carry EF 0, except Wood (Kinleith) as above.
 """
 import re
@@ -356,7 +356,7 @@ class FuelAttribution:
     def matahina_fill(self):
         """Trading-period rows for Matahina from Manawa fiscal-year totals (Apr-Mar).
         Returns trading_date, tp (1-48), gen_mwh, override_id. Hydro, EF 0, all flagged.
-        Since 2026-09-29 no MATAHINA_ rows remain (superseded by GRIDIMPORT_FILL_MAT1101)."""
+        No MATAHINA_ rows remain in the override table; GRIDIMPORT_FILL_MAT1101 covers Matahina."""
         if not self.ov.override_id.str.startswith("MATAHINA_").any():
             return pd.DataFrame([], columns=["trading_date", "tp", "gen_mwh", "override_id", "fill_basis"])
         parts = []

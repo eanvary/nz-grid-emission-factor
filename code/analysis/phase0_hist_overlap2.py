@@ -38,7 +38,7 @@ for isl in ["NI", "SI"]:
     for yr in [2024, 2025]:
         sub = merged[(merged["island"] == isl) & (merged["datetime_hour"].dt.year == yr)]
         h_mean = (sub["hist_ef"] * sub["hist_gen_mwh"]).sum() / sub["hist_gen_mwh"].sum()
-        p_mean = sub["proj_ef"].mean()  # simple hourly mean; note not gen-weighted
+        p_mean = sub["proj_ef"].mean()  # simple hourly mean, not gen-weighted
         p_mean_w = None
         log(f"  {isl} {yr}: hist gen-weighted mean EF = {h_mean:.5f} kg/kWh | "
             f"proj simple mean EF = {p_mean:.5f} kg/kWh | diff = {100*(p_mean-h_mean)/h_mean:.2f}%")

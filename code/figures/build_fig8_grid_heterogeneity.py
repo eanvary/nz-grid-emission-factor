@@ -88,7 +88,7 @@ y_positions = [y + gap_before_nz for y in y_positions]  # shift all up so nothin
 
 fig, ax = plt.subplots(figsize=(8.2, 4.6))
 
-X_FLOOR = 0.6  # gCO2e/kWh -- log-scale plotting floor for genuine zero minima (NZ SI, UK North Scotland)
+X_FLOOR = 0.6  # gCO2e/kWh -- log-scale plotting floor for true zero minima (NZ SI, UK North Scotland)
 for i, (_, row) in enumerate(plot_rows.iterrows()):
     y = y_positions[i]
     verified = row["verified"] == "yes"
@@ -149,10 +149,9 @@ title = (f"Sub-regional range of generation-basis emission intensity in six grid
 ax.set_title(title, fontsize=10.5, loc="left", wrap=True, pad=14)
 
 # Legend is built from what's actually on the plot: the "unverified" style
-# entry only appears if the register still has an unverified row (it
-# doesn't, as of the second sourcing pass -- all 6 systems are now
-# primary_agency/operator_data-verified, so that entry is dropped rather
-# than shown as an unused legend key).
+# entry only appears if the register has an unverified row (at present
+# none: all 6 systems are primary_agency/operator_data-verified, so that
+# entry is dropped rather than shown as an unused legend key).
 legend_elems = [
     Line2D([0], [0], color=OI["blue"], lw=6,
            label="verified, primary agency / peer-reviewed" if all_verified else "verified"),

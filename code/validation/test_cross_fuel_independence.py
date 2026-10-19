@@ -1,14 +1,14 @@
 """
-Closes VALIDATION_REPORT.md self-critique #2: "Fuel-to-fuel independence is assumed,
-untested." Tests it directly against the real monthly per-fuel EF series in
-monthly_fuel_mix_NI_SI.csv, rather than leaving it a bare assumption.
+Tests the assumption that fuel-to-fuel EF errors are independent against the monthly
+per-fuel EF series in monthly_fuel_mix_NI_SI.csv, rather than leaving it a bare
+assumption.
 
 What "cross-fuel independence" means in the propagation formula (run_ipcc_uncertainty_
 quantification.py): Var(EF) = sum_i (w_i * sigma_i)^2 requires each fuel's own EF-value
 error to be uncorrelated with every other fuel's. This can only be tested on the variation
-each fuel's real registered EF actually shows over the 132-month study period -- so the
-first, load-bearing step is simply to look at whether each fuel varies AT ALL, not to
-assume all four move independently by default.
+each fuel's registered EF shows over the 132-month study period, so the first check
+is whether each fuel varies at all, rather than assuming all four move independently
+by default.
 """
 from pathlib import Path
 
@@ -60,7 +60,7 @@ print(corr_raw.round(4).to_string())
 # division every month), not real variation. Pearson correlation divides by
 # std, so these near-zero-but-nonzero denominators turn pure floating-point
 # noise into plausible-looking coefficients (-0.07, 0.02 above) that mean
-# nothing. Anything involving a fuel this script's own Step 1 already flagged
+# nothing. Anything involving a fuel that the first check above flagged
 # CONSTANT is overwritten to NaN here rather than reported at face value.
 corr = corr_raw.copy()
 for fuel in FUELS:
@@ -86,7 +86,7 @@ print("\n=== Side finding, checked for WOOD: ===")
 wood_co2 = ni[ni.fuel_code == "WOOD"]["co2_kg"]
 wood_gen = ni[ni.fuel_code == "WOOD"]["gen_mwh"]
 wood_ef = ni[ni.fuel_code == "WOOD"]["weighted_ef_kg_per_MWh"]
-# Since 2026-09-28 Kinleith wood carries CH4 and N2O only (biogenic CO2 excluded): 1.52 kg/GJ x
+# Kinleith wood carries CH4 and N2O only (biogenic CO2 excluded): 1.52 kg/GJ x
 # MBIE's wood heat rate for the year (override KINLEITH_WOOD, generation_pipeline/
 # fuel_attribution_overrides.csv), so its factor is non-zero and changes year to year.
 print(f"WOOD generation: {wood_gen.mean():,.0f} MWh/month on average "

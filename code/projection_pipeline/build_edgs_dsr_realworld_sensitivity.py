@@ -1,51 +1,50 @@
 """
-Follow-up brief U: test Assumption 2's model-original DSR/battery peak-shave RULE (charge at
-the day's lowest residual hour, discharge at the day's highest) against a real-world-cited
+DSR timing sensitivity: test Assumption 2's model-original DSR/battery peak-shave rule (charge
+at the day's lowest residual hour, discharge at the day's highest) against a real-world-cited
 alternative: AEMO's published evening-peak battery discharge window for Australia's NEM.
-Standalone: reads only existing shipped parquets, writes only new CSVs. Does not modify
-build_edgs_dispatch.py, edgs_common.py, or any shipped output parquet.
+Standalone: reads only existing pipeline parquets, writes only new CSVs. Does not modify
+build_edgs_dispatch.py, edgs_common.py, or any pipeline output parquet.
 
-BACKGROUND: Assumption 2 (edgs_common.py) is explicitly labelled "model-original, NOT
-MBIE-derived" - MBIE gives only DSR CAPACITY (MW) by scenario-year, never a dispatch rule. The
-user asked whether a real country's actual battery behaviour could ground this instead of
-inventing one. Found one: Australia's NEM (comparable regulatory heritage to NZ's market;
-grid-scale, not household-only) publishes exactly this kind of timing data quarterly.
+Background: Assumption 2 (edgs_common.py) is labelled "model-original, NOT MBIE-derived".
+MBIE gives only DSR capacity (MW) by scenario-year, never a dispatch rule. The question is
+whether a real market's observed battery behaviour can ground the rule instead of an invented
+one. Australia's NEM (comparable regulatory heritage to NZ's market; grid-scale, not
+household-only) publishes this kind of timing data quarterly.
 
-EXTERNAL SOURCE (cited, not invented): AEMO, "Quarterly Energy Dynamics - Q1 2026"
+External source: AEMO, "Quarterly Energy Dynamics - Q1 2026"
 (https://www.aemo.com.au/-/media/files/major-publications/qed/2026/qed-q1-2026.pdf):
   - Section 2.4.1 "Batteries" (grid-scale BESS, the comparable case to NZ's DSR/BESS):
     record discharge 3,556 MW at the half-hour ending 1900 hrs (7pm), 7 Jan 2026; record
     charging 2,742 MW, concentrated in daytime hours associated with solar surplus. AEMO's own
     Figure 56 tracks "change in average battery discharge/charge by time of day".
-  - Household/CER section (p.11): evening peak window explicitly stated as "1600 hrs to 2100
-    hrs"; charging described as "daytime... mid-morning", tied to rooftop solar + grid supply.
+  - Household/CER section (p.11): evening peak window stated as "1600 hrs to 2100 hrs";
+    charging described as "daytime... mid-morning", tied to rooftop solar + grid supply.
 
-DESIGN (this script's own reasoned reading of the citation, disclosed as such):
-  - Discharge window: 1600-2100 hrs (16,17,18,19,20) - AEMO's OWN explicitly stated evening-
-    peak window, verbatim from the source.
-  - Charge window: 0900-1500 hrs (9,10,11,12,13,14) - THIS script's own interpretation of
+Design (this script's own reading of the citation, disclosed as such):
+  - Discharge window: 1600-2100 hrs (16,17,18,19,20), AEMO's own stated evening-peak
+    window, verbatim from the source.
+  - Charge window: 0900-1500 hrs (9,10,11,12,13,14), this script's own interpretation of
     AEMO's qualitative "daytime... mid-morning" charging description, since AEMO gives no
-    precise charge-window hours the way it does for the evening-peak discharge window. Flagged
-    explicitly as a reasoned reading, not a direct citation, same standard as Brief H's 2032
-    capacity-cutover choice.
-  - Energy, not shape, is held constant: each day's TOTAL discharge/charge energy is kept
-    IDENTICAL to what the shipped residual-driven rule already moves that day (so this is a
-    pure TIMING test, not a magnitude/capacity test), spread UNIFORMLY across the cited window
+    precise charge-window hours the way it does for the evening-peak discharge window. This is
+    a reasoned reading, not a direct citation (same standard as the 2032 HVDC capacity
+    cutover year in build_edgs_hvdc_capacity_correction.py).
+  - Energy, not shape, is held constant: each day's total discharge/charge energy is kept
+    identical to what the pipeline's residual-driven rule moves that day (so this is a pure
+    timing test, not a magnitude/capacity test), spread uniformly across the cited window
     (the least-assumption choice within the window, since AEMO gives no finer sub-window shape
     for either case).
 
-METHOD: re-derives the residual/thermal-shape/EF chain (build_edgs_dispatch.py Steps A2-B) in
-parallel, central (2021) template, ADOPTED (real-solar-shape) baseline, changing ONLY the DSR
-peak-shave rule - every other formula reproduced from the shipped script. Sanity-checked before
-trusting the result (baseline-mode reconstruction must reproduce the shipped EF exactly).
+Method: re-derives the load/residual/thermal-shape/EF chain of build_edgs_dispatch.py in
+parallel, central (2021) template, real-solar-shape baseline, changing only the DSR peak-shave
+rule; every other formula is reproduced from the pipeline script. Sanity-checked before
+trusting the result (baseline-mode reconstruction must reproduce the pipeline EF exactly).
 
 Outputs (output/edgs/):
-  edgs_dsr_realworld_match.csv        per scenario-year-day: does the shipped model's OWN
-                                       chosen discharge hour already fall inside AEMO's cited
-                                       1600-2100hrs window? (validates/quantifies the informal
-                                       "close in shape" comparison made when this brief was
-                                       proposed)
-  edgs_dsr_realworld_sensitivity_summary.csv   per scenario-year: shipped vs AEMO-window NI
+  edgs_dsr_realworld_match.csv        per scenario-year-day: does the pipeline's own chosen
+                                       discharge hour already fall inside AEMO's cited
+                                       1600-2100hrs window? (quantifies how close in shape
+                                       the two rules already are)
+  edgs_dsr_realworld_sensitivity_summary.csv   per scenario-year: pipeline vs AEMO-window NI
                                        generation EF (mean/p99/max) and HVDC-relevant residual
                                        peak timing
 """
@@ -129,7 +128,7 @@ def island_capacity_share(scenario):
 
 
 def dsr_shipped(residual_pre, dsr_mw, H):
-    """Shipped rule: discharge at the day's max residual hour, charge at the day's min."""
+    """Pipeline rule: discharge at the day's max residual hour, charge at the day's min."""
     residual = residual_pre.copy()
     if dsr_mw > 0:
         ndays = H // 24
@@ -143,7 +142,7 @@ def dsr_shipped(residual_pre, dsr_mw, H):
 
 
 def dsr_aemo(residual_pre, dsr_mw, H):
-    """AEMO-cited rule: SAME daily energy as the shipped rule would move, but spread uniformly
+    """AEMO-cited rule: same daily energy as the pipeline rule would move, but spread uniformly
     across AEMO's stated discharge window (1600-2100hrs) and this script's reading of the
     charge window (0900-1500hrs), instead of concentrated in a single residual-driven hour."""
     residual = residual_pre.copy()
@@ -153,7 +152,7 @@ def dsr_aemo(residual_pre, dsr_mw, H):
         base = residual_pre[:ndays * 24].reshape(ndays, 24)
         hi = base.argmax(axis=1)
         rows_idx = np.arange(ndays)
-        daily_energy = np.minimum(dsr_mw, base[rows_idx, hi])  # same magnitude rule as shipped
+        daily_energy = np.minimum(dsr_mw, base[rows_idx, hi])  # same magnitude rule as pipeline
         disch_per_hr = daily_energy / len(AEMO_DISCHARGE_HOURS)
         chg_per_hr = daily_energy / len(AEMO_CHARGE_HOURS)
         out = residual_pre[:ndays * 24].reshape(ndays, 24).copy()
@@ -168,7 +167,7 @@ def dsr_aemo(residual_pre, dsr_mw, H):
 
 
 def run(scenario, year, mode):
-    """mode: 'shipped' or 'aemo'"""
+    """mode: 'shipped' (pipeline rule) or 'aemo'"""
     cal = year_calendar(year)
     H = len(cal)
     cap_share = island_capacity_share(scenario)
@@ -248,7 +247,7 @@ def run(scenario, year, mode):
     return cal["datetime_hour"].to_numpy(), ef_ni, ni_gen, ni_co2, dsr_series, residual_pre
 
 
-# Sanity check (shipped mode must reproduce the actual adopted shipped EF exactly)
+# Sanity check (pipeline-rule mode must reproduce the pipeline's EF parquet exactly)
 ship_ef = pd.read_parquet(OUT_DIR / "edgs_hourly_emission_factor.parquet",
                            columns=["scenario", "island", "datetime_hour", "ef_basis",
                                     "emission_factor_kg_co2e_per_kwh"])
@@ -264,7 +263,7 @@ if resid > 1e-6:
     log("WARNING: reconstruction does not match shipped baseline - results below are unreliable")
 del ship_ef, ship_ni
 
-# Part 1: match rate - how often does the shipped model's OWN chosen discharge hour
+# Part 1: match rate - how often does the pipeline's own chosen discharge hour
 # already fall inside AEMO's cited 1600-2100hrs window?
 match_rows = []
 for scenario in SCENARIOS:
@@ -290,7 +289,7 @@ log(f"\nOverall: shipped model's own discharge hour falls inside AEMO's 1600-210
     f"on {overall_match:.1f}% of days ({match_df.n_days_in_aemo_window.sum():,} of "
     f"{match_df.n_days.sum():,} DSR-active scenario-year-days)")
 
-# Part 2: full sensitivity - shipped rule vs AEMO-window rule, same energy, different timing
+# Part 2: full sensitivity - pipeline rule vs AEMO-window rule, same energy, different timing
 rows = []
 for scenario in SCENARIOS:
     for year in YEARS:

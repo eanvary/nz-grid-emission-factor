@@ -1,6 +1,6 @@
 # New Zealand grid emission factor database: specification
 
-Version: **ef-database-v1.0** (2026-09-29), branch `ef-database-refinement`. Every statement
+Version: ef-database-v1.0.1 (2026-09-29), a bug-fix release of v1.0. Every statement
 below cites the file, override row (`override_id` in
 `generation_pipeline/fuel_attribution_overrides.csv`) or external source it rests on.
 
@@ -99,7 +99,7 @@ coal generation. Denominator: hourly generation x the year's grid share. Annual 
   DateDecommissioned (`RULE_DECOMMISSIONED`).
 - **Unit-level attribution.** Huntly E3P and P40 take their own units (`UNIT_E3P`, `UNIT_P40`).
   The Rotokawa and Te Huka unit rows (`UNIT_ROTOKAWA`, `UNIT_TEHUKA`) apply only when NZGA
-  geothermal is switched off; in the shipped series geothermal takes the NZGA mapping below
+  geothermal is switched off; in the released series geothermal takes the NZGA mapping below
   (`fuel_attribution.py`, `factor_parts`).
 - **Heat-rate corrections** (MBIE generation stack reports): Otahuhu B 7,400 (`HEATRATE_OTA2202`,
   MBIE 2011 Table 3-1); Stratford peakers 8,907 (`HEATRATE_SFD21`, `HEATRATE_SFD22`) and Te Rapa
@@ -168,8 +168,8 @@ fill and month, with ratios and cross-checks, in `output/filled_generation_summa
 | norskeskog (KAW0112) | 2015-2019 | 989.02 | Grid_import x ratio 1.000 (Jan 2020) | `GRIDIMPORT_FILL_KAW0112_2015_2019` |
 | Matahina (MAT1101) | Oct 2021 to Dec 2025 | 1,342.43 | Grid_import generator stream (Generation_Type GG), measured: equals Generation_MD Matahina in every month Jan 2015 to Sep 2021 | `GRIDIMPORT_FILL_MAT1101_2021_10_2025_12` |
 
-Superseded Matahina fills (Manawa fiscal-year totals and long-term average) are kept in
-`generation_pipeline/fuel_attribution_overrides_superseded.csv`.
+The measured stream replaced earlier Matahina fills based on Manawa fiscal-year totals and a
+long-term average.
 
 ## 7. Validation
 
@@ -185,10 +185,10 @@ target) and D3-GAS-emissions (cogeneration scope).
 
 ## 7a. Uncertainty (gas and geothermal factors)
 
-`docs/validation/build_fleet_uncertainty.py` writes `fleet_uncertainty_by_fuel.csv`; the six
+`docs/validation/build_fleet_uncertainty.py` writes `fleet_uncertainty_by_fuel.csv`; the five
 propagation scripts (`run_ipcc_uncertainty_fleet_adjusted.py`, `run_ipcc_uncertainty_full_coverage.py`,
 `run_ipcc_uncertainty_montecarlo.py`, `test_geothermal_sigma_sensitivity.py`,
-`test_montecarlo_trial_convergence.py`, `make_session26_figures.py`) read its `rel_sigma_adopted`.
+`test_montecarlo_trial_convergence.py`) read its `rel_sigma_adopted`.
 Gas: relative sigma = sqrt(carbon^2 + heatrate^2), per-unit factor uncertainty. carbon = IPCC (2006)
 Vol 2 Ch 2 Table 2.2 natural gas, default 56,100 kg/TJ (54,300-58,300), relative half-width 0.0357;
 heatrate = RMS of the D3 gas-fuel annual residuals 2015-2025 (`output/D3_fuel_level_validation.csv`,

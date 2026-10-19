@@ -1,44 +1,41 @@
 """
-Follow-up brief H: cap the required inter-island transfer at REAL HVDC capacity and test
-whether NI's published consumption-side EF (Brief B) is understated in scenario-years where
-the "required" transfer (Briefs C/D/F/G) exceeds what the cable can physically carry.
+Cap the required inter-island transfer at real HVDC capacity and test whether NI's
+consumption-side EF is understated in scenario-years where the required transfer exceeds
+what the cable can physically carry.
 
-FIDELITY NOTE: this script reconstructs required_transfer_to_NI(t) using ONLY real, already-
-shipped data (edgs_hourly_generation.parquet's actual NI+SI generation, the real demand
-share/shape) rather than regenerating generation under a counterfactual assumption (as Briefs
-E-G had to, since they tested DIFFERENT input assumptions). Because Module 7's own transfer
-formula is island_genload_NI(t) = nat_gen(t) x share(t), and nat_gen(t) = g_NI(t)+g_SI(t) is
-already exactly known from the shipped table, this reproduces Module 7's internal transfer
-series EXACTLY (verified: max transfer for Reference/2035 matches the real shipped Brief-C
-figure to the full precision printed, no discrepancy) - UNLIKE Briefs F/G's necessary
-approximation. This is the most precise reconstruction of required_transfer_to_NI(t) produced
-in this project so far.
+Fidelity: required_transfer_to_NI(t) is reconstructed from the pipeline's own saved data
+(edgs_hourly_generation.parquet's actual NI+SI generation, the real demand share/shape)
+rather than by regenerating generation under a counterfactual assumption, as the
+input-assumption sensitivities must. Module 7's transfer formula is
+island_genload_NI(t) = nat_gen(t) x share(t), and nat_gen(t) = g_NI(t)+g_SI(t) is known
+exactly from the saved table, so this reproduces Module 7's internal transfer series exactly
+(max transfer for Reference/2035 matches Module 7's figure to the full precision printed).
+The sensitivity scripts that regenerate generation can only approximate it.
 
-CAPACITY CUTOVER (stated interpretation, not a citation): every source found in Brief D states
-only "the early 2030s" for the 1200->1400 MW upgrade's completion - no source gives a specific
-year. This script adopts **2032** as a stated, reasoned midpoint of "the early 2030s" (commonly
-read as 2030-2033) for the purpose of this calculation. This is NOT a claimed MBIE/Transpower
-figure; a different specific year within "early 2030s" would shift which scenario-years fall
-just either side of the cutover, but not the qualitative finding (see Step 4 discussion of
-this choice's limited sensitivity).
+Capacity cutover (stated interpretation, not a citation): every source found states only
+"the early 2030s" for the 1200->1400 MW upgrade's completion; none gives a specific year.
+This script uses 2032 as a reasoned midpoint of "the early 2030s" (commonly read as
+2030-2033). It is not an MBIE/Transpower figure. A different year within "early 2030s"
+would shift which scenario-years fall just either side of the cutover, but not the
+qualitative finding.
 
-Step 2 methodology: for each flagged hour (transfer_to_NI(t) > capacity(year)), shortfall(t) =
+Method: for each flagged hour (transfer_to_NI(t) > capacity(year)), shortfall(t) =
 transfer_to_NI(t) - capacity(year). Spare NI thermal headroom is estimated as
 total_NI_thermal_capacity(year) - already_dispatched_NI_thermal_generation(t) (both aggregate
-quantities, per the brief's own framing - the shipped pipeline reconciles thermal at FUEL
-level, not plant level, so there is no preserved per-plant hourly dispatch to re-derive
-exactly). If spare exists, the shortfall is assigned to the CHEAPEST-available merit-order
-plant(s) with estimated headroom (headroom_i(t) = capacity_i x (1 - utilisation_fraction(t)),
-utilisation_fraction(t) = already-dispatched thermal / total NI thermal capacity - i.e. plants
+quantities: the pipeline reconciles thermal at fuel level, not plant level, so there is no
+per-plant hourly dispatch to re-derive exactly). If spare exists, the shortfall is assigned
+to the cheapest available merit-order plant(s) with estimated headroom
+(headroom_i(t) = capacity_i x (1 - utilisation_fraction(t)),
+utilisation_fraction(t) = already-dispatched thermal / total NI thermal capacity, i.e. plants
 are assumed proportionally loaded to the aggregate utilisation, a documented simplification of
 "use the existing merit order to decide which plant absorbs it"), and CO2 uses that plant's own
-heat-rate x MfE fuel factor (its marginal emission intensity - NOT the pipeline's reconciled
-average, since this MW is by construction NOT part of MBIE's already-reconciled annual total).
-If spare is insufficient, the hour is flagged as an UNSERVED-DEMAND / reliability finding and
-NOT folded into the emissions correction.
+heat-rate x MfE fuel factor (its marginal emission intensity, not the pipeline's reconciled
+average, since this MW is by construction not part of MBIE's reconciled annual total).
+If spare is insufficient, the hour is flagged as an unserved-demand / reliability finding and
+not folded into the emissions correction.
 
 Standalone: reads only existing saved parquets, writes only new CSVs. Does not modify
-build_edgs_dispatch.py, build_edgs_island_consumption.py, edgs_common.py, or any shipped
+build_edgs_dispatch.py, build_edgs_island_consumption.py, edgs_common.py, or any pipeline
 output parquet.
 
 Outputs: edgs_hvdc_capacity_correction_hours.csv   (every affected hour, served or unserved)
@@ -123,7 +120,7 @@ for scenario in SCENARIOS:
         flagged_import = transfer_to_NI > cap       # NI wanted more import than the cable carries
         flagged_export = transfer_to_NI < -cap       # NI wanted to export more than the cable carries
         if not (flagged_import.any() or flagged_export.any()):
-            continue  # scenario-year unaffected; skip (leave untouched, per the brief)
+            continue  # scenario-year unaffected; leave untouched
 
         # Already-dispatched NI thermal generation + total NI thermal capacity, this hour/year
         gth = g[(g.island == "NI") & (g.fuel_commodity.isin(THERMAL_COMMODITIES))]
@@ -202,7 +199,7 @@ for scenario in SCENARIOS:
         # Recompute NI consumption EF for this scenario-year (affected hours corrected, rest untouched)
         t = targets[(targets.scenario == scenario) & (targets.year == year)]
         demand_twh = float(t[t.metric == "annual_demand"]["value"].iloc[0])
-        island_demand_NI = demand_twh * 1e6 * ni_share * w_ni  # same denominator as Module 7 Step 1
+        island_demand_NI = demand_twh * 1e6 * ni_share * w_ni  # same denominator as Module 7
 
         # total-year CO2: unaffected hours use original CO2 as-is (g_NI*genEF_NI*1000 + transfer*genEF_SI*1000);
         # affected hours use orig_co2_sy / corr_co2_sy computed above (import side only; export-constrained

@@ -12,10 +12,10 @@ TABLES = ROOT / "tables"
 
 decomp = pd.read_csv(TABLES / "phase3_decomposition_contextualised_v3_finalEUI.csv")
 
-# Updated at the user's request to the longest non-truncated ('full')
-# period available -- there is no literal 27-year row (start years in the
-# data are only 2025, 2027, 2030); 2025+25yr is the closest full-fit
-# approximation to the whole modelled horizon. Was 2027/10yr.
+# Headline case: the longest non-truncated ('full') period available.
+# There is no literal 27-year row (start years in the data are only 2025,
+# 2027, 2030); 2025+25yr is the closest full-fit approximation to the
+# whole modelled horizon.
 HEADLINE_PROFILE, HEADLINE_TRAJECTORY, HEADLINE_START, HEADLINE_PERIOD = "daytime_office", "Reference", 2025, 25
 profiles = sorted(decomp["load_shape"].unique())
 trajectories = sorted(decomp["scenario"].unique())

@@ -1,17 +1,16 @@
 """
-Extends Category D1 (MBIE cross-check) to the newest window this project's data now
-covers: 2024 Q1 -- 2026 Q1 (the latest quarter MBIE's own workbook has published), using
-the 8 new raw months (Jan-Aug 2026) downloaded from the Electricity Authority's public EMI
-portal this session. Same method as the existing D1 check (full scope, no autoproducer
-exclusion, national total CO2 / national total generation per quarter) -- only the window
-is new, not the method.
+Extends Category D1 (MBIE cross-check) to 2024 Q1 to 2026 Q1 (the latest quarter in
+MBIE's published workbook), using the 8 raw months for Jan-Aug 2026 downloaded from the
+Electricity Authority's public EMI portal. Same method as the D1 check (full scope, no
+autoproducer exclusion, national total CO2 / national total generation per quarter);
+only the window differs.
 
-2024-2025 months: read from the ALREADY-SHIPPED output/monthly_emission_factor_NI_SI.csv
-(NI+SI summed to national) -- no need to recompute what's already validated.
-2026 months (Jan-Aug): computed fresh here from the newly-downloaded raw files, using the
-shipped pipeline's own generation reader, POC->island map and fuel/factor attribution
+2024-2025 months: read from the released output/monthly_emission_factor_NI_SI.csv
+(NI+SI summed to national), which is already validated.
+2026 months (Jan-Aug): computed here from the 2026 raw files, using the
+pipeline's own generation reader, POC->island map and fuel/factor attribution
 (generation_pipeline/fuel_attribution.py: FuelAttribution.generation / .attribute,
-poc_island_map), so 2026 is on the same basis as the shipped 2024-2025 months.
+poc_island_map), so 2026 is on the same basis as the released 2024-2025 months.
 """
 import sys
 from pathlib import Path
@@ -42,7 +41,7 @@ parts = [gen.groupby(["year", "month"]).agg(gen=("gen_mwh", "sum"), co2=("co2_kg
 new_monthly = pd.concat(parts, ignore_index=True)
 print(new_monthly.to_string(index=False))
 
-# 2024-2025 months from the already-shipped, already-validated output.
+# 2024-2025 months from the released, validated output.
 shipped = pd.read_csv(ROOT / "output" / "monthly_emission_factor_NI_SI.csv")
 shipped_national = shipped.groupby(["year", "month"]).agg(
     gen=("total_gen_MWh", "sum"), co2=("total_CO2_kg", "sum")

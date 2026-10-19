@@ -1,33 +1,29 @@
 """
 Figure 2 -- treatment schematic (Methods figure, no result magnitudes).
-[Manuscript numbering: this is "Figure 2" in the current text (see
-"20260822 Where, when, and which future - Z comments.docx", paragraph 79:
-"Figure 2. Schematic of the four-treatment, three-stage decomposition of
+[Manuscript numbering: this is "Figure 2" in the manuscript ("Figure 2.
+Schematic of the four-treatment, three-stage decomposition of
 static/national emission-factor simplification error"). The script/output
-filename retains the repo's internal "fig4_..." naming.]
+filename keeps the repo's internal "fig4_..." naming.]
 Every illustrative series is real data read from tables/ or the underlying
 hourly EDGS output; no series is synthesised.
 
 Headline case: daytime_office, Reference, start=2025, 25-year period
-(fit_status=='full') -- confirmed to exist before drawing (Step 0 gate).
+(fit_status=='full'), checked to exist before drawing.
 
-v2 of this script (this revision; the original build_fig4_treatment_schematic.py
-is untouched), at the user's request, fixing two problems in the original:
+This version differs from build_fig4_treatment_schematic.py in two ways.
 
-Problem 1 -- panel (b) previously carried a faint axhline "ghost" at a_mean,
-the mean of ONE representative week from panel (a), drawn flat across the full
-25-year x-axis. Comparing a one-week mean against a 25-year annual series has
-no analytical meaning and invites reading the vertical gap between the two
-lines as "the temporal error", which is wrong. That ghost is removed from
-panel (b) entirely. (Panels (c)/(d)'s faint ghosts are UNCHANGED -- those are
-genuinely the prior panel's own plotted series, which the legend correctly
-describes; only panel (b)'s was the mismatched one.)
+Panel (b) has no faint axhline "ghost" at a_mean, the mean of one
+representative week from panel (a), drawn flat across the full 25-year
+x-axis. Comparing a one-week mean against a 25-year annual series has no
+analytical meaning and invites reading the vertical gap between the two
+lines as "the temporal error", which is wrong. (Panels (c)/(d) keep their
+faint ghosts: those are the prior panel's own plotted series, which the
+legend describes.)
 
-Problem 2 -- the temporal error (E_b - E_a) is not a gap between two annual
-factor values; it has two parts, confirmed against Table 6 of the manuscript
-during Step 0 verification of this revision (numbers below are against the
-corrected, solar-fixed data -- see DATA-VINTAGE CORRECTION note above; the
-pre-fix numbers this revision originally shipped with are superseded):
+The temporal error (E_b - E_a) is not a gap between two annual factor
+values; it has two parts, checked against Table 6 of the manuscript
+(numbers below are for the solar-corrected data; see the data-vintage
+note below):
   (i)  weighting-basis part = (generation-weighted annual mean) - (plain
        hourly time-mean). Identical across load-shape profiles (it does not
        depend on demand): -0.085031 kgCO2e/kWh cumulative over 2025-2049
@@ -44,11 +40,11 @@ pre-fix numbers this revision originally shipped with are superseded):
   256.87 kgCO2e/m2 at median EUI) is identical across all three profiles,
   as required by construction (all three demand shapes share one annual
   energy total).
-A single January week cannot illustrate this: Step 0 found the original
-representative week's mean sits at the 43rd percentile of the full 2025 NI
+A single January week cannot illustrate this: the mean of the representative
+week used in build_fig4_treatment_schematic.py sits at the 43rd percentile of the full 2025 NI
 hourly distribution, materially below the 2025 annual mean, so shading office
 hours on that week alone could visually suggest the wrong sign. Panel (a) is
-therefore redrawn as a full-2025 hour-of-week mean profile (mean NI
+therefore a full-2025 hour-of-week mean profile (mean NI
 generation-basis EF for each of the 168 (day-of-week, hour) slots, averaged
 over all of 2025), with the two-part mechanism drawn directly onto it: the
 generation-weighted annual mean (=panel (b)'s first value), the daytime_office
@@ -56,31 +52,28 @@ demand-weighted mean, and (since the two differ by more than 2% of the
 y-axis range) the plain hourly time-mean, plus shading over the profile's own
 occupied hours.
 
-DATA-VINTAGE CORRECTION (2026-09-16, superseding the note this revision
-originally shipped with): output/edgs/edgs_hourly_emission_factor.parquet
-(all-scenario) was regenerated on 2026-09-03 to fix a real, documented bug
-in edgs_pipeline/build_edgs_dispatch.py -- pre-2024 dispatch templates
-(the default CENTRAL_TEMPLATE=2021) carry no Solar fuel code, so solar
-generation previously fell back to a FLAT 24-hour spread, i.e. non-zero
-solar output at night, "a known-wrong physical impossibility" per the
-pipeline's own code comment. The fix (Brief T) replaces that fallback with
-the real observed 2024 NI hourly solar shape (zero 18:00-06:00, peaked at
-midday). Verified directly: the pre-fix file this script originally used
-(edgs_hourly_emission_factor_Reference.parquet, 2026-07-18, single-scenario)
+Data vintage: output/edgs/edgs_hourly_emission_factor.parquet
+(all-scenario) includes a fix in projection_pipeline/build_edgs_dispatch.py.
+Pre-2024 dispatch templates (the default CENTRAL_TEMPLATE=2021) carry no
+Solar fuel code, so without the fix solar generation falls back to a flat
+24-hour spread, i.e. non-zero solar output at night, "a known-wrong
+physical impossibility" per the pipeline's own code comment. The fix
+replaces that fallback with the observed 2024 NI hourly solar shape (zero
+18:00-06:00, peaked at midday). Checked directly: the pre-fix
+single-scenario file (edgs_hourly_emission_factor_Reference.parquet)
 has NI solar generation constant at 78.165 MWh in every hour of a sampled
 day; the corrected all-scenario file has it at exactly 0 from 18:00-06:00
-and ~220 MWh at midday. This is not a minor correction: recomputing the
-daytime_office headline temporal component against the corrected data flips
-its sign, from -17.1 to +27.7 kgCO2e/m2 (25yr, median EUI) -- office demand
-overlaps the solar-suppressed midday window, so it is CLEANER than the
-annual average in every year 2025-2049, not dirtier-then-cleaner as the
-pre-fix data implied. phase3_decomposition.py, phase3_contextualise_v2_
-finalEUI.py and build_table3_headline.py have been rerun against the
-corrected EDGS output (2026-09-16); phase3_annual_island_ef.csv,
-phase3_annual_national_ef.csv, phase3_decomposition_full.csv and Table 6
-now all reflect the fix. This script now sources ALL of panel (a)'s hourly
-data from the same corrected, all-scenario file (filtered scenario==
-"Reference"), for consistency with panels (b)-(d) and the corrected Table 6.
+and ~220 MWh at midday. The correction matters: against the corrected data
+the daytime_office headline temporal component changes sign, from -17.1 to
++27.7 kgCO2e/m2 (25yr, median EUI). Office demand overlaps the
+solar-suppressed midday window, so it is cleaner than the annual average in
+every year 2025-2049, not dirtier-then-cleaner as the pre-fix data implied.
+phase3_decomposition.py, phase3_contextualise_v2_finalEUI.py and
+build_table3_headline.py use the corrected EDGS output, and so do
+phase3_annual_island_ef.csv, phase3_annual_national_ef.csv,
+phase3_decomposition_full.csv and Table 6. This script takes all of panel
+(a)'s hourly data from the same corrected, all-scenario file (filtered
+scenario=="Reference"), for consistency with panels (b)-(d) and Table 6.
 """
 import sys
 import numpy as np
@@ -94,15 +87,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 FIGS = ROOT / "figures"
 FIGS.mkdir(parents=True, exist_ok=True)
-# All-scenario, solar-fixed files (post 2026-09-03; see DATA-VINTAGE CORRECTION
-# above). Filtered to scenario=="Reference" below, same as phase3_decomposition.py.
+# All-scenario, solar-corrected files (see the data-vintage note above).
+# Filtered to scenario=="Reference" below, same as phase3_decomposition.py.
 HOURLY_EF_PARQUET = Path(r"C:\Users\ehsan\OneDrive - AUT University\PhD\Database\Grid Emission Factor\output\edgs\edgs_hourly_emission_factor.parquet")
 HOURLY_GEN_PARQUET = Path(r"C:\Users\ehsan\OneDrive - AUT University\PhD\Database\Grid Emission Factor\output\edgs\edgs_hourly_generation.parquet")
 # phase3_decomposition_full.csv / phase3_annual_island_ef.csv / phase3_annual_national_ef.csv /
-# phase3_load_shapes_stylised.csv no longer exist under Figure/tables/ in this repo (removed by a
-# prior "remove superseded backups/stale phase3 analysis" cleanup). Read them from the canonical
-# location phase3_decomposition.py / phase3_load_profiles.py actually write to, the same way
-# HOURLY_EF_PARQUET above already points at the Database repo's output.
+# phase3_load_shapes_stylised.csv are not under Figure/tables/. Read them from the location
+# phase3_decomposition.py / phase3_load_profiles.py write to, the same way
+# HOURLY_EF_PARQUET above points at the Database repo's output.
 DB_TABLES = Path(r"C:\Users\ehsan\OneDrive - AUT University\PhD\Database\Grid Emission Factor\analysis_paper\tables")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -130,8 +122,8 @@ END_YEAR = START_YEAR + PERIOD_YRS - 1
 print(f"Headline row confirmed: start={START_YEAR}, period={PERIOD_YRS}yr, "
       f"fit_status={hl['fit_status']}, order_check_total_matches={hl['order_check_total_matches']}")
 
-# (b) annual island mean per year, headline period -- loaded first since (a)
-# now plots a reference line at (b)'s own first value.
+# (b) annual island mean per year, headline period, loaded first since (a)
+# plots a reference line at (b)'s own first value.
 isl = pd.read_csv(DB_TABLES / "phase3_annual_island_ef.csv")
 b_series = isl[(isl["scenario"] == "Reference") & (isl["island"] == "NI") &
                (isl["year"].between(START_YEAR, END_YEAR))].sort_values("year")
@@ -150,8 +142,8 @@ d_value = hl["E_d_static_base"] / hl["n_years_used"]
 d_value_from_series = c_series[c_series["year"] == START_YEAR]["annual_national_ef"].iloc[0]
 assert abs(d_value - d_value_from_series) < 1e-6, "static base value disagrees with annual_national_ef series"
 
-# (a) 2025 hour-of-week mean profile, NI generation-basis EF -- replaces the
-# single representative week. Mean of ALL occurrences of each (day-of-week,
+# (a) 2025 hour-of-week mean profile, NI generation-basis EF, in place of a
+# single representative week. Mean of all occurrences of each (day-of-week,
 # hour-of-day) slot across the full 2025 calendar year (168 slots).
 hourly = pd.read_parquet(HOURLY_EF_PARQUET)
 hourly["datetime_hour"] = pd.to_datetime(hourly["datetime_hour"])
@@ -183,7 +175,7 @@ ni_2025_w = ni_2025.merge(gen_ni_2025, on="datetime_hour", how="left")
 genw_mean_2025 = np.average(ni_2025_w["emission_factor_kg_co2e_per_kwh"], weights=ni_2025_w["generation_mwh"].fillna(0))
 assert abs(genw_mean_2025 - b_2025) < 1e-6, "recomputed 2025 generation-weighted mean disagrees with phase3_annual_island_ef.csv"
 
-# daytime_office demand-weighted mean, full 2025 NI hourly series (Step 0 item 4c)
+# daytime_office demand-weighted mean, full 2025 NI hourly series
 shapes = pd.read_csv(DB_TABLES / "phase3_load_shapes_stylised.csv")
 office_shape = shapes[shapes["label"] == "daytime_office"][["dow", "hour", "raw_intensity"]]
 ni_2025_office = ni_2025.merge(office_shape, on=["dow", "hour"], how="left")
@@ -200,12 +192,12 @@ OCCUPIED_THRESHOLD = 0.3
 office_map = shapes[shapes["label"] == "daytime_office"].set_index(["dow", "hour"])["raw_intensity"]
 occupied_by_dowhour = office_map > OCCUPIED_THRESHOLD
 
-# y-axis range (computed from panel (a)'s NEW data)
+# y-axis range (computed from panel (a)'s data)
 y_max = max(a_vals.max(), b_series["annual_island_ef"].max(), c_series["annual_national_ef"].max(), d_value) * 1.15
 y_min = 0
 y_range = y_max - y_min
 
-# Rule (per this revision's brief): draw the plain time-mean line in (a) only
+# Rule: draw the plain time-mean line in (a) only
 # if it sits at least 2% of the y-axis range away from the annual mean.
 plain_gap = abs(genw_mean_2025 - plain_mean_2025)
 draw_plain_mean = (plain_gap / y_range) >= 0.02

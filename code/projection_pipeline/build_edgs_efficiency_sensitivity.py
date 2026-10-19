@@ -1,24 +1,23 @@
 """
-Follow-up brief R: thermal PLANT EFFICIENCY improvement, as a STANDALONE SENSITIVITY TEST,
-not a pipeline change. This script does NOT modify build_edgs_dispatch.py, edgs_common.py,
-build_edgs_plant_register.py, or any shipped output parquet. It reads only the pipeline's
-existing saved intermediates and recomputes combustion CO2 in parallel under a counterfactual
-efficiency-improvement assumption, purely for comparison against the shipped baseline.
+Thermal plant efficiency improvement, as a standalone sensitivity test, not a pipeline
+change. This script does not modify build_edgs_dispatch.py, edgs_common.py,
+build_edgs_plant_register.py, or any pipeline output parquet. It reads only the pipeline's
+saved intermediates and recomputes combustion CO2 in parallel under a counterfactual
+efficiency-improvement assumption, for comparison against the baseline.
 
-BACKGROUND (user question): does the shipped pipeline account for thermal plants getting more
-efficient over 2024-2050? Checked both MBIE source workbooks directly - answer is NO, and not
-because the pipeline dropped it: MBIE's own Generation Stack `Heat Rate (GJ/GWh)` field is a
-SINGLE STATIC VALUE per plant, identical across all 5 scenarios, with NO year dimension (verified
-- e.g. Huntly Rankine coal = 10900 GJ/GWh in every scenario/row; Huntly U5 CCGT = 7400 in every
-scenario/row). The only NEW thermal builds in the whole stack are 8 generic OCGT peakers, all
-fixed at 11750 GJ/GWh - WORSE than most existing plants, not better. MBIE's own published
-`Emission factors` sheet trend to 2050 is explained entirely by fleet-MIX shift (more renewables,
-thermal retirements), not by any per-plant efficiency assumption. So there is no MBIE efficiency
-trend to extract - modelling one requires an external, cited assumption, exactly like the
-geothermal/wood/battery EXTERNAL-CITED constants in edgs_common.py. This script builds and tests
-one.
+Background: does the pipeline account for thermal plants getting more efficient over
+2024-2050? Both MBIE source workbooks say no, and not because the pipeline dropped it: MBIE's
+Generation Stack `Heat Rate (GJ/GWh)` field is a single static value per plant, identical
+across all 5 scenarios, with no year dimension (e.g. Huntly Rankine coal = 10900 GJ/GWh in
+every scenario/row; Huntly U5 CCGT = 7400 in every scenario/row). The only new thermal builds
+in the whole stack are 8 generic OCGT peakers, all fixed at 11750 GJ/GWh, worse than most
+existing plants. MBIE's published `Emission factors` sheet trend to 2050 is explained by the
+shift in fleet mix (more renewables, thermal retirements), not by any per-plant efficiency
+assumption. So there is no MBIE efficiency trend to extract; modelling one needs an external,
+cited assumption, like the geothermal/wood/battery external constants in edgs_common.py. This
+script builds and tests one.
 
-EXTERNAL SOURCE (cited, not invented):
+External source (cited):
   U.S. EIA, "Natural gas-fired electricity conversion efficiency grows as coal remains stable"
   (Today in Energy, 27 Jan 2016), https://www.eia.gov/todayinenergy/detail.php?id=32572
   - US fleet-average heat rate, 2006-2015 (EIA-923/860 generator-level data):
@@ -27,32 +26,30 @@ EXTERNAL SOURCE (cited, not invented):
   - Driven substantially by combined-cycle's rising share of gas generation (75% in 2006 ->
     85% in 2015) displacing older/simple-cycle units, not purely per-unit engineering upgrades.
 
-DERIVATION (this script's own arithmetic, not an EIA-stated annual rate):
-  compound annual gas heat-rate IMPROVEMENT = (1 - 0.07)^(1/9) - 1 = -0.803%/yr (heat rate
-  falling, i.e. efficiency rising). Applied ONLY to the "Natural gas" MBIE commodity (MBIE's
-  Electricity generation use / GHG sheets carry no CCGT/OCGT/cogen sub-split - "Natural gas" is
-  the finest grain available, so the single rate applies to NZ's whole gas fleet, mirroring the
-  US fleet-average basis it was measured on). Coal held FLAT (0%, not the EIA's own +1%
-  worsening - this script tests an improvement scenario, not a degradation one, and 1%/9yr is
-  noise-scale). Diesel/LPG/Fuel oil: NO cited fleet trend found for these fuels in this search
-  (thin literature; NZ's diesel/LPG peakers are low-utilisation reserve plant, not represented
-  in the EIA CCGT/coal dataset) - held FLAT, explicitly untested rather than assumed.
+Derivation (this script's own arithmetic, not an EIA-stated annual rate):
+  compound annual gas heat-rate improvement = (1 - 0.07)^(1/9) - 1 = -0.803%/yr (heat rate
+  falling, i.e. efficiency rising). Applied only to the "Natural gas" MBIE commodity (MBIE's
+  Electricity generation use / GHG sheets carry no CCGT/OCGT/cogen sub-split, so "Natural gas"
+  is the finest grain available and the single rate applies to NZ's whole gas fleet, mirroring
+  the US fleet-average basis it was measured on). Coal held flat (0%, not the EIA's +1%
+  worsening: this tests an improvement scenario, not a degradation one, and 1% over 9 years is
+  noise-scale). Diesel/LPG/Fuel oil: no cited fleet trend was found (thin literature; NZ's
+  diesel/LPG peakers are low-utilisation reserve plant, not represented in the EIA CCGT/coal
+  dataset), so they are held flat and left untested rather than assumed.
 
-CAVEAT (stated, not hidden): extrapolating a 2006-2015 US fleet trend forward to 2050 (35 years
-beyond the observed window, a different country/fleet) is a real methodological stretch. This
-script does NOT claim NZ's gas fleet will actually improve at this rate - it sizes the effect
-IF it did, exactly the "standalone sensitivity, not adopted" pattern used throughout this project
-(see e.g. the geothermal test in edgs_common.py / README).
+Caveat: extrapolating a 2006-2015 US fleet trend forward to 2050 (35 years beyond the
+observed window, a different country and fleet) is a real methodological stretch. The script
+does not claim NZ's gas fleet will improve at this rate; it sizes the effect if it did, as a
+standalone sensitivity like the geothermal test (see edgs_common.py / README).
 
-METHOD: MBIE's own generation (GWh, mbie_gwh in edgs_thermal_intensity.parquet) is held EXACTLY
-as shipped/published - this sensitivity does not touch generation, dispatch, or demand. Only the
-FUEL INPUT needed to produce that same MBIE generation is scaled down by the cumulative
-efficiency factor for "Natural gas" rows (fuel_use_pj' = fuel_use_pj x factor(year)); combustion
-CO2 is then recomputed as fuel_use_pj' x MfE factor, the SAME MfE constant the shipped pipeline
-uses (this sensitivity isolates the efficiency lever only, not the MfE-factor lever - see the
-companion question about MfE factor updates, out of scope here).
+Method: MBIE's generation (GWh, mbie_gwh in edgs_thermal_intensity.parquet) is held exactly
+as published; this sensitivity does not touch generation, dispatch, or demand. Only the fuel
+input needed to produce that same MBIE generation is scaled down by the cumulative efficiency
+factor for "Natural gas" rows (fuel_use_pj' = fuel_use_pj x factor(year)); combustion CO2 is
+then recomputed as fuel_use_pj' x MfE factor, the same MfE constant the pipeline uses. This
+isolates the efficiency lever only; updates to the MfE factors are out of scope here.
 
-Standalone: reads only edgs_thermal_intensity.parquet (existing, shipped), writes only new CSVs.
+Standalone: reads only edgs_thermal_intensity.parquet (pipeline output), writes only new CSVs.
 
 Outputs (output/edgs/):
   edgs_efficiency_sensitivity.csv          per scenario/year/fuel: baseline vs efficiency-
@@ -85,15 +82,15 @@ log(f"Derived compound annual gas heat-rate improvement: {GAS_ANNUAL_IMPROVEMENT
     f"(applied {BASE_YEAR}->2050, cumulative {1-(1-GAS_ANNUAL_IMPROVEMENT)**(2050-BASE_YEAR):.1%} "
     f"by 2050)")
 
-# Load shipped baseline (reconciled thermal fuel/CO2, per scenario-year-fuel)
+# Load the baseline (reconciled thermal fuel/CO2, per scenario-year-fuel)
 recon = pd.read_parquet(OUT_DIR / "edgs_thermal_intensity.parquet")
 # Combustion-only rows (exclude the Wood non-CO2 row: efficiency has no meaning for a
 # fixed non-biogenic CH4+N2O factor untouched by this sensitivity)
 base = recon[recon["flag"] == "MBIE_fueluse_x_MfE"].copy()
 MFE_EF = {k: v[0] for k, v in MFE_FUEL_EF_KG_PER_GJ.items()}
 
-# Apply cumulative efficiency factor to fuel input; recompute CO2 from the SAME MfE
-# constant the shipped pipeline uses. Generation (mbie_gwh) is untouched throughout.
+# Apply cumulative efficiency factor to fuel input; recompute CO2 from the same MfE
+# constant the pipeline uses. Generation (mbie_gwh) is untouched throughout.
 def efficiency_factor(fuel, year):
     rate = EFFICIENCY_RATE_BY_FUEL.get(fuel, 0.0)
     yrs = max(0, year - BASE_YEAR)
@@ -115,8 +112,8 @@ detail.to_csv(OUT_DIR / "edgs_efficiency_sensitivity.csv", index=False)
 log(f"\nWrote edgs_efficiency_sensitivity.csv ({len(detail):,} rows)")
 
 # National summary: combustion CO2 delta per scenario-year (Mt, %) + implied
-# generation-side EF delta (using the SAME MBIE net-generation denominator the
-# shipped pipeline's generation EF uses, i.e. total generation is unaffected).
+# generation-side EF delta (using the same MBIE net-generation denominator the
+# pipeline's generation EF uses, i.e. total generation is unaffected).
 targets = pd.read_parquet(OUT_DIR / "edgs_annual_targets.parquet")
 netgen = (targets[targets["metric"] == "net_generation"]
           .groupby(["scenario", "year"])["value"].sum().rename("netgen_gwh"))  # GWh, all commodities

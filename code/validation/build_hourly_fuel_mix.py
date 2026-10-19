@@ -1,9 +1,9 @@
 """
-Closes the "monthly, not hourly" gap in VALIDATION_REPORT.md Finding 4.
+Per-fuel hourly generation table, needed for an hourly (not only monthly) uncertainty band.
 
-The shipped pipeline (generation_pipeline/build_ef_timeseries_daily_hourly.py) computes
+The pipeline (generation_pipeline/build_ef_timeseries_daily_hourly.py) computes
 a per-POC, per-fuel hourly generation table internally (its own `hourly_raw` DataFrame)
-but only ever publishes the already-blended total (`hourly_emission_factor_NI_SI.csv`,
+but publishes only the blended total (`hourly_emission_factor_NI_SI.csv`,
 island/date/hour/EF/gen/CO2 -- no fuel_std column). This script rebuilds that same
 per-fuel hourly table from the same raw inputs, using the IDENTICAL logic (TP-pairing into
 24 hours, TP49/TP50 DST handling, flagged fills folded into hours) copied from that script,
@@ -11,14 +11,14 @@ and the pipeline's own shared modules for everything else: POC->island map and f
 attribution from generation_pipeline/fuel_attribution.py (poc_island_map, FuelAttribution:
 generator- and unit-level factors, Huntly 1-4 coal/gas split, Kinleith wood, flagged
 fills). fuel_std in the output is the attributed fuel, so Huntly 1-4 output appears under
-CLG and GAS by the quarterly coal share. The two disagree only if there's a genuine bug,
-not a methodology difference.
+CLG and GAS by the quarterly coal share. The two can disagree only through a bug, not
+through a difference in method.
 
 Read-only: touches no pipeline input or output. Writes one new file,
 hourly_fuel_mix_NI_SI.csv, into this validation folder (not into output/).
 
 Verification built in: the per-fuel hourly table, summed back to (island, date, hour),
-must reproduce the shipped hourly_emission_factor_NI_SI.csv exactly (energy and EF) --
+must reproduce the released hourly_emission_factor_NI_SI.csv exactly (energy and EF),
 checked below, not assumed.
 """
 import sys
@@ -94,7 +94,7 @@ hourly_raw["month"] = hourly_raw["date"].dt.month
 hourly_raw = fa.attribute(hourly_raw)  # fuel_std becomes the attributed fuel; co2_kg added
 print(f"  {len(hourly_raw):,} POC-level hourly rows, {hourly_raw['gen_mwh'].sum()/1e6:.2f} TWh total")
 
-# Aggregate to (island, date, hour, fuel_std) -- the new, finer product this script adds.
+# Aggregate to (island, date, hour, fuel_std): the finer product this script adds.
 fuel_hourly = (
     hourly_raw.groupby(["island", "date", "hour", "fuel_std"])
     .agg(gen_mwh=("gen_mwh", "sum"), co2_kg=("co2_kg", "sum"))
@@ -107,7 +107,7 @@ fuel_hourly.to_csv(OUT, index=False)
 print(f"Wrote {len(fuel_hourly):,} rows -> {OUT}")
 
 # Verification: sum this new per-fuel table back to (island, date, hour) and
-# compare against the ALREADY-SHIPPED hourly_emission_factor_NI_SI.csv.
+# compare against the released hourly_emission_factor_NI_SI.csv.
 print("\nVerifying against shipped hourly_emission_factor_NI_SI.csv...")
 recombined = (
     fuel_hourly.groupby(["island", "date", "hour"])

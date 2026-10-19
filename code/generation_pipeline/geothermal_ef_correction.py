@@ -1,5 +1,5 @@
 """
-Geothermal point-value correction (Item 2, "hybrid" version, 2026-09-14).
+Geothermal point-value correction ("hybrid" rule).
 
 Background: this project's own plant register (`EA data/Dispatched generation
 plant.csv`) assigns ONE flat value -- 99.996 kg/MWh (identical HeatRate x
@@ -28,9 +28,9 @@ the unmatched 6 -- a real, sourced improvement on the flat 99.996 kg/MWh
 assumption for all 18, without overstating how much of the register this single
 2018 field study can actually speak to.
 
-This does NOT touch or re-litigate the EDGS forward-looking pipeline's own,
-separate, already-decided rejection of this same source (a different pipeline,
-a different use of the data -- see run_ipcc_uncertainty_full_coverage.py docstring).
+This is separate from the EDGS projection pipeline's decision not to use this
+source (a different pipeline and a different use of the data; see the
+run_ipcc_uncertainty_full_coverage.py docstring).
 """
 
 GEOTHERMAL_FALLBACK_EF_KG_PER_MWH = 76.03  # McLean & Richardson (2019) MW-weighted fleet mean
@@ -52,7 +52,7 @@ GEOTHERMAL_EF_KG_PER_MWH_BY_PLANTCODE = {
     "WRK0331 TAA0": 45.0,    # Te Huka (original unit) -> their "Te Huka" (22 MW, 45)
     "WRK2201 WRK0": 21.0,    # Wairakei -> their "Wairakei A&B and binary" (116 MW, 21)
     # No match (post-dates the 2018 study, or an industrial cogen not in their
-    #     station list) -- fallback to the fleet mean, not the old flat 99.996
+    #     station list): fallback to the fleet mean, not the register's flat 99.996
     "KAW0111 TAM0": GEOTHERMAL_FALLBACK_EF_KG_PER_MWH,  # Kawerau (Te Ahi O Maui), commissioned 2018
     "KAW0112 ONU0": GEOTHERMAL_FALLBACK_EF_KG_PER_MWH,  # Norske Skog / Carter Holt Harvey cogen
     "KAW2201 TAM0": GEOTHERMAL_FALLBACK_EF_KG_PER_MWH,  # Kawerau (TOPP2)

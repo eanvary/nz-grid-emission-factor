@@ -2,13 +2,13 @@
 Sensitivity of the published uncertainty band to one modelling choice: what
 geothermal's relative sigma should be.
 
-WHY THIS EXISTS (2026-09-23)
+Why this test
 run_ipcc_uncertainty_montecarlo.py sets GEO's relative sigma to the MW-weighted
 spread ACROSS the 12 McLean & Richardson (2019) stations, 93.97%, and draws one
 multiplier per fuel per trial. That is a fuel-level parameter.
 
-But the point estimate does not use a fleet value for geothermal. Since the
-2026-09-14 correction, geothermal_ef_correction.py gives 90.5% of geothermal
+But the point estimate does not use a fleet value for geothermal:
+geothermal_ef_correction.py gives 90.5% of geothermal
 generation its own station's measured emission factor (Ohaaki 341, Wairakei 21,
 and so on), and only the remaining 9.5% falls back to the fleet mean of 76.03.
 
@@ -20,7 +20,7 @@ This script does not decide the question. It re-runs the same Monte Carlo under
 three readings of what is actually uncertain, changing nothing else, so the size
 of the effect is on record.
 
-  0. as shipped (2026-09-29)  by proxy-rule step, independent draws: step 1 at the NIR
+  0. adopted           by proxy-rule step, independent draws: step 1 at the NIR
                        2026 measurement uncertainty (7.07%), step 2 at 7.07% with the
                        station's own year-to-year variation, steps 3-4 at the spread
   1. previous          the full between-station spread, one common draw
@@ -79,8 +79,8 @@ SIG_FALLBACK = co2_share_fallback * SIG_SHIPPED
 _geo_sig = pd.read_csv(os.path.join(HERE, "geo_uncertainty_sigma.csv")).set_index("fuel_std")["rel_sigma"]
 SIG_TERMS = {k: float(v) for k, v in _geo_sig.items()}  # GEO, GEO_S2_<station>, GEO_PROXY
 # each scenario: (name, {geothermal term: sigma} or one sigma for every geothermal term). The first is the
-# method adopted 2026-09-29 (by proxy-rule step, build_geo_uncertainty_inputs.py); the other three are the
-# earlier readings, applied to all geothermal alike.
+# adopted method (by proxy-rule step, build_geo_uncertainty_inputs.py); the other three are alternative
+# readings, applied to all geothermal alike.
 SCENARIOS = [
     ("as shipped: by rule step (7.07% / station / spread)", SIG_TERMS),
     ("previous: full between-station spread, one draw", SIG_SHIPPED),

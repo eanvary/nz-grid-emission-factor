@@ -1,15 +1,15 @@
 """
 Re-runs the monthly and hourly IPCC Approach-1 propagation with GAS's relative
-uncertainty replaced by the adopted value from build_fleet_uncertainty.py (since 2026-09-29
-per-unit factor uncertainty, sqrt(IPCC Table 2.2 carbon^2 + D3 heat-rate RMS^2) = 4.06%;
-previously the fleet dispersion, 6.74%; IPCC Table 2.2 default 3.56%) -- CLG, DSL, WOOD unchanged (single-plant
-or unregistered fleets gave a degenerate/unavailable fleet estimate, so they keep the
-IPCC default, per build_fleet_uncertainty.py's own printed verdict).
+uncertainty replaced by the adopted value from build_fleet_uncertainty.py (per-unit
+factor uncertainty, sqrt(IPCC Table 2.2 carbon^2 + D3 heat-rate RMS^2) = 4.06%; for
+comparison, the fleet dispersion is 6.74% and the IPCC Table 2.2 default 3.56%). CLG, DSL
+and WOOD are unchanged: single-plant or unregistered fleets give a degenerate or
+unavailable fleet estimate, so they keep the IPCC default, as build_fleet_uncertainty.py
+reports.
 
-This does NOT overwrite the original IPCC-default results
-(ipcc_uncertainty_by_island_{month,year,hour,day}.csv) -- both are kept side by side,
-matching this project's own established convention (see edgs_pipeline's Brief-series
-corrections) of never silently replacing a prior figure.
+The IPCC-default results (ipcc_uncertainty_by_island_{month,year,hour,day}.csv) are
+not overwritten; both sets are kept side by side, so no earlier result is silently
+replaced.
 """
 import math
 from pathlib import Path
@@ -23,8 +23,8 @@ fleet = pd.read_csv(HERE / "fleet_uncertainty_by_fuel.csv").set_index("fuel_std"
 
 # Exact IPCC Table 2.2 relative half-widths -- recomputed from the same
 # (default, lower, upper) triplets as run_ipcc_uncertainty_quantification.py,
-# not hand-copied rounded constants, so the "original" baseline below is a
-# byte-identical reproduction of the earlier report's figures.
+# not hand-copied rounded constants, so the "original" baseline below
+# reproduces the IPCC-default results byte for byte.
 IPCC_TABLE_2_2 = {
     "CLG": (96100.0, 92800.0, 100000.0),
     "GAS": (56100.0, 54300.0, 58300.0),
@@ -117,8 +117,8 @@ print(f"NI annual CI% -- fleet-adjusted: min={ni_annual_fleet.min():.2f}% max={n
 print(f"\nWrote ipcc_uncertainty_by_island_month_fleet_adjusted.csv and "
       f"ipcc_uncertainty_by_island_year_fleet_adjusted.csv")
 
-# Hourly (vectorised, mirroring run_ipcc_uncertainty_hourly.py's approach --
-# this is the headline resolution now that Finding 4 is closed).
+# Hourly (vectorised, as in run_ipcc_uncertainty_hourly.py; the headline
+# resolution).
 hourly_path = HERE / "hourly_fuel_mix_NI_SI.csv"
 if hourly_path.exists():
     print("\nRunning hourly propagation, both variants (vectorised)...")

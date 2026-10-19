@@ -1,5 +1,5 @@
 """
-Phase 1, item 6: spatial structure.
+Phase 1: spatial structure.
 NI vs SI EF gap over time (generation-side and consumption-side); the
 consumption-side vs generation-side wedge per island (Cook Strait reallocation
 effect); hours where consumption and generation EF diverge most.
@@ -62,7 +62,7 @@ wedge_df = pd.concat(wedge_rows, ignore_index=True)
 wedge_df.to_csv(TABLES / "phase1_consumption_generation_wedge.csv", index=False)
 log(wedge_df[wedge_df["scenario"] == "Reference"][["island", "year", "ef_gen", "ef_cons", "wedge", "wedge_pct_of_gen"]].to_string(index=False))
 
-# National consumption EF trajectory (blended, ships consumption-basis only)
+# National consumption EF trajectory (blended; published on the consumption basis only)
 log("\n=== National (consumption-basis, blended) annual EF vs NI/SI consumption EF, Reference ===")
 nat = ef[ef["island"] == "National"].merge(
     gen.groupby(["scenario", "datetime_hour"], observed=True)["generation_mwh"].sum().reset_index(),

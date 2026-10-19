@@ -1,8 +1,8 @@
 """
-Root-causes the em6 cross-check gaps flagged in VALIDATION_REPORT.md Finding 1
-(GEO 3.3%, HYD 8.8% "good but not perfect" agreement; GAS 39.9% "systematic level offset").
+Finds the cause of the em6 cross-check gaps (GEO 3.3%, HYD 8.8% "good but not perfect"
+agreement; GAS 39.9% "systematic level offset").
 
-Cheapest hypothesis first, per the session's own priority ranking: day-boundary /
+The cheapest hypothesis is tested first: day-boundary /
 trading-date alignment between this project's own `trading_date` (NZ trading-day
 convention: TP1 = 00:00-00:30 NZT) and em6's `trading_date` field, whose labelling
 convention was never verified against ours.
@@ -12,13 +12,13 @@ Diagnostic: re-merge the SAME two cached series (`generation_by_fuel_daily_2026.
 changes) at date lags of -2..+2 days and compare r / mean|diff%| per fuel:
 
   lag   GAS(r, diff%)     GEO(r, diff%)     HYD(r, diff%)     WIN(r, diff%)
-  +0d   0.802, 39.9%      0.896, 3.3%       0.779, 8.8%       0.513, 54.7%   <- as shipped
+  +0d   0.802, 39.9%      0.896, 3.3%       0.779, 8.8%       0.513, 54.7%   <- unshifted
   +1d   0.941, 24.4%      0.990, 2.7%       0.998, 1.9%       0.999, 3.3%    <- best fit, by far
 
-CONFIRMED root cause: em6's `trading_date` is one calendar day EARLIER than this
-project's own trading-date convention for the same physical generation -- HYD and WIN
-(fuels with genuine day-to-day variability, so a 1-day misalignment is very visible in
-correlation) jump from r=0.78/0.51 to r=0.998/0.999 once the 1-day shift is applied. GEO
+Root cause: em6's `trading_date` is one calendar day earlier than this
+project's trading-date convention for the same physical generation. HYD and WIN
+(fuels with real day-to-day variability, so a 1-day misalignment shows strongly in
+correlation) rise from r=0.78/0.51 to r=0.998/0.999 once the 1-day shift is applied. GEO
 (near-constant baseload) and GAS (partly cogen-driven, see below) improve but less
 dramatically, exactly as expected for fuels whose daily total doesn't swing much even when
 mislabelled by a day. This is consistent with a UTC-vs-NZT trading-day boundary
@@ -31,9 +31,8 @@ still excluded from the verdict).
 
 This script applies the +1 day correction to the cached em6 series and rebuilds
 em6_crosscheck_overlap.csv / em6_crosscheck_summary_by_fuel.csv. It does not need network
-access (root-caused from data already on disk); the live-fetch build script
-(build_2026_extension_and_em6_crosscheck.py) is separately patched to apply this same
-shift on any future re-run.
+access (the diagnosis uses data already on disk); the live-fetch build script
+(build_2026_extension_and_em6_crosscheck.py) applies the same shift.
 """
 import numpy as np
 import pandas as pd

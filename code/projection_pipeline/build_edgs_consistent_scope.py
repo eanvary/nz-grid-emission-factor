@@ -86,8 +86,9 @@ PI = pi.set_index("plant")
 
 def intensity(plant, year):
     """g/kWh for a plant and year: a 'follows' row takes its reference plant's path (proxy rule
-    step 3); otherwise base (or g_per_kwh_measured from measured_year, the step 1 tie-break), a step change from change_year, and an optional linear trend from
-    the change-year value to g_per_kwh_trend_end at trend_end_year (flat after)."""
+    step 3); otherwise base (or g_per_kwh_measured from measured_year, the step 1 tie-break),
+    a step change from change_year, and an optional linear trend from the change-year value
+    to g_per_kwh_trend_end at trend_end_year (flat after)."""
     r = PI.loc[plant]
     if isinstance(r.follows, str) and r.follows:
         return intensity(r.follows, year)

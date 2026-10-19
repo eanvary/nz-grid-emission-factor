@@ -1,5 +1,5 @@
 """
-Flag 3b -- cross-check the 22-reference list in MANUSCRIPT_INTEGRATION_REPORT.md
+Cross-checks the 22-reference list in MANUSCRIPT_INTEGRATION_REPORT.md
 (section 4, "References to add to the manuscript") against the actual
 figures/*_PROVENANCE.md files that cite each source, and write
 analysis/REFERENCE_COMPLETENESS_STATUS.csv (ref_key, status, missing_fields).
@@ -7,7 +7,7 @@ analysis/REFERENCE_COMPLETENESS_STATUS.csv (ref_key, status, missing_fields).
 This is a human checklist, not a fabrication pass: every "missing_fields"
 value below is either (a) the same gap the manuscript integration report
 itself already flagged with an inline **[INCOMPLETE: VERIFY]** or
-**[VERIFY ...]** tag, or (b) a genuine mismatch found by reading the
+**[VERIFY ...]** tag, or (b) a mismatch found by reading the
 corresponding *_PROVENANCE.md file next to the reference-list entry. No
 missing DOI, author, or volume number is invented anywhere in this file.
 

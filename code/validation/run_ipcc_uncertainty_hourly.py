@@ -1,13 +1,13 @@
 """
-Closes VALIDATION_REPORT.md Finding 4 ("the shipped hourly table cannot support a
-genuinely hourly uncertainty band"): re-runs the same IPCC Approach-1 propagation as
-run_ipcc_uncertainty_quantification.py, but against the newly-built
-hourly_fuel_mix_NI_SI.csv (built by build_hourly_fuel_mix.py, verified to reconcile
-exactly to the shipped pipeline output) instead of the monthly fuel-mix table.
+Hourly uncertainty band. The published hourly table carries only the blended EF, so
+it cannot support an hourly band on its own. This script re-runs the same IPCC
+Approach-1 propagation as run_ipcc_uncertainty_quantification.py, but against
+hourly_fuel_mix_NI_SI.csv (built by build_hourly_fuel_mix.py, which reconciles
+exactly to the pipeline output) instead of the monthly fuel-mix table.
 
 Same method, same IPCC Table 2.2 fuel bounds, same GEO/ELE exclusion -- only the input
 resolution changes, so any difference between this script's output and the monthly
-script's output is a genuine resolution effect, not a methodology change.
+script's output is a resolution effect, not a change of method.
 """
 import math
 from pathlib import Path

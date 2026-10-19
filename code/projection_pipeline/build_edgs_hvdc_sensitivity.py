@@ -1,39 +1,38 @@
 """
-Follow-up brief C: is the HVDC capacity violation (Brief B, Step 5: 103/135 scenario-years,
-up to 2,662 MW by 2050 vs the cited 1,200 MW Cook Strait capacity) a genuine finding or an
-artifact of this pipeline's own simplifications? Tests three candidate artifacts as genuine
-re-runs (not qualitative reasoning), each producing a comparable violation count/magnitude to
-the BASELINE (Module 7's shipped result), then a COMBINED re-run with all three fixes together.
+Is the HVDC capacity violation found in Module 7 (103/135 scenario-years, up to 2,662 MW
+by 2050 vs the cited 1,200 MW Cook Strait capacity) a real finding or an artifact of this
+pipeline's own simplifications? Tests three candidate artifacts as actual re-runs (not
+qualitative reasoning), each producing a violation count/magnitude comparable to the
+baseline (Module 7's result), then a combined re-run with all three fixes together.
 
-  Sensitivity A (Step 2): DSR/battery island split: currently 100% of DSR net effect is
+  Sensitivity A: DSR/battery island split: by default 100% of DSR net effect is
     booked to NI (edgs_hourly_generation.parquet); GEM build schedule capacity is actually
     ~48/52 NI/SI (Reference/Growth/Constraint/Environmental: 244.8 NI / 266.6 SI MW;
-    Innovation: 244.8 NI / 248.8 SI MW). Re-allocates the EXISTING national DSR hourly
+    Innovation: 244.8 NI / 248.8 SI MW). Re-allocates the existing national DSR hourly
     series by each scenario-year's GEM capacity share (a documented approximation: the
-    peak-shave TIMING pattern stays national/residual-driven, only the ISLAND SPLIT of that
-    pattern changes - a full independent per-island DSR re-dispatch is out of scope here).
-  Sensitivity B (Step 3): solar shape artifact: the raw EA/EMI data has no Solar fuel code
-    before 2024 (Brief B finding), so the shipped central template (2021) falls back to a
-    flat 24-hour profile. Re-runs using the 2024 template's REAL diurnal solar shape for
-    both islands instead.
-  Sensitivity C (Step 4): uniform loss-ratio bounding: Module 7's actual (corrected)
-    formula renormalises island generation-level load to real national generation, so the
-    national loss/gross-up ratio CANCELS OUT of the island split and does not directly
-    drive the transfer magnitude. To give this simplification a genuine test, a
-    DIFFERENTIAL (not uniform) NI-vs-SI loss adjustment is applied to the pre-renormalisation
-    island shares (+/-10%, explicitly a bounding/illustrative magnitude, not a cited or
-    claimed-true value - no island-specific loss data exists, per Brief B) in both
-    directions (NI-heavier and SI-heavier), reasoning stated in the README.
+    peak-shave timing pattern stays national/residual-driven, only the island split of that
+    pattern changes; a full independent per-island DSR re-dispatch is out of scope here).
+  Sensitivity B: solar shape artifact: the raw EA/EMI data has no Solar fuel code
+    before 2024, so the central template (2021) has no solar shape of its own and would
+    otherwise fall back to a flat 24-hour profile. Re-runs using the 2024 template's real
+    diurnal solar shape for both islands instead.
+  Sensitivity C: uniform loss-ratio bounding: Module 7's formula renormalises island
+    generation-level load to real national generation, so the national loss/gross-up
+    ratio cancels out of the island split and does not directly drive the transfer
+    magnitude. To test this simplification, a differential (not uniform) NI-vs-SI loss
+    adjustment is applied to the pre-renormalisation island shares (+/-10%, a bounding,
+    illustrative magnitude, not a cited or claimed-true value: no island-specific loss
+    data exists) in both directions (NI-heavier and SI-heavier), reasoning stated in the
+    README.
 
 Outputs: edgs_hvdc_sensitivity_summary.csv (baseline + 5 sensitivity variants x scenario)
 
-TEMPLATE PARAMETERISATION (2026-08-12, Brief N / PLAN_11YEAR_TEMPLATE_REASSESSMENT.md Step 7):
-set EDGS_TEMPLATE_YEAR to re-derive this brief's baseline+sensitivities against a different
-Assumption-1 shape template (e.g. 2017, the true 11-year median) instead of the shipped 2021
-central template. Reads the matching edgs_hourly_generation{_tmplYYYY}.parquet /
+Template parameterisation: set EDGS_TEMPLATE_YEAR to re-derive the baseline and
+sensitivities against a different Assumption-1 shape template (e.g. 2017, the true 11-year
+median) instead of the 2021 central template. Reads the matching edgs_hourly_generation{_tmplYYYY}.parquet /
 edgs_hourly_emission_factor{_tmplYYYY}.parquet (produced by build_edgs_dispatch.py with the
 same env var) and filters demand/renewable shapes to that template year. Output filename
-gets the same suffix, so the shipped central-template CSV is never overwritten.
+gets the same suffix, so the central-template CSV is never overwritten.
 """
 import os
 import numpy as np
@@ -125,16 +124,15 @@ def compute_transfer(dt, ni_share, w_ni, w_si, g_NI, g_SI, gNI_adj=None, gSI_adj
         g_SI = g_SI + gSI_adj
     nat_gen = g_NI + g_SI
 
-    # The fallback mask is determined from the UNDELTA'D (base) shape only - matching
-    # Module 7's own `share_sum <= 0` check exactly - so every sensitivity variant uses the
-    # SAME fallback hour(s) consistently, and the baseline (ni_delta=si_delta=0) reproduces
-    # Module 7's shipped result exactly. Applying delta scaling BEFORE determining the mask
-    # let a single historical-data anomaly (one DST-transition hour with a genuinely negative
-    # raw component weight - a documented artifact, not a bug) cross from a safely-negative
-    # base sum to a tiny-positive delta-scaled sum, evading the mask and causing a
-    # near-zero-division artifact (confirmed: max transfer 2.69 MILLION MW at
-    # Innovation/2027 before this fix) - a bug in this diagnostic script's delta test, not
-    # in the shipped Module 7 output (whose unscaled base sum is safely negative there).
+    # The fallback mask is determined from the un-deltaed (base) shape only, matching
+    # Module 7's own `share_sum <= 0` check exactly, so every sensitivity variant uses the
+    # same fallback hour(s) and the baseline (ni_delta=si_delta=0) reproduces Module 7's
+    # result exactly. Applying delta scaling before determining the mask would let a single
+    # historical-data anomaly (one DST-transition hour with a negative raw component weight,
+    # a documented data artifact) cross from a safely-negative base sum to a tiny-positive
+    # delta-scaled sum, evade the mask and cause a near-zero division (max transfer 2.69
+    # million MW at Innovation/2027). That is a risk in this script's delta test only, not
+    # in Module 7's output, whose unscaled base sum is safely negative there.
     base_ssum = ni_share * w_ni + (1 - ni_share) * w_si
     no_shape = base_ssum <= 0
 

@@ -2,19 +2,18 @@
 Phase 3, template robustness: does the spatial > temporal ranking survive a
 change of Assumption-1 shape template?
 
-WHY THIS EXISTS (2026-09-20). The paper's decomposition has only ever been run
-on the shipped central template (2021). The hydro-template sensitivity reported
-alongside it covered the annual EF trajectory, not the decomposition, so the
-claim that the ranking is unaffected by the template was untested. This script
-tests it directly: it compares phase3_decomposition_full.csv (central 2021)
+Why this check. The paper's decomposition uses the central template (2021).
+The hydro-template sensitivity covers the annual EF trajectory, not the
+decomposition, so whether the ranking depends on the template needs its own
+test. This script compares phase3_decomposition_full.csv (central 2021)
 with the _tmpl2023 (wet), _tmpl2024 (dry) and _tmpl2017 (hydro-median) runs
 produced by `EDGS_TEMPLATE_YEAR=<year> python phase3_decomposition.py`.
 
-All four inputs are built with the same current pipeline code, including the
-solar-shape fix (Brief T, 2026-09-03) and weekday alignment (Brief W,
-2026-09-16), so the comparison is like-for-like.
+All four inputs are built with the same pipeline code, including the observed
+solar shape for templates without solar data and the weekday alignment of
+templates, so the comparison is like-for-like.
 
-OUTPUTS  analysis_paper/tables/phase3_template_ranking_check.csv
+Outputs  analysis_paper/tables/phase3_template_ranking_check.csv
          analysis_paper/logs/phase3_template_ranking_check_log.txt
 """
 import numpy as np

@@ -1,12 +1,12 @@
 """
-Phase 3 item 15 prerequisite: three STYLISED (not metered/BEES-derived -- none
-found anywhere in the project, confirmed by search) commercial load shapes.
+Phase 3 input: three stylised commercial load shapes (not metered or
+BEES-derived, because no such data was available to the project).
 Each is defined as a (month-independent, i.e. no seasonality assumed for the
 BUILDING load itself -- only the grid EF varies seasonally) weight over
 (day-of-week type, hour-of-day), normalised so it sums to 1.0 over a standard
 non-leap 8760-hour year -- i.e. each represents the SAME fixed annual energy
 total distributed differently across hours, making decomposition results
-comparable across shapes as required.
+comparable across shapes.
 """
 import numpy as np
 import pandas as pd

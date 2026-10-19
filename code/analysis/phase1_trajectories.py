@@ -1,5 +1,5 @@
 """
-Phase 1, item 4: trajectories.
+Phase 1: trajectories.
 Annual (generation-weighted) mean EF paths, historical (2015-2025, metered)
 spliced with projected (2024-2050), by scenario x island x ef_basis.
 Rate of decline, inflection points (rolling-slope sign changes), data-driven
@@ -88,8 +88,8 @@ rates_df.to_csv(TABLES / "phase1_cagr_by_scenario_island.csv", index=False)
 # (the single blended index most relevant for a "headline" trajectory read).
 log("\n=== Inflection points (rolling 3-yr slope sign change), National generation-side EF ===")
 nat = annual[(annual["island"] == "National") & (annual["ef_basis"] == "consumption")].copy()
-# National ships consumption-basis only (per Phase 0 schema note) -- use that as
-# the national headline series, explicitly labelled.
+# National is published on the consumption basis only (Phase 0 schema), so
+# that is the national headline series, labelled as such.
 log("NOTE: 'National' island only ships ef_basis='consumption' in this table "
     "(confirmed in Phase 0); the 'National headline' trajectory below is therefore "
     "consumption-side by necessity, not generation-side.")

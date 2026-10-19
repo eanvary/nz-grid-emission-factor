@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).parent.parent  # repo root (this script now lives in generation_pipeline/, one level deeper -- 2026-08 reorg)
+ROOT = Path(__file__).parent.parent  # repo root (this script lives in generation_pipeline/, one level down)
 NSP_DIR = ROOT / "EA data" / "NSP Tables"
 PLANT_FILE = ROOT / "EA data" / "Dispatched generation plant.csv"
 GEN_DIR = ROOT / "EA_EMI_raw"
@@ -55,7 +55,7 @@ eff_end_raw = plant["effective_end_datetime"].astype(str).str.replace(
 plant["eff_end"] = pd.to_datetime(eff_end_raw, utc=True, errors="coerce")
 plant["EF_kg_per_MWh"] = plant["HeatRate"] * plant["EmissionsFactor"] / 1e6
 
-# Item 2 (2026-09-14): real per-station geothermal EF (McLean & Richardson 2019),
+# Real per-station geothermal EF (McLean & Richardson 2019),
 # fallback to their fleet mean where unmatched -- see geothermal_ef_correction.py.
 from geothermal_ef_correction import apply_geothermal_ef_correction
 apply_geothermal_ef_correction(plant)
@@ -189,7 +189,7 @@ for name, d in [("daily", daily_raw), ("hourly", hourly_raw)]:
     log(f"{name}: {len(d):,} generator-level rows, {d['gen_mwh'].sum()/1e6:.2f} TWh total")
 daily_raw, hourly_raw = frames["daily"], frames["hourly"]
 
-# Aggregate to island level. Columns after total_CO2_kg are additions (2026-09-28): filled
+# Aggregate to island level. Columns after total_CO2_kg: filled
 # generation, CO2 carried by estimated factors, and the Stratford bound series.
 EXTRA_AGG = dict(filled_gen_MWh=("filled_gen_mwh", "sum"), CO2_kg_estimated=("co2_kg_estimated", "sum"),
                  total_CO2_kg_stratford_ccgt=("co2_kg_bound_ccgt", "sum"),

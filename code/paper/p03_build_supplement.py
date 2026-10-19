@@ -1,6 +1,6 @@
-"""Build the supplementary material for the 30 September 2026 revision (python-docx).
+"""Build the supplementary material (python-docx).
 Every value comes from Figure/analysis_v1/out (numbers_for_text.json and CSVs), the review coding
-file, or text moved out of the 24 September manuscript. Usage: python p03_build_supplement.py <out.docx>"""
+file, or text moved out of the main manuscript. Usage: python p03_build_supplement.py <out.docx>"""
 import json, sys
 from pathlib import Path
 import pandas as pd

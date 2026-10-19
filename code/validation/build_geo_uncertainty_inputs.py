@@ -1,6 +1,6 @@
 """
-Geothermal inputs for the uncertainty propagation (2026-09-29): uncertainty by proxy-rule step
-(RULE_GEO_PROXY_ORDER) instead of one between-station sigma for the whole fleet.
+Geothermal inputs for the uncertainty propagation: uncertainty by proxy-rule step
+(RULE_GEO_PROXY_ORDER) rather than one between-station sigma for the whole fleet.
 
 Geothermal CO2 is split into independent pseudo-fuels:
   GEO             step 1 (source-specific intensity for that station and year).

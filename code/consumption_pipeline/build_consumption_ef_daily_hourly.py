@@ -1,13 +1,12 @@
 """
 NI/SI CONSUMPTION-based DAILY and HOURLY emission factor database, 2015-2025.
 Same method as build_consumption_ef_timeseries.py (see that file's docstring
-for the full methodology and the 2026-08-10 redesign rationale).
+for the full methodology and for why it reads the root pipeline's outputs).
 
-REDESIGNED 2026-08-10: reads the root pipeline's own already-fixed,
-already-extended 2015-2025 daily/hourly outputs directly, instead of
-maintaining a second independent copy of the raw-file ingestion logic (which
-carried the same bugs the root pipeline had -- SCD2 9999-year timestamp
-overflow, DST fall-back TP49/TP50 drop -- undiscovered here until now).
+Reads the root pipeline's 2015-2025 daily/hourly outputs directly rather than
+keeping a second copy of the raw-file ingestion logic, so fixes made there
+(for example the SCD2 9999-year timestamp overflow and the DST fall-back
+TP49/TP50 handling) apply here too.
 
 Inputs (root pipeline outputs, already validated):
   output/daily_emission_factor_NI_SI.csv    - generation-side EF, daily

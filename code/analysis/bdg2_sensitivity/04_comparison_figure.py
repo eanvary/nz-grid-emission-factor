@@ -1,5 +1,5 @@
 """
-BDG2 real-data sensitivity test, step 4: comparison figure -- spatial vs.
+BDG2 real-data sensitivity test (script 4 of 4): comparison figure, spatial vs.
 temporal error share, stylised shapes (main assessment, read-only) vs. real
 BDG2 shapes (this sensitivity branch), headline case (Reference, NI,
 start=2027, 10yr).

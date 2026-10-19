@@ -4,7 +4,7 @@ from phase4_figures.py). Kept: horizontal bars from zero, bar length = mean
 of the two decomposition orders, a bracket for the order range, colour by
 sign, value labels on every bar, a plain-language title.
 
-Changed (per the Results-section corrections):
+Changed from that figure:
   1. Bars are in kgCO2e/m2 at the median intensity, read from
      phase3_decomposition_contextualised_v3_finalEUI.csv (not a hardcoded
      EUI constant -- the per-row EUI scale factor is recovered from the
@@ -17,15 +17,15 @@ Case: daytime_office, Reference. HEADLINE = start=2025, 25-year period
 years are only 2025, 2027, 2030); 2025+25yr is the longest non-truncated
 option covering close to the full modelled horizon.
 
-Flag 1 (three-flags resolution pass): the manuscript text now caveats the
-2025 headline start year because it falls inside the 2024-2025 window that
-Methods documents as carrying a ~30% validation gap against metered data,
-and states three options without picking one. This figure now carries that
-same conditionality visually rather than showing only 2025: a second,
+The manuscript caveats the 2025 headline start year because it falls
+inside the 2024-2025 window that Methods documents as carrying a ~30%
+validation gap against metered data, and states three options without
+picking one. This figure carries the same conditionality visually rather
+than showing only 2025: a second,
 visually subordinate bar set for the 2027-start/10-year case (drawn from
 the same source table) sits beside each headline bar. The figure only
 draws if the two start years agree in sign and ranking -- if they didn't,
-that would be a genuine finding requiring a stop, not a styling choice
+that would be a finding requiring a stop, not a styling choice
 (checked below, and printed either way).
 """
 import sys
@@ -82,9 +82,9 @@ def load_case(start_year, period, label):
 headline = load_case(2025, 25, "headline (2025/25yr)")
 compare = load_case(2027, 10, "comparison (2027/10yr)")
 
-# Gate: sign and ranking must agree before drawing. This is exactly the
-# check Flag 1 asked for -- a genuine mismatch here would be a finding, not
-# a presentation problem, and the script must stop rather than draw over it.
+# Gate: sign and ranking must agree before drawing. A mismatch here would
+# be a finding, not a presentation problem, so the script stops rather than
+# drawing over it.
 h_total, c_total = headline["mid"]["Total error\n(E$_d$ − E$_a$)"], compare["mid"]["Total error\n(E$_d$ − E$_a$)"]
 sign_agrees = (h_total < 0) == (c_total < 0)
 

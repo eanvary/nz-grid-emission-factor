@@ -1,30 +1,27 @@
 """
-Follow-up brief G: test the HVDC capacity violation finding (Briefs B-F) against wet/dry
-hydrology, not just the central 2021 template. Every prior HVDC round (B-F) used ONLY the
-central template; this is the missing Assumption-1 sensitivity test, applied for the first
-time to all 5 scenarios (earlier rounds only ran wet/dry for Reference, for the EF shape).
+Test the HVDC capacity violation finding against wet/dry hydrology, not just the central
+2021 template. This is the Assumption-1 sensitivity test for the HVDC finding, applied to
+all 5 scenarios.
 
-EXTENDED (2026-08-11, Brief M / PLAN_11YEAR_TEMPLATE_REASSESSMENT.md): added "median" (2017,
-the true median of the full 11-year 2015-2025 record -- 2021 turns out to be 3rd-driest/18th
-percentile, not median) as a 4th template, generated the same way as wet/dry below
-(EDGS_TEMPLATE_YEAR=2017, all 5 scenarios -> edgs_hourly_generation_tmpl2017.parquet). This
-answers directly whether the mislabeled "central" choice matters for the cited HVDC-violation
-figures, without touching or invalidating anything already published for the 2021 template.
+"median" (2017, the true median of the full 11-year 2015-2025 record; 2021 is the
+3rd-driest, 18th percentile) is a 4th template, generated the same way as wet/dry below
+(EDGS_TEMPLATE_YEAR=2017, all 5 scenarios -> edgs_hourly_generation_tmpl2017.parquet). It
+shows whether choosing 2021 as "central" matters for the HVDC-violation figures, without
+changing any result built on the 2021 template.
 
-METHOD: identical transfer arithmetic to build_edgs_island_consumption.py / the Brief C-F
+Method: the same transfer arithmetic as build_edgs_island_consumption.py and the other HVDC
 reconstructions (island generation-level load renormalised to actual national generation;
-required_transfer = genload - generation) - UNMODIFIED, per the brief's explicit instruction
-not to recalibrate. Only the INPUT changes: which template's demand/renewable SHAPE and which
-template's dispatched GENERATION are read, for each of central (2021, shipped), wet (2023),
-dry (2024). This requires wet/dry GENERATION for all 5 scenarios, which prior rounds never
-produced (only Reference) - generated this round via two plain re-runs of the unmodified
+required_transfer = genload - generation), unmodified and not recalibrated. Only the input
+changes: which template's demand/renewable shape and which template's dispatched generation
+are read, for each of central (2021), median (2017), wet (2023) and dry (2024). Wet/dry
+generation for all 5 scenarios comes from plain re-runs of the unmodified
 build_edgs_dispatch.py with EDGS_TEMPLATE_YEAR=2023/2024 (no scenario arg = all 5 scenarios),
-writing edgs_hourly_generation_tmpl2023.parquet / _tmpl2024.parquet (new files, does not
-touch the shipped central-template output).
+writing edgs_hourly_generation_tmpl2023.parquet / _tmpl2024.parquet (separate files; the
+central-template output is not touched).
 
-Uses Brief F's continuous violation-magnitude metric (MW-hours over 1200 MW, integrated per
-scenario-year) as the PRIMARY measure, not the binary flag count, per that brief's own finding
-that the flag count is noise-sensitive at this margin.
+The primary measure is the continuous violation magnitude (MW-hours over 1200 MW, integrated
+per scenario-year), not the binary flag count, because the flag count is noise-sensitive at
+this margin.
 
 Outputs: edgs_hydro_sensitivity_summary.csv (15 scenario x template rows),
          edgs_hydro_sensitivity_mechanism.csv (SI export/demand/surplus breakdown)
@@ -101,7 +98,7 @@ for tmpl_name, (tmpl_year, suffix) in TEMPLATES.items():
     log(f"\n=== Template: {tmpl_name} ({tmpl_year}) ===")
     dem_shape = dem_shape_all[dem_shape_all.template_year == tmpl_year]
     ren_shape = ren_shape_all[ren_shape_all.template_year == tmpl_year]
-    # Solar real-shape fix (Brief T, adopted 2026-09-03) - same patch as build_edgs_dispatch.py
+    # Solar real-shape fallback, same as build_edgs_dispatch.py
     REAL_SOLAR_SHAPE = ren_shape_all[(ren_shape_all.template_year == 2024)
                                      & (ren_shape_all.island == "NI") & (ren_shape_all.fuel_std == "SOL")]
     gen = pd.read_parquet(OUT_DIR / f"edgs_hourly_generation{suffix}.parquet")
@@ -178,7 +175,7 @@ for tmpl_name, (tmpl_year, suffix) in TEMPLATES.items():
                             "year": year, "max_transfer_mw": max_mw, "n_hours_violate": n_hours,
                             "continuous_mag_MWh": continuous_mag})
 
-            # Step 3 mechanism data: SI hydro generation (annual GWh), SI island demand
+            # Mechanism data (Step 3 table): SI hydro generation (annual GWh), SI island demand
             # target (annual, from island_demand share x shape), SI exportable surplus
             si_hydro_gwh = float(annual_gen.get("Hydro", 0.0)) * cap_share.get((year, "Hydro", "SI"), 0.0) \
                 if np.isfinite(cap_share.get((year, "Hydro", "SI"), np.nan)) else 0.0

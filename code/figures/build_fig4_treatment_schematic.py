@@ -4,15 +4,13 @@ Every illustrative series is real data read from tables/ or the underlying
 hourly EDGS output; no series is synthesised.
 
 Headline case: daytime_office, Reference, start=2025, 25-year period
-(fit_status=='full') -- confirmed to exist before drawing (Step 0 gate).
-Updated post-delivery at the user's request to match Fig. 5/Table 3's
-2025/25yr case (was 2027/10yr); there is no literal 27-year row (start
-years in the data are only 2025, 2027, 2030) -- 2025+25yr is the longest
-non-truncated option.
+(fit_status=='full'), checked to exist before drawing. This is the
+2025/25yr case of Fig. 5 and Table 3; there is no literal 27-year row
+(start years in the data are only 2025, 2027, 2030), and 2025+25yr is the
+longest non-truncated option.
 
-Redesigned for legibility (v2, at the user's request -- the original
-uniform-grey-line version was judged unclear): each panel (b)/(c)/(d) is
-now drawn in the colour of the collapse that PRODUCES it (temporal=blue,
+For legibility, each panel (b)/(c)/(d) is
+drawn in the colour of the collapse that produces it (temporal=blue,
 spatial=vermillion, trajectory=green), matching the arrows and the
 equation below. Each panel also carries a faint "ghost" of the PRIOR
 panel's series in the prior panel's own colour, so the collapse is visible
@@ -216,10 +214,10 @@ legend_elems = [
 fig.legend(handles=legend_elems, loc="upper left", bbox_to_anchor=(1.0, 0.98),
            frameon=False, fontsize=8.0, borderaxespad=0)
 
-# Flag 1, item 2: marginal note naming the two start years used
+# Marginal note naming the two start years used
 # elsewhere in the paper, in the same rounded-box "tag" style as the
 # per-panel annotations above, so a reader moving between this Methods
-# figure and the Results figures (which now show both 2025 and 2027) is
+# figure and the Results figures (which show both 2025 and 2027) is
 # not confused by an apparent mismatch. This is a Methods illustration
 # with no result magnitude of its own -- the note names the two years,
 # not a value.

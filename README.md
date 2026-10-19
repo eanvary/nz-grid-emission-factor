@@ -13,8 +13,8 @@ The repository holds grid emission factors for the North Island (NI) and South I
 
 The historical series is built from Electricity Authority half-hourly metered generation. The projection
 reconstructs each MBIE Electricity Demand and Generation Scenarios (EDGS) 2024 trajectory at hourly
-resolution for each island. Method, scope and validation are described in the paper, in
-`docs/DATABASE_SPEC.md` and in `docs/methodology/`.
+resolution for each island. Method, scope and validation are described in the paper and in
+`docs/DATABASE_SPEC.md`.
 
 ## Quick start
 

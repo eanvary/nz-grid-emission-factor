@@ -1,64 +1,66 @@
 """
-Follow-up brief T: replace the FLAT solar-shape fallback with the real observed 2024 NI solar
-diurnal/seasonal shape, as a STANDALONE SENSITIVITY TEST. Standalone: reads only existing
-shipped parquets, writes only new CSVs. Does not modify build_edgs_dispatch.py, edgs_common.py,
-or any shipped output parquet.
+Solar shape sensitivity: replace the flat solar-shape fallback with the real observed 2024 NI
+solar diurnal/seasonal shape. Standalone: reads only existing pipeline parquets, writes only
+new CSVs. Does not modify build_edgs_dispatch.py, edgs_common.py, or any pipeline output
+parquet.
 
-BACKGROUND: EA/EMI raw data carries no Solar fuel code before 2024, so the central (2021) and
-median (2017) Assumption-1 templates have ZERO solar rows in edgs_shape_renewables.parquet
-(verified). build_edgs_dispatch.py's own fallback logic (Step A2) therefore spreads solar
-generation FLAT across all 24 hours for every scenario-year of the shipped pipeline. MBIE's own
-solar methodology (EDGS 2024 report, p.25-28) gives no help here either: it converts distributed-
-PV capacity straight to annual GWh via one flat 14.5% capacity factor, with no diurnal or
-seasonal profile of its own to borrow. Real NZ solar generation shape (template_year=2024,
-island=NI) DOES exist in edgs_shape_renewables.parquet (8,784 real hourly weights, confirmed
-non-flat) but is unused by every scenario-year, because it postdates the chosen template years.
+Background: EA/EMI raw data carries no Solar fuel code before 2024, so the central (2021) and
+median (2017) Assumption-1 templates have zero solar rows in edgs_shape_renewables.parquet.
+Without a real-shape rule, build_edgs_dispatch.py's fallback logic spreads solar generation
+flat across all 24 hours for every scenario-year. MBIE's own solar methodology (EDGS 2024
+report, p.25-28) gives no help here either: it converts distributed-PV capacity straight to
+annual GWh via one flat 14.5% capacity factor, with no diurnal or seasonal profile of its own
+to borrow. A real NZ solar generation shape (template_year=2024, island=NI) does exist in
+edgs_shape_renewables.parquet (8,784 real hourly weights, non-flat) but no template year
+reaches it, because it postdates the chosen template years. (build_edgs_dispatch.py now
+applies this real shape by default; the flat baseline below matches its output only when it
+is run with EDGS_DISABLE_SOLAR_FIX=1.)
 
-This is a MATERIAL gap, not cosmetic: MBIE's own solar GWh grows 5-16x by 2050 across scenarios
-(823 GWh in 2024 -> up to 13,706 GWh in 2050), so an increasingly large annual quantity is being
-smeared uniformly across 24 hours instead of concentrated in daylight hours.
+The gap is material: MBIE's own solar GWh grows 5-16x by 2050 across scenarios (823 GWh in
+2024 -> up to 13,706 GWh in 2050), so an increasingly large annual quantity is smeared
+uniformly across 24 hours instead of concentrated in daylight hours.
 
-DESIGN (agreed with user before building):
-  1. Future solar GAIN: untouched - MBIE's own annual solar GWh per scenario-year, unchanged.
-  2. Daylight-length / diurnal-seasonal SHAPE: the real observed 2024 NI hourly solar generation
+Design:
+  1. Future solar gain: untouched; MBIE's own annual solar GWh per scenario-year, unchanged.
+  2. Daylight-length / diurnal-seasonal shape: the real observed 2024 NI hourly solar generation
      shape (edgs_shape_renewables.parquet, template_year=2024, island=NI), applied in place of
-     the flat fallback for the CENTRAL (2021) template. This is real NZ observed data (already
+     the flat fallback for the central (2021) template. This is real NZ observed data (it
      encodes NZ's actual seasonal daylight swing + real cloud-cover effects), not a synthetic
-     sun-position model - the strongest available source, no external citation needed.
-  3. Daylight length itself does not get a "future" trend (astronomically fixed) - only the
-     volume riding on the fixed shape grows, via (1), unchanged from the shipped pipeline.
+     sun-position model, so no external citation is needed.
+  3. Daylight length itself does not get a "future" trend (astronomically fixed); only the
+     volume riding on the fixed shape grows, via (1), unchanged from the pipeline.
   4. South Island: no real SI solar shape exists in any template. The real NI shape is applied
-     to SI too (same convention as the pipeline's own existing island-fallback logic), explicitly
-     flagged - a disclosed limitation (SI's actual daylight swing is more extreme than NI's,
-     understated here), not a silent one.
-  5. Considered and explicitly rejected: the NIWA/BRANZ M1/M2/M3 future weather files
-     (Weather data/island_hourly_full_M{1,2,3}.csv). Checked directly: GHI/DNI/DHI and wind_speed
-     are BIT-FOR-BIT IDENTICAL across M1/M2/M3 for both islands (standard CIBSE-style morphing
+     to SI too (same convention as the pipeline's own island-fallback logic). This is a
+     disclosed limitation: SI's actual daylight swing is more extreme than NI's and is
+     understated here.
+  5. Considered and rejected: the NIWA/BRANZ M1/M2/M3 future weather files
+     (Weather data/island_hourly_full_M{1,2,3}.csv). GHI/DNI/DHI and wind_speed are
+     bit-for-bit identical across M1/M2/M3 for both islands (standard CIBSE-style morphing
      only shifts temp_air/temp_dew/relative_humidity, +1.10 degC NI mean M1->M3; it does not
-     re-simulate future irradiance or wind). These files therefore carry NO shape/timing signal
-     and are not used here - using them as "three future shape chunks" would misrepresent what
-     the dataset contains. (A temperature-derating effect on PV output is a real, separate,
-     smaller amplitude-only lever - not built here, out of scope for this brief.)
+     re-simulate future irradiance or wind). These files therefore carry no shape/timing signal
+     and are not used here; treating them as "three future shape chunks" would misrepresent
+     what the dataset contains. (A temperature-derating effect on PV output is a real,
+     separate, smaller amplitude-only lever, not modelled here.)
 
-METHOD: re-derives the renewables/residual/thermal-shape chain (build_edgs_dispatch.py Steps
-A-B) in parallel, central (2021) template only, changing ONLY the solar shape lookup - every
-other formula (demand shape, other renewables, DSR peak-shave, residual, thermal-shape cap,
-MBIE-anchored thermal fuel CO2) is reproduced byte-for-byte from the shipped script. Verified
-against the shipped baseline before trusting the adjusted run (see Step 0 sanity check below).
+Method: re-derives the renewables/residual/thermal-shape chain of build_edgs_dispatch.py in
+parallel, central (2021) template only, changing only the solar shape lookup. Every other
+formula (demand shape, other renewables, DSR peak-shave, residual, thermal-shape cap,
+MBIE-anchored thermal fuel CO2) is reproduced byte-for-byte from the pipeline script. The
+baseline run is checked against the pipeline parquet before trusting the adjusted run (see
+the sanity check below).
 
-IMPORTANT CAUGHT-BEFORE-REPORTING ISSUE: reshaping WHEN solar is dispatched cannot change the
-ANNUAL total. build_edgs_dispatch.py always normalises thermal_shape to sum=1 and applies MBIE's
-own annual GWh per fuel, so total thermal generation/CO2 for the year is invariant to the solar
-shape; solar's own annual GWh (and NI/SI split) is likewise unchanged. So total NI generation and
-total NI CO2 for the year are IDENTICAL between baseline and real-shape runs, and the properly
-energy-weighted annual EF (total CO2 / total generation - the published-style figure) is
-UNCHANGED (verified below, ~0.00% by construction). An early draft of this script instead
-reported the unweighted MEAN of the 8,760 hourly EF values, which moved by up to +23% - that
-number is a real but different (and easily misread) statistic: concentrating solar into fewer,
-sunnier hours creates many very-low-EF daytime hours and correspondingly higher-EF night hours
-(no solar cushion at night at all, vs a constant small cushion under the flat fallback), which
-shifts the unweighted average even though the true annual total does not move. Both figures are
-reported below, clearly separated, to avoid this trap.
+Annual EF is invariant to solar timing. Reshaping when solar is dispatched cannot change the
+annual total: build_edgs_dispatch.py always normalises thermal_shape to sum=1 and applies
+MBIE's own annual GWh per fuel, so total thermal generation/CO2 for the year does not depend
+on the solar shape, and solar's own annual GWh (and NI/SI split) is unchanged. Total NI
+generation and total NI CO2 for the year are therefore identical between baseline and
+real-shape runs, and the energy-weighted annual EF (total CO2 / total generation, the
+published-style figure) is unchanged (~0.00% by construction, checked below). The unweighted
+mean of the 8,760 hourly EF values does move, by up to +23%. That is a real but different
+(and easily misread) statistic: concentrating solar into fewer, sunnier hours creates many
+very-low-EF daytime hours and correspondingly higher-EF night hours (no solar cushion at night
+at all, vs a constant small cushion under the flat fallback), which shifts the unweighted
+average even though the annual total does not move. Both figures are reported separately.
 
 Outputs (output/edgs/):
   edgs_solar_shape_sensitivity_summary.csv   per scenario-year: energy-weighted annual EF
@@ -155,8 +157,8 @@ def island_capacity_share(scenario):
     return cap.set_index(["year", "commodity", "island"])["share"].to_dict()
 
 
-# Core dispatch reconstruction, run TWICE per scenario-year: baseline (flat solar,
-# reproducing the shipped pipeline exactly) and adjusted (real 2024 NI solar shape).
+# Core dispatch reconstruction, run twice per scenario-year: baseline (flat solar,
+# reproducing the flat-solar pipeline exactly) and adjusted (real 2024 NI solar shape).
 def run(scenario, year, use_real_solar_shape):
     cal = year_calendar(year)
     H = len(cal)
@@ -181,7 +183,7 @@ def run(scenario, year, use_real_solar_shape):
         shares = ({isl: s / tot for isl, s in valid.items()} if tot > 0 else {"NI": 1.0})
         for isl, share in shares.items():
             if std == "SOL" and use_real_solar_shape:
-                # Brief T: real 2024 NI solar shape, applied to both islands (disclosed
+                # Real 2024 NI solar shape, applied to both islands (disclosed
                 # limitation for SI - see docstring point 4)
                 w = map_weights(cal, real_solar_ni[["month", "day", "hour", "weight"]])
             else:
@@ -248,7 +250,7 @@ def run(scenario, year, use_real_solar_shape):
     return cal["datetime_hour"].to_numpy(), ef_ni, ni_gen, ni_co2
 
 
-# Sanity check the reconstruction (baseline mode) against the shipped parquet
+# Sanity check the reconstruction (baseline mode) against the pipeline parquet
 ship_ef = pd.read_parquet(OUT_DIR / "edgs_hourly_emission_factor.parquet",
                            columns=["scenario", "island", "datetime_hour", "ef_basis",
                                     "emission_factor_kg_co2e_per_kwh"])
@@ -272,9 +274,9 @@ for scenario in SCENARIOS:
         _, ef_real, gen_real, co2_real = run(scenario, year, use_real_solar_shape=True)
         base_worst_idx = int(np.argmax(ef_base))
         real_worst_idx = int(np.argmax(ef_real))
-        # Properly energy-weighted annual EF (total CO2 / total generation) - NOT the same
-        # as an unweighted average of the hourly EF values (see docstring note below on why
-        # that distinction matters here).
+        # Energy-weighted annual EF (total CO2 / total generation), not the same as an
+        # unweighted average of the hourly EF values (see the docstring for why that
+        # distinction matters here).
         ew_base = co2_base.sum() / (gen_base.sum() * 1000.0) if gen_base.sum() > 0 else np.nan
         ew_real = co2_real.sum() / (gen_real.sum() * 1000.0) if gen_real.sum() > 0 else np.nan
         rows.append({

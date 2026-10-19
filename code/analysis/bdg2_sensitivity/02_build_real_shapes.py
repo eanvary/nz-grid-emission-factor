@@ -1,9 +1,9 @@
 """
-BDG2 real-data sensitivity test, step 2: build an empirical hourly load
+BDG2 real-data sensitivity test (script 2 of 4): build an empirical hourly load
 "shape" per building from the real metered data, for use in the same
 load-weighted decomposition method as the main (stylised-shape) assessment.
 
-KEY, EXPLICITLY STATED ASSUMPTION -- Southern Hemisphere calendar shift:
+Key assumption, Southern Hemisphere calendar shift:
 all 6 sample buildings are Northern Hemisphere (US/UK/Ireland). To make
 their SEASONAL pattern (the thing stylised shapes cannot capture at all)
 line up sensibly with New Zealand's grid data, each building's calendar

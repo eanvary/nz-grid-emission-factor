@@ -1,7 +1,7 @@
 """
 Is a fuel's em6 gap noise, or a systematic scale offset?
 
-WHY THIS EXISTS (2026-09-23)
+Why this test
 The em6 cross-check reports solar at correlation 0.97 but a mean absolute daily
 difference of 39%. That pairing was read as noise: solar's daily totals are small,
 so small absolute differences become large percentages.
@@ -18,7 +18,7 @@ by the same factor, so fuels landing at a ratio near 1.0 rule that out.
 
 It also re-derives this project's own side straight from the raw EMI files, so a
 bug in the cross-check aggregation would show up as a ratio away from 1.0 in the
-"ours rebuilt / ours as shipped" column.
+ours_rebuilt_over_shipped column (ours rebuilt / ours as published).
 
 Run: python test_em6_scale_vs_noise.py
 """

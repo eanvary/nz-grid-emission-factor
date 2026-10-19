@@ -136,7 +136,7 @@ log("\n  TESTED IN THE PIPELINE (build_edgs_dispatch.py, then reverted): adding 
     "time-varying geothermal factor to combustion CO2 and re-running Check 2 across all 5 "
     "scenarios gives emissions-weighted |diff| ~19-27% (WORSE than combustion-only ~6.3%).")
 log("  DECISION: geothermal fugitive CO2, at its cited real-world magnitude, does NOT explain "
-    "the gap and is NOT adopted in the shipped pipeline. The prior high statistical R2 (0.9995) "
+    "the gap and is not adopted in the pipeline. The high statistical R2 found earlier (0.9995) "
     "reflected geothermal generation and the small residual gap co-trending upward over the "
     "27-year projection window -- correlation of trends, not a valid causal/magnitude match.")
 
@@ -173,7 +173,7 @@ Xj = np.column_stack([dd.coal_gwh, dd.coal_frac, dd.carbon_price, dd.year, np.on
 bj, *_ = np.linalg.lstsq(Xj, yy, rcond=None)
 r2j = 1 - ((yy - Xj @ bj) ** 2).sum() / ((yy - yy.mean()) ** 2).sum()
 log(f"  JOINT (all four): R2={r2j:.3f}")
-log("  RESULT: year/time is the strongest single explanatory variable (R2~0.6) — clearly "
+log("  RESULT: year/time is the strongest single explanatory variable (R2~0.6), "
     "stronger than coal or carbon price alone (R2~0.1-0.2). This is evidence of a slow drift "
     "with time, not a fixed missing source; NOT confirmed as causal, NOT adopted into the "
     "pipeline's calculation. Consistent with (but not proof of) the separately-noted drift in "
@@ -194,8 +194,8 @@ log("Coal factor / carbon price / time: re-tested against the RAW gap (not the r
 log("STATUS: three independent, evidence-based hypotheses tested and rejected. The raw Check-2a "
     "gap remains genuinely unexplained but small where emissions are material (~1-4% in "
     "117/135 scenario-years, ~6.3% emissions-weighted overall). Hypothesis-chasing on this "
-    "specific residual is deliberately deprioritised from here; reported, not adjusted, "
-    "consistent with the brief's prohibition on inventing factors or MBIE's unpublished "
+    "specific residual stops here; it is reported, not adjusted, because inventing factors "
+    "or guessing MBIE's unpublished "
     "per-fuel/per-source split.")
 
 (OUT_DIR / "edgs_check2_diagnostic_summary.txt").write_text("\n".join(lines), encoding="utf-8")

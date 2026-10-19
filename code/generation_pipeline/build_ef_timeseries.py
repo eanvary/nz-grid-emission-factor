@@ -47,9 +47,9 @@ multi_island = (
     gen_nsp.groupby("POC code")["Island"].nunique().pipe(lambda s: s[s > 1])
 )
 if len(multi_island):
-    log(f"WARNING — POCs with multiple island values: {multi_island.index.tolist()}")
+    log(f"WARNING: POCs with multiple island values: {multi_island.index.tolist()}")
 else:
-    log("OK — all generation POCs map to a single island")
+    log("OK: all generation POCs map to a single island")
 
 # Island assignment is geographically stable per POC regardless of reconciliation
 # type (verified: zero POCs with conflicting Island across all recon types), so
@@ -157,7 +157,7 @@ match_rate = gen["island"].notna().mean()
 log(f"\nIsland assignment rate: {match_rate:.2%}")
 if match_rate < 0.95:
     unmatched_pocs = sorted(gen.loc[gen["island"].isna(), "poc"].unique())
-    log(f"WARNING — match rate below 95%. Unmatched POCs: {unmatched_pocs}")
+    log(f"WARNING: match rate below 95%. Unmatched POCs: {unmatched_pocs}")
 else:
     unmatched_pocs = sorted(gen.loc[gen["island"].isna(), "poc"].unique())
     if unmatched_pocs:
@@ -276,16 +276,16 @@ for island, lo, hi in [("NI", 15, 28), ("SI", 12, 24)]:
     yr_gen = annual[annual["island"] == island].assign(twh=lambda d: d["total_gen_MWh"] / 1e6)
     bad = yr_gen[(yr_gen["twh"] < lo) | (yr_gen["twh"] > hi)]
     if len(bad):
-        log(f"  WARNING — {island} years outside {lo}-{hi} TWh range:\n{bad[['year','twh']].to_string(index=False)}")
+        log(f"  WARNING: {island} years outside {lo}-{hi} TWh range:\n{bad[['year','twh']].to_string(index=False)}")
     else:
-        log(f"  OK — {island} annual generation within expected {lo}-{hi} TWh range")
+        log(f"  OK: {island} annual generation within expected {lo}-{hi} TWh range")
 
 ni_annual = annual[annual["island"] == "NI"].set_index("year")["EF_kg_per_MWh"]
 si_annual = annual[annual["island"] == "SI"].set_index("year")["EF_kg_per_MWh"]
 common_years = sorted(ni_annual.index.intersection(si_annual.index))
 if common_years:
     si_lower = (si_annual[common_years] < ni_annual[common_years]).mean()
-    log(f"  SI lower than NI in {si_lower:.0%} of years (expect ~100%) — years: {common_years}")
+    log(f"  SI lower than NI in {si_lower:.0%} of years (expect ~100%), years: {common_years}")
 log(f"  NI annual EF by year: {ni_annual.round(1).to_dict()}")
 log(f"  SI annual EF by year: {si_annual.round(1).to_dict()}")
 
@@ -324,7 +324,7 @@ ax1.plot(si_m["period"], si_m["EF_kg_per_MWh"], color=TEAL, alpha=0.35, lw=1, la
 ax1.plot(ni_m["period"], ni_m["EF_kg_per_MWh"].rolling(12, min_periods=1).mean(), color=NAVY, lw=2.5, label="NI 12-mo avg")
 ax1.plot(si_m["period"], si_m["EF_kg_per_MWh"].rolling(12, min_periods=1).mean(), color=TEAL, lw=2.5, label="SI 12-mo avg")
 ax1.set_ylabel("kg CO₂/MWh")
-ax1.set_title("Panel A — Monthly grid emission factor, NI vs SI")
+ax1.set_title("Panel A. Monthly grid emission factor, NI vs SI")
 ax1.legend(loc="upper right", fontsize=8)
 ax1.grid(alpha=0.3)
 
@@ -341,7 +341,7 @@ ax2.stackplot(
 )
 ax2.set_ylabel("Generation (TWh)")
 ax2.set_xlabel("Year")
-ax2.set_title("Panel B — NI annual fuel mix")
+ax2.set_title("Panel B. NI annual fuel mix")
 ax2.legend(loc="upper left", fontsize=8, ncol=3)
 ax2.grid(alpha=0.3)
 
@@ -352,7 +352,7 @@ log("Wrote: EF_timeseries_NI_SI.png")
 log("\n=== NOTES ===")
 log("1. SI EF is 0.0 in every year. This is not a bug: the 'Dispatched generation "
     "plant' SCD2 file (the only source of HeatRate/EmissionsFactor in this pipeline) "
-    "contains zero thermal (CLG/GAS/DSL/GEO) plants located in the South Island — "
+    "contains zero thermal (CLG/GAS/DSL/GEO) plants located in the South Island: "
     "every thermal POC (Huntly, Kawerau, Napier, Otahuhu, Southdown, Whirinaki, etc.) "
     "is in the North Island. SI generation in this dataset is 100% hydro/wind, so a "
     "zero combustion EF is the correct result given this data source, not a join failure.")

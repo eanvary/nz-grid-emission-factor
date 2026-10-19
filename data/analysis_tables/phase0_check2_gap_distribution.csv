@@ -1,4 +1,4 @@
-scenario,year,recomputed_model_comb_Mt,model_comb_Mt,mbie_ghg_Mt,diff_vs_shipped_diag_Mt,diff_vs_shipped_diag_pct,gap_Mt,gap_pct_of_mbie
+scenario,year,recomputed_model_comb_Mt,model_comb_Mt,mbie_ghg_Mt,diff_vs_pipeline_diag_Mt,diff_vs_pipeline_diag_pct,gap_Mt,gap_pct_of_mbie
 Constraint,2024,3.6209415999999996,3.6,3.562,0.02094159999999956,0.5817111111110989,0.038000000000000256,1.0668163952835559
 Constraint,2025,2.84772256,2.8269,2.79,0.0208225599999996,0.7365863666914146,0.036900000000000155,1.3225806451612958
 Constraint,2026,2.88009244,2.8594,2.823,0.020692439999999923,0.723663705672516,0.03639999999999999,1.2894084307474314

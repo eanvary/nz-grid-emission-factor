@@ -28,7 +28,7 @@ checks = []  # list of dicts: id, category, description, status, detail
 def record(check_id, category, description, status, detail=""):
     checks.append({"id": check_id, "category": category, "description": description,
                     "status": status, "detail": detail})
-    print(f"[{status:4s}] {check_id} ({category}) — {description}" + (f" — {detail}" if detail else ""))
+    print(f"[{status:4s}] {check_id} ({category}) {description}" + (f": {detail}" if detail else ""))
 
 
 # Scope (years, month coverage, leap years) is derived from whatever raw files are
@@ -59,7 +59,7 @@ LEAP_YEARS = {y for y in YEARS if calendar.isleap(y)}
 scope_label = f"{first_y}-{first_m:02d} to {last_y}-{last_m:02d}"
 
 # A. Completeness and coverage
-print("\n" + "=" * 70 + "\nA — COMPLETENESS & COVERAGE\n" + "=" * 70)
+print("\n" + "=" * 70 + "\nA. Completeness and coverage\n" + "=" * 70)
 
 record("A1", f"Completeness", f"All Generation_MD monthly files present, no gaps ({scope_label})",
        "PASS" if gen_months == expected_months else "FAIL",
@@ -109,7 +109,7 @@ record("A8", "Completeness", "No duplicate (island, date) rows in daily table",
        "PASS" if dup_daily == 0 else "FAIL", f"{dup_daily} duplicates")
 
 # B. Internal consistency and reconciliation
-print("\n" + "=" * 70 + "\nB — INTERNAL CONSISTENCY & RECONCILIATION\n" + "=" * 70)
+print("\n" + "=" * 70 + "\nB. Internal consistency and reconciliation\n" + "=" * 70)
 
 h2d = (hourly.groupby(["island", "date"])
        .agg(gen=("total_gen_MWh", "sum"), co2=("total_CO2_kg", "sum")).reset_index())
@@ -192,7 +192,7 @@ else:
            f"generation {gen_err.max():.2e}, CO2 {co2_err.max():.2e} (worst {worst})")
 
 # C. Physical plausibility and bounds
-print("\n" + "=" * 70 + "\nC — PHYSICAL PLAUSIBILITY & BOUNDS\n" + "=" * 70)
+print("\n" + "=" * 70 + "\nC. Physical plausibility and bounds\n" + "=" * 70)
 
 neg_gen = (hourly["total_gen_MWh"] < 0).sum()
 record("C1", "Plausibility", "No negative generation values, hourly table",
@@ -230,7 +230,7 @@ record("C5", "Plausibility", "Fleet-average EF per thermal fuel within literatur
        "PASS" if not bench_fail else "FAIL", "; ".join(bench_fail) if bench_fail else "all within range")
 
 # D. External cross-validation (MBIE official quarterly national EF)
-print("\n" + "=" * 70 + "\nD — EXTERNAL CROSS-VALIDATION\n" + "=" * 70)
+print("\n" + "=" * 70 + "\nD. External cross-validation\n" + "=" * 70)
 
 # Cogeneration scope. MBIE's published EF is "primary activity" scope and excludes
 # autoproducer/industrial cogeneration; this pipeline includes it. D2 below
@@ -272,7 +272,7 @@ record("D1", "External-validation",
        f"Full-scope quarterly national EF vs MBIE published Electricity EFs ({len(comp)} quarters)",
        "PASS" if corr_full > 0.9 else "WARN",
        f"r={corr_full:.4f}, mean|diff|={mean_abs_diff_full:.1f}% "
-       f"(systematic — MBIE excludes autoproducer/cogen sales, this pipeline includes them; see D2)")
+       f"(systematic: MBIE excludes autoproducer/cogen sales, this pipeline includes them; see D2)")
 
 # D2 re-derives national totals from the raw EMI files on MBIE's scope. It uses the
 # pipeline's own attribution module (fuel_attribution.py: generator-level factors,
@@ -424,7 +424,7 @@ record("E6", "Temporal", "No POC has a zero/missing month between two months wit
        f"with >=5 GWh in both neighbouring months: {[(p, m) for p, m in zip(_big['poc'], _big['month'])]}; see completeness_flags.csv")
 
 # E. Temporal integrity
-print("\n" + "=" * 70 + "\nE — TEMPORAL INTEGRITY\n" + "=" * 70)
+print("\n" + "=" * 70 + "\nE. Temporal integrity\n" + "=" * 70)
 
 # NZ's DST transitions are month-fixed (spring-forward late September, fall-back
 # first Sunday of April -- see E3), so a year only contributes an expected
@@ -465,14 +465,14 @@ record("E3", "Temporal", "DST fall-back day (TP49/TP50) present and now included
        f"{len(fallback_dst_gen)} files with a fall-back day found (expected {len(years_with_april)} in-scope Aprils)")
 
 # F. Provenance
-print("\n" + "=" * 70 + "\nF — PROVENANCE\n" + "=" * 70)
+print("\n" + "=" * 70 + "\nF. Provenance\n" + "=" * 70)
 record("F1", "Provenance", "Every raw file's byte size logged and none anomalously small",
        "PASS", f"{len(gen_files)} Generation_MD + {len(hvdc_files)} HVDC_flows files, sizes checked in A3")
 record("F2", "Provenance", "All known pipeline bugs documented with fix date, magnitude, and rationale",
        "PASS", "see EDGS_Pipeline_Complete_Documentation.md Section 8.5 and script NOTES logs")
 
 # G. Statistical outlier screen
-print("\n" + "=" * 70 + "\nG — STATISTICAL OUTLIER SCREEN\n" + "=" * 70)
+print("\n" + "=" * 70 + "\nG. Statistical outlier screen\n" + "=" * 70)
 
 ni_daily_ef = daily[daily.island == "NI"]["EF_kg_per_MWh"].dropna()
 q1, q3 = ni_daily_ef.quantile([0.25, 0.75])
@@ -483,7 +483,7 @@ record("G1", "Outliers", "NI daily EF: count of >3xIQR outliers (flagged for man
        f"{len(outliers)}/{len(ni_daily_ef)} rows ({len(outliers)/len(ni_daily_ef)*100:.2f}%) beyond 3xIQR")
 
 # H. Consumption-side and inter-island transfer
-print("\n" + "=" * 70 + "\nH — CONSUMPTION-SIDE & INTER-ISLAND TRANSFER\n" + "=" * 70)
+print("\n" + "=" * 70 + "\nH. Consumption side and inter-island transfer\n" + "=" * 70)
 
 CONS_DIR = ROOT / "Consumption_Island" / "output"
 
@@ -611,7 +611,7 @@ n_info = (df_checks["status"] == "INFO").sum()
 print(f"PASS: {n_pass}   WARN: {n_warn}   FAIL: {n_fail}   INFO: {n_info}   (total {len(df_checks)} checks)")
 
 df_checks.to_csv(OUT_DIR / "DATA_QUALITY_ASSESSMENT_RESULTS.csv", index=False)
-report_lines = [f"[{r['status']:4s}] {r['id']} ({r['category']}) — {r['description']}"
+report_lines = [f"[{r['status']:4s}] {r['id']} ({r['category']}) {r['description']}"
                  + (f"\n       {r['detail']}" if r['detail'] else "") for r in checks]
 report_lines.append(f"\nPASS: {n_pass}   WARN: {n_warn}   FAIL: {n_fail}   INFO: {n_info}   (total {len(df_checks)} checks)")
 (OUT_DIR / "DATA_QUALITY_ASSESSMENT_RESULTS.txt").write_text("\n".join(report_lines), encoding="utf-8")

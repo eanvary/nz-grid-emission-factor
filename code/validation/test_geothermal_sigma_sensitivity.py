@@ -66,7 +66,7 @@ g = pd.read_csv(os.path.join(HERE, "geothermal_mclean_richardson_stations.csv"))
 w = g.mw / g.mw.sum()
 mu = (w * g.ef_gco2_kwh).sum()
 sd = math.sqrt((w * (g.ef_gco2_kwh - mu) ** 2).sum())
-SIG_SHIPPED = sd / mu
+SIG_RELEASED = sd / mu
 SIG_INDEP = math.sqrt((w ** 2 * (g.ef_gco2_kwh - mu) ** 2).sum()) / mu
 
 plant = pd.read_csv(os.path.join(ROOT, "output",
@@ -74,7 +74,7 @@ plant = pd.read_csv(os.path.join(ROOT, "output",
 geo = plant[plant.fuel_std == "GEO"]
 fallback = geo[geo.EF_kg_per_MWh.round(2).between(76.02, 76.04)]
 co2_share_fallback = fallback.total_CO2_kg.sum() / geo.total_CO2_kg.sum()
-SIG_FALLBACK = co2_share_fallback * SIG_SHIPPED
+SIG_FALLBACK = co2_share_fallback * SIG_RELEASED
 
 _geo_sig = pd.read_csv(os.path.join(HERE, "geo_uncertainty_sigma.csv")).set_index("fuel_std")["rel_sigma"]
 SIG_TERMS = {k: float(v) for k, v in _geo_sig.items()}  # GEO, GEO_S2_<station>, GEO_PROXY
@@ -82,8 +82,8 @@ SIG_TERMS = {k: float(v) for k, v in _geo_sig.items()}  # GEO, GEO_S2_<station>,
 # adopted method (by proxy-rule step, build_geo_uncertainty_inputs.py); the other three are alternative
 # readings, applied to all geothermal alike.
 SCENARIOS = [
-    ("as shipped: by rule step (7.07% / station / spread)", SIG_TERMS),
-    ("previous: full between-station spread, one draw", SIG_SHIPPED),
+    ("as released: by rule step (7.07% / station / spread)", SIG_TERMS),
+    ("previous: full between-station spread, one draw", SIG_RELEASED),
     ("same spread, station errors independent", SIG_INDEP),
     ("only the fallback plants are uncertain", SIG_FALLBACK),
 ]

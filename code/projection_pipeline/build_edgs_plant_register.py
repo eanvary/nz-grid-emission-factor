@@ -66,7 +66,7 @@ for scenario in SCENARIOS:
 
     unknown_tech = sorted(set(gs["Tech"]) - set(TECH_TO_COMMODITY))
     if unknown_tech:
-        log(f"WARNING [{scenario}] — Tech not in crosswalk: {unknown_tech}")
+        log(f"WARNING [{scenario}]: Tech not in crosswalk: {unknown_tech}")
 
     for _, row in gs.iterrows():
         commodity = TECH_TO_COMMODITY.get(row["Tech"])
@@ -74,7 +74,7 @@ for scenario in SCENARIOS:
             continue
         island = REGION_TO_ISLAND.get(row["Region"])
         if island is None:
-            log(f"WARNING [{scenario}] — region '{row['Region']}' not mapped ({row['Plant']})")
+            log(f"WARNING [{scenario}]: region '{row['Region']}' not mapped ({row['Plant']})")
             continue
         retire_year, convert = match_retirement(row["Plant"], rules)
         cap = float(row["Capacity (MW)"]) if pd.notna(row["Capacity (MW)"]) else 0.0
@@ -87,7 +87,7 @@ for scenario in SCENARIOS:
             # Huntly Rankine biomass conversion (Innovation/Environmental from 2032)
             if convert and convert[0] == "biomass" and yr >= convert[1]:
                 com, dclass = "Wood", "renewable"
-                src = f"calculated: {row['Plant']} converted to biomass from {convert[1]} (brief S2)"
+                src = f"calculated: {row['Plant']} converted to biomass from {convert[1]} (EDGS 2024 report, Appendix One)"
             records.append({
                 "scenario": scenario, "year": yr, "plant": row["Plant"],
                 "commodity": com, "dispatch_class": dclass, "island": island,
@@ -121,11 +121,11 @@ for scenario in SCENARIOS:
 
 # TCC must be gone by 2025; Huntly U5 gone by 2038 (default) / 2033 (Innov/Env)
 tcc_2025 = reg[(reg["year"] == 2025) & (reg["plant"].str.contains("Taranaki Combined Cycle"))]
-log(f"\nRetirement check — TCC rows in 2025 (expect 0): {len(tcc_2025)}")
+log(f"\nRetirement check: TCC rows in 2025 (expect 0): {len(tcc_2025)}")
 for scenario, yr_gone in [("Reference", 2038), ("Innovation", 2033)]:
     u5 = reg[(reg["scenario"] == scenario) & (reg["year"] == yr_gone)
              & (reg["plant"].str.contains("Huntly Unit 5"))]
-    log(f"Retirement check — {scenario} Huntly U5 rows in {yr_gone} (expect 0): {len(u5)}")
+    log(f"Retirement check: {scenario} Huntly U5 rows in {yr_gone} (expect 0): {len(u5)}")
 
 # GEM build schedule (authoritative new-build island tag): normalise + write
 gem_out = gem.rename(columns={

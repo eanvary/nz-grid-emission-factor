@@ -260,10 +260,10 @@ dt_chk, ef_chk, _, _ = run(check_scenario, check_year, use_real_solar_shape=Fals
 ship_chk = (ship_ni[(ship_ni.scenario == check_scenario)]
             .set_index("datetime_hour").loc[dt_chk, "emission_factor_kg_co2e_per_kwh"].to_numpy())
 resid = np.abs(ef_chk - ship_chk).max()
-log(f"Step 0 sanity check ({check_scenario} {check_year}, baseline mode vs shipped): "
+log(f"Step 0 sanity check ({check_scenario} {check_year}, baseline mode against the pipeline): "
     f"max |diff| = {resid:.2e}")
 if resid > 1e-6:
-    log("WARNING: reconstruction does not match shipped baseline - results below are unreliable")
+    log("WARNING: reconstruction does not match the pipeline baseline - results below are unreliable")
 del ship_ef, ship_ni
 
 # Run baseline vs adjusted for all 135 scenario-years
@@ -312,7 +312,7 @@ log(f"\nAnnual energy-weighted EF (published-style figure): max |delta| across a
 
 n_shifted = int(summ.worst_hour_shifted.sum())
 log(f"\nWorst-hour TIMING shifted in {n_shifted}/{len(summ)} scenario-years "
-    f"(a genuine shape effect Brief S's uniform annual scaling could not produce)")
+    f"(a shape effect that uniform annual scaling cannot produce)")
 
 log("\nDirty-hour ceiling (p99 NI generation EF), baseline -> real-solar-shape, selected years:")
 for scenario in SCENARIOS:
@@ -325,4 +325,4 @@ for scenario in SCENARIOS:
     log(f"  {scenario}: " + " | ".join(parts))
 
 (OUT_DIR / "processing_log_solar_shape_sensitivity.txt").write_text("\n".join(lines), encoding="utf-8")
-log("\nNOT adopted into the shipped pipeline - standalone sensitivity only (see docstring).")
+log("\nNot adopted in the pipeline: standalone sensitivity only (see docstring).")

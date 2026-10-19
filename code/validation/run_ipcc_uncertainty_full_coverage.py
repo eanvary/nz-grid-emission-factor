@@ -81,13 +81,13 @@ if flat_val:
           f"for every geothermal POC.")
     print(f"  McLean & Richardson's real MW-weighted mean: {geo_w_mean_gco2:.2f} gCO2/kWh.")
     print(f"  Difference: this project's flat value is {diff_pct:+.1f}% vs. the real weighted mean.")
-    print(f"  (Observation only -- not a change to the shipped pipeline. See report for scope.)")
+    print(f"  (Observation only, not a change to the pipeline.)")
 else:
     print(f"  Per-POC values (geothermal_ef_correction.py), not one flat value: "
           f"{min(distinct_ef):.1f}-{max(distinct_ef):.1f} kg/MWh.")
 if fa.nzga:
     nz = {y: v for (st, y), v in fa.nzga.items() if st == "NZGA MW-weighted average"}
-    print(f"  Shipped factors use NZGA station intensities; NZGA MW-weighted average by year (g/kWh): "
+    print(f"  Released factors use NZGA station intensities; NZGA MW-weighted average by year (g/kWh): "
           + ", ".join(f"{y}: {v:.1f}" for y, v in sorted(nz.items())))
 
 # Re-run propagation, monthly + hourly, with GEO included in REL_SIGMA.

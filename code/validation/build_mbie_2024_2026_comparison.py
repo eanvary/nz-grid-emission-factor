@@ -42,13 +42,13 @@ new_monthly = pd.concat(parts, ignore_index=True)
 print(new_monthly.to_string(index=False))
 
 # 2024-2025 months from the released, validated output.
-shipped = pd.read_csv(ROOT / "output" / "monthly_emission_factor_NI_SI.csv")
-shipped_national = shipped.groupby(["year", "month"]).agg(
+released = pd.read_csv(ROOT / "output" / "monthly_emission_factor_NI_SI.csv")
+released_national = released.groupby(["year", "month"]).agg(
     gen=("total_gen_MWh", "sum"), co2=("total_CO2_kg", "sum")
 ).reset_index()
-shipped_2024_2025 = shipped_national[shipped_national.year.isin([2024, 2025])]
+released_2024_2025 = released_national[released_national.year.isin([2024, 2025])]
 
-nat = pd.concat([shipped_2024_2025, new_monthly], ignore_index=True).sort_values(["year", "month"])
+nat = pd.concat([released_2024_2025, new_monthly], ignore_index=True).sort_values(["year", "month"])
 nat["period"] = pd.to_datetime(nat[["year", "month"]].assign(day=1))
 nat["quarter"] = nat["period"].dt.to_period("Q")
 qmap = {1: "Mar", 2: "Jun", 3: "Sep", 4: "Dec"}

@@ -51,7 +51,7 @@ def log(m):
     print(m); log_lines.append(str(m))
 
 log(f"Assumption-1 shape template: {TEMPLATE_YEAR}"
-    f"{' (shipped central)' if not SUFFIX else ' (sensitivity run, suffix ' + SUFFIX + ')'}")
+    f"{' (central)' if not SUFFIX else ' (sensitivity run, suffix ' + SUFFIX + ')'}")
 
 SCENARIOS = ["Reference", "Growth", "Constraint", "Innovation", "Environmental"]
 BUILDING_ISLAND = "NI"  # most NZ commercial floor area (Auckland, Wellington); SI noted qualitatively only

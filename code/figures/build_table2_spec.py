@@ -39,7 +39,7 @@ rows.append(dict(
 scenarios = sorted(decomp["scenario"].unique())
 rows.append(dict(
     Dimension="Scenario", Levels=", ".join(scenarios), n=len(scenarios),
-    Source_or_basis="phase3_decomposition_full.csv", Note="MBIE EDGS scenario names, as shipped"))
+    Source_or_basis="phase3_decomposition_full.csv", Note="MBIE EDGS scenario names, as published"))
 
 # 4. Start year
 start_years = sorted(decomp["start_year"].unique())

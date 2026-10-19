@@ -33,7 +33,7 @@ sys.path.insert(0, str(ROOT / "generation_pipeline"))
 from fuel_attribution import FUEL_STD, FuelAttribution, poc_island_map  # noqa: E402
 
 GEN_DIR = ROOT / "EA_EMI_raw"
-SHIPPED_HOURLY = ROOT / "output" / "hourly_emission_factor_NI_SI.csv"
+RELEASED_HOURLY = ROOT / "output" / "hourly_emission_factor_NI_SI.csv"
 OUT = HERE / "hourly_fuel_mix_NI_SI.csv"
 
 print("Loading POC -> Island lookup (fuel_attribution.poc_island_map, as the pipeline)...")
@@ -108,7 +108,7 @@ print(f"Wrote {len(fuel_hourly):,} rows -> {OUT}")
 
 # Verification: sum this new per-fuel table back to (island, date, hour) and
 # compare against the released hourly_emission_factor_NI_SI.csv.
-print("\nVerifying against shipped hourly_emission_factor_NI_SI.csv...")
+print("\nChecking against the released hourly_emission_factor_NI_SI.csv...")
 recombined = (
     fuel_hourly.groupby(["island", "date", "hour"])
     .agg(total_gen_MWh=("gen_mwh", "sum"), total_CO2_kg=("co2_kg", "sum"))
@@ -116,17 +116,17 @@ recombined = (
 )
 recombined["EF_kg_per_MWh"] = recombined["total_CO2_kg"] / recombined["total_gen_MWh"]
 
-shipped = pd.read_csv(SHIPPED_HOURLY)
-shipped["date"] = pd.to_datetime(shipped["date"])
-merged = recombined.merge(shipped, on=["island", "date", "hour"], suffixes=("_new", "_shipped"))
-assert len(merged) == len(shipped) == len(recombined), (
-    f"row count mismatch: new={len(recombined)} shipped={len(shipped)} merged={len(merged)}"
+released = pd.read_csv(RELEASED_HOURLY)
+released["date"] = pd.to_datetime(released["date"])
+merged = recombined.merge(released, on=["island", "date", "hour"], suffixes=("_new", "_released"))
+assert len(merged) == len(released) == len(recombined), (
+    f"row count mismatch: new={len(recombined)} released={len(released)} merged={len(merged)}"
 )
-gen_diff = (merged["total_gen_MWh_new"] - merged["total_gen_MWh_shipped"]).abs()
-ef_diff = (merged["EF_kg_per_MWh_new"] - merged["EF_kg_per_MWh_shipped"]).abs()
+gen_diff = (merged["total_gen_MWh_new"] - merged["total_gen_MWh_released"]).abs()
+ef_diff = (merged["EF_kg_per_MWh_new"] - merged["EF_kg_per_MWh_released"]).abs()
 print(f"  rows compared: {len(merged):,}")
 print(f"  max |gen diff|: {gen_diff.max():.6f} MWh   (mean {gen_diff.mean():.8f})")
 print(f"  max |EF diff|:  {ef_diff.max():.6f} kg/MWh (mean {ef_diff.mean():.8f})")
 assert gen_diff.max() < 1e-6, "generation reconciliation FAILED"
 assert ef_diff.max() < 1e-6, "EF reconciliation FAILED"
-print("  PASS -- per-fuel hourly table reconciles exactly to the shipped hourly output.")
+print("  PASS: per-fuel hourly table reconciles exactly to the released hourly output.")

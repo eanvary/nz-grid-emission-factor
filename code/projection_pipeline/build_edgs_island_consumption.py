@@ -163,7 +163,7 @@ log("  FINDING: this is a TAUTOLOGY, not independent validation. The historical 
     "(checked EA_EMI_raw and EA data: generation, plant, and NSP files only) to run a true "
     "independent test.")
 si_export_share = (cons["net_to_NI_MWh"] > 0).mean() * 100
-log(f"  Best available independent check: real HVDC direction — SI net-exports to NI in "
+log(f"  Best available independent check: real HVDC direction: SI net-exports to NI in "
     f"{si_export_share:.1f}% of historical hours, consistent with NZ's well-documented SI "
     f"hydro generation surplus. This is a plausibility check only, not a precision validation.")
 HIST_VALIDATION_NOTE = (
@@ -278,9 +278,9 @@ log(f"  Max |transfer_to_NI + transfer_to_SI| across all scenario-years: "
     f"{sym.max_asymmetry_mwh.max():.2e} MWh (expect ~0, floating-point only, by renormalisation)")
 
 log(f"\n=== Step 5: HVDC capacity check ({HVDC_SOURCE}) ===")
-log("  CAVEAT (discovered during this brief): the raw EA/EMI Generation_MD data has NO "
-    "'Solar' Fuel_Code at all before 2024 (checked 2021/2023 vs 2024 files directly) — a "
-    "genuine historical data-availability gap, not a code bug. The shipped CENTRAL_TEMPLATE "
+log("  CAVEAT: the raw EA/EMI Generation_MD data has NO "
+    "'Solar' Fuel_Code at all before 2024 (checked 2021/2023 vs 2024 files directly), a "
+    "historical data-availability gap, not a code bug. The CENTRAL_TEMPLATE "
     "(2021) therefore has no solar hourly shape for NI or SI, and Module 4/5's existing, "
     "already-tagged fallback ('[A1 fallback: flat baseload]' in edgs_hourly_generation.parquet "
     "source_detail) spreads solar's annual GWh evenly across all 24 hours, including night. "
@@ -290,22 +290,22 @@ log("  CAVEAT (discovered during this brief): the raw EA/EMI Generation_MD data 
     "demand nearly doubles over the projection) is very unlikely to be solely a solar "
     "artifact, but the exact hour-by-hour numbers should be read as indicative, not precise. "
     "Fixing Module 4's solar shape (e.g. a synthetic diurnal curve, since no historical POC "
-    "data exists for 2021-2023) is a separate, out-of-scope follow-up for this brief.")
+    "data exists for 2021-2023) is outside this module.")
 if capacity_flags:
     cf = pd.DataFrame(capacity_flags)
     log(f"  FLAGGED: {len(cf)} scenario-years with |transfer| > {HVDC_CAPACITY_MW} MW in at least one hour:")
     log(cf.to_string(index=False))
 else:
-    log(f"  OK — no scenario-year-hour exceeds the cited {HVDC_CAPACITY_MW} MW capacity.")
+    log(f"  OK: no scenario-year-hour exceeds the cited {HVDC_CAPACITY_MW} MW capacity.")
 
 rec = pd.DataFrame(reconcile_report)
 log(f"\n=== Step 6: national reconciliation (island consumption CO2 sum vs generation-side CO2) ===")
 log(f"  Max |diff_pct| across all scenario-years: {rec.diff_pct.abs().max():.10f}% "
-    f"(mandatory check — must be ~0)")
+    f"(mandatory check, must be ~0)")
 if rec.diff_pct.abs().max() > 1e-6:
-    log("  WARNING — reconciliation did not pass at floating-point precision; investigate before shipping.")
+    log("  WARNING: reconciliation did not pass at floating-point precision; investigate before release.")
 else:
-    log("  OK — island consumption CO2 sums to the generation-side national CO2 total, exactly.")
+    log("  OK: island consumption CO2 sums to the generation-side national CO2 total, exactly.")
 
 # Write: append island consumption rows to the existing table (additive only)
 cons_out = pd.concat(cons_rows, ignore_index=True)
@@ -341,68 +341,66 @@ readme_addendum = f"""
 
 ## Island-resolved consumption-side emission factor (Module 7)
 
-Adds `ef_basis='consumption'` rows for `island='NI'` and `island='SI'` to
-edgs_hourly_emission_factor.parquet, alongside the unchanged National consumption row. The
-three "not quite fully assumption-free" points, together:
+This module adds `ef_basis='consumption'` rows for `island='NI'` and `island='SI'` to
+edgs_hourly_emission_factor.parquet. The National consumption row is unchanged. Three points
+limit how far the method is free of assumptions.
 
-1. **Step 2 simplification, CORRECTED from the brief's literal formula.** The literal
-   `island_demand(t) x national_grossup_factor` formula was implemented and tested first; it
-   produced a genuine national hourly imbalance (std ~383 MWh, max ~1713 MWh, ~27.6% of mean
-   hourly demand for a sample scenario-year) — NOT rounding error. Cause: Module 5's thermal
-   dispatch sets each fuel's ANNUAL total to MBIE's published figure while only the SHAPE
-   (not the absolute level) follows the demand-minus-renewables residual; since 100% of
-   thermal capacity is NI, this manifests as a national-level gap between the demand-scaled
-   load series and actually-dispatched generation. FIX: island generation-level load is
-   renormalised so the NATIONAL total exactly equals ACTUAL national generation(t) at every
-   hour (the grossup factor cancels out of the per-island SPLIT ratio, which still comes
-   entirely from MBIE's Island share of demand and Assumption 1's per-island shape — no new
-   data source). This guarantees the Step 3 transfer-symmetry check holds at floating-point
-   precision (confirmed: max |transfer_to_NI + transfer_to_SI| = 3.18e-12 MWh across all
-   135 scenario-years, after also fixing a single DST-transition-hour edge case).
-2. **Reliance on arithmetic balance, not directly observed future HVDC data** — inherent to
-   any forward-looking method: there is no way to observe 2024-2050 HVDC dispatch directly,
-   so the required transfer is computed as island generation-level load minus island
-   generation, not modelled from real inter-island trading/frequency-keeping behaviour.
-3. **Step 4 historical validation result that (partially) justifies trusting (2):** the
-   literal test (historical demand minus generation vs real net_to_NI_MWh) is a TAUTOLOGY,
-   not independent evidence — the historical Consumption pipeline DEFINES "consumption" as
-   generation + real metered transfer, so the two match by construction (confirmed: diff at
-   floating-point precision, 4.55e-13 MWh). No independently-metered per-island demand
-   dataset exists locally to run a true independent test. The only genuinely independent
-   check available: real historical HVDC direction (SI net-exports to NI in 77.0% of hours)
-   matches NZ's well-documented SI hydro surplus — a plausibility check only, not a
-   precision validation. **This means the forward-looking transfer/consumption-EF numbers
-   should be read as an internally-consistent accounting method, not as a validated
-   prediction of actual future HVDC dispatch.**
+1. **Step 2: island load is renormalised to national generation.** A direct
+   `island_demand(t) x national_grossup_factor` formula leaves a national hourly imbalance
+   (std ~383 MWh, max ~1713 MWh, ~27.6% of mean hourly demand for a sample scenario-year).
+   This is not rounding error. Module 5's thermal dispatch sets each fuel's annual total to
+   MBIE's published figure. Only the hourly shape, not the absolute level, follows the
+   demand-minus-renewables residual. All thermal capacity is in the NI, so the mismatch
+   appears as a national gap between the demand-scaled load series and dispatched generation.
+   Island generation-level load is therefore renormalised so that the national total equals
+   actual national generation(t) in every hour. The grossup factor cancels out of the
+   per-island split ratio. That ratio still comes only from MBIE's Island share of demand and
+   the per-island shape of Assumption 1, with no new data source. The Step 3 transfer-symmetry
+   check then holds at floating-point precision: max |transfer_to_NI + transfer_to_SI| =
+   3.18e-12 MWh across all 135 scenario-years. One DST-transition hour needs separate handling
+   for this to hold.
+2. **Transfers come from arithmetic balance, not from observed future HVDC data.** This applies
+   to any forward-looking method, because 2024-2050 HVDC dispatch cannot be observed. The
+   required transfer is island generation-level load minus island generation. It is not
+   modelled from real inter-island trading or frequency-keeping behaviour.
+3. **Step 4 historical validation gives only partial support for point 2.** The direct test
+   compares historical demand minus generation with real net_to_NI_MWh. This test is a
+   tautology, not independent evidence. The historical Consumption pipeline defines consumption
+   as generation plus real metered transfer, so the two match by construction (diff at
+   floating-point precision, 4.55e-13 MWh). No independently metered per-island demand dataset
+   is available locally for a true independent test. The one independent check is the real
+   historical HVDC direction. The SI net-exports to the NI in 77.0% of hours, which matches the
+   known SI hydro surplus in New Zealand. This is a plausibility check, not a precision
+   validation. **The forward-looking transfer and consumption EF values are therefore an
+   internally consistent accounting method, not a validated prediction of future HVDC
+   dispatch.**
 
-**Step 5 — HVDC capacity check.** Cited: Transpower, "HVDC link upgrade programme"
-(transpower.co.nz/hvdc-upgrade, accessed 2026-07) — current rated capacity 1200 MW
-(cable-limited); a 1400 MW upgrade (4th submarine cable, Stage 1) was approved by the
-Commerce Commission 18 June 2026 ($1.1bn), expected to complete in the early 2030s — verified (Brief D)
-against both Transpower's own page and the Commerce Commission decision independently, not
-assumed. **{n_cap_flag_years} of 135 scenario-years have at least one hour where the
+**Step 5: HVDC capacity check.** Source: Transpower, "HVDC link upgrade programme"
+(transpower.co.nz/hvdc-upgrade, accessed 2026-07). Current rated capacity is 1200 MW
+(cable-limited). A 1400 MW upgrade (4th submarine cable, Stage 1) was approved by the Commerce
+Commission on 18 June 2026 ($1.1bn). It is expected to be complete in the early 2030s. These
+figures were checked independently against Transpower's page and the Commerce Commission
+decision. **{n_cap_flag_years} of 135 scenario-years have at least one hour where the
 required transfer exceeds 1200 MW** (up to {max_transfer_mw:.0f} MW by 2050 in some
-scenarios), concentrated in later years and lower-thermal scenarios, as national demand
-nearly doubles over the projection while HVDC capacity is held fixed at the cited figure.
-This is reported as a flag, NOT silently clipped or rescaled — it signals a structural
-tension between MBIE's own demand/generation projections and a fixed transfer-capacity
-assumption that this pipeline does not otherwise model (e.g. MBIE's projections may
-implicitly assume additional local generation buildout, transmission upgrades, or a
-different balancing pattern). A CAVEAT discovered during this brief: the raw EA/EMI data
-has no 'Solar' Fuel_Code before 2024, so the shipped central template (2021) has no solar
-hourly shape and Module 5's existing fallback spreads solar flat across all 24 hours — this
-distorts which specific hour is flagged, though not annual totals, and is unlikely to be
-the sole driver of the trend. Detail: edgs_hvdc_capacity_flags.csv.
+scenarios). These hours fall mostly in later years and lower-thermal scenarios. National
+demand nearly doubles over the projection, while HVDC capacity is held fixed at the cited
+figure. The exceedance is reported as a flag and is not clipped or rescaled. It points to a
+structural tension between MBIE's demand and generation projections and a fixed transfer
+capacity, which this pipeline does not otherwise model. MBIE's projections may, for example,
+assume additional local generation, transmission upgrades or a different balancing pattern.
+One caveat applies to the flagged hours. The raw EA/EMI data has no 'Solar' Fuel_Code before
+2024, so the central template (2021) has no solar hourly shape. Module 5's fallback then
+spreads solar flat across all 24 hours. This changes which hour is flagged but not the annual
+totals. It is unlikely to be the sole driver of the trend. Detail: edgs_hvdc_capacity_flags.csv.
 
-**Step 6 — emissions attributed by exporting island**, national reconciliation (island
-consumption CO2 sums to the generation-side national CO2 total) verified EXACT for all 135
+**Step 6: emissions attributed by exporting island.** Island consumption CO2 sums to the
+generation-side national CO2 total. This national reconciliation is exact for all 135
 scenario-years (max |diff| = {rec.diff_pct.abs().max():.10f}%). Detail:
 edgs_island_consumption_reconciliation.csv, edgs_island_transfer_symmetry.csv.
 
-**Known limitation carried over, not fixed here:** Assumption 2's DSR/battery is booked
-100% to NI in the existing generation table even though GEM build schedule capacity is
-split ~48%/52% NI/SI — this is the separately-flagged battery/BESS capacity gap priority,
-not addressed in this module.
+**Known limitation.** Assumption 2 books DSR and battery 100% to the NI in the generation
+table. GEM build schedule capacity is split ~48%/52% NI/SI. This belongs to the separate
+battery/BESS capacity gap item and is not addressed in this module.
 """
 readme_path = OUT_DIR / "README_EDGS_hourly.md"
 if readme_path.exists():

@@ -242,7 +242,7 @@ df.to_csv(OUT_DIR / f"edgs_hvdc_sensitivity_summary{SUFFIX}.csv", index=False)
 # Summary
 log("\n=== HVDC capacity violation sensitivity summary (135 scenario-years) ===")
 for tag, maxcol, ncol in [
-    ("BASELINE (Module 7 shipped)", "max_mw_baseline", "n_hours_baseline"),
+    ("BASELINE (Module 7 pipeline)", "max_mw_baseline", "n_hours_baseline"),
     ("A: DSR 48/52 split", "max_mw_dsr_split", "n_hours_dsr_split"),
     ("B: real 2024 solar shape", "max_mw_solar_fix", "n_hours_solar_fix"),
     ("C1: loss +10% NI", "max_mw_loss_NIup", "n_hours_loss_NIup"),

@@ -40,13 +40,13 @@ carbon = cp.set_index(["Scenario", "TimePeriod"])["Value"].to_dict()
 thermal["fuel_ef_kg_per_gj"] = thermal["commodity"].map(fuel_ef_kg_per_gj)
 missing_ef = sorted(thermal.loc[thermal["fuel_ef_kg_per_gj"] == 0, "commodity"].unique())
 if missing_ef:
-    log(f"NOTE — thermal commodities with 0 fuel EF (check): {missing_ef}")
+    log(f"NOTE: thermal commodities with 0 fuel EF (check): {missing_ef}")
 
 thermal["carbon_price_nzd_per_t"] = [
     carbon.get((sc, yr), np.nan) for sc, yr in zip(thermal["scenario"], thermal["year"])
 ]
 if thermal["carbon_price_nzd_per_t"].isna().any():
-    log(f"WARNING — {thermal['carbon_price_nzd_per_t'].isna().sum()} rows missing carbon price")
+    log(f"WARNING: {thermal['carbon_price_nzd_per_t'].isna().sum()} rows missing carbon price")
 
 hr = thermal["heat_rate_gj_per_gwh"]
 thermal["fuel_cost"] = hr * thermal["fuel_delivery_nzd_per_gj"] / 1000.0
@@ -63,12 +63,12 @@ thermal["merit_rank"] = (
     .rank(method="first").astype(int)
 )
 thermal["source_detail"] = (
-    "calculated: brief Step 3 formula; Fuel EF=" + MFE_SOURCE
+    "calculated: merit-order cost formula; Fuel EF=" + MFE_SOURCE
     + "; carbon=Assumptions!Commodity prices[Effective carbon price]"
 )
 
 # Sanity: cheapest and dearest thermal in Reference across years
-log("\nReference merit order — cheapest & dearest thermal, selected years:")
+log("\nReference merit order: cheapest and dearest thermal, selected years:")
 for yr in (2024, 2035, 2050):
     s = thermal[(thermal["scenario"] == "Reference") & (thermal["year"] == yr)]
     s = s.sort_values("marginal_cost_nzd_per_mwh")

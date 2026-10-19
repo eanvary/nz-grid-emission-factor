@@ -45,7 +45,7 @@ ef["month"] = ef["datetime_hour"].dt.month
 ef["dow"] = ef["datetime_hour"].dt.dayofweek
 ef["is_weekend"] = ef["dow"] >= 5
 ef["hour"] = ef["datetime_hour"].dt.hour
-log(f"Loaded {len(ef)} NI generation-side hourly EF rows (read-only from shipped output)")
+log(f"Loaded {len(ef)} NI generation-side hourly EF rows (read-only from the released output)")
 
 # Load real BDG2 shapes (already hemisphere-shifted to nz_month by 02_build_real_shapes.py)
 shapes = pd.read_csv(TABLES / "real_building_shapes_hemisphere_shifted.csv")

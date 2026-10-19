@@ -68,26 +68,26 @@ def report_battery_mw(scenario, year):
 targets = pd.read_parquet(OUT_DIR / "edgs_annual_targets.parquet")
 gem = pd.read_parquet(OUT_DIR / "edgs_gem_build.parquet")
 dsr_gem = gem[gem.commodity == "Demand side response"]
-dsr_cap_map_shipped = {}
+dsr_cap_map_pipeline = {}
 for sc in SCENARIOS:
     s = dsr_gem[dsr_gem.scenario == sc]
     for yr in YEARS:
-        dsr_cap_map_shipped[(sc, yr)] = float(s[s.year <= yr]["capacity_mw"].sum())
+        dsr_cap_map_pipeline[(sc, yr)] = float(s[s.year <= yr]["capacity_mw"].sum())
 
 gap_rows = []
 for sc in SCENARIOS:
     for yr in YEARS:
-        shipped = dsr_cap_map_shipped[(sc, yr)]
+        pipeline = dsr_cap_map_pipeline[(sc, yr)]
         report = report_battery_mw(sc, yr)
-        gap_rows.append({"scenario": sc, "year": yr, "dsr_mw_shipped": shipped,
+        gap_rows.append({"scenario": sc, "year": yr, "dsr_mw_pipeline": pipeline,
                          "report_battery_mw": report,
-                         "ratio": (report / shipped) if shipped > 0 else np.nan})
+                         "ratio": (report / pipeline) if pipeline > 0 else np.nan})
 gap_df = pd.DataFrame(gap_rows)
 gap_df.to_csv(OUT_DIR / "edgs_battery_gap_comparison.csv", index=False)
 log("=== Step 1: battery capacity gap (MBIE-stated anchor years) ===")
 for yr in (2029, 2049):
     log(f"  {yr}:")
-    log(gap_df[gap_df.year == yr][["scenario", "dsr_mw_shipped", "report_battery_mw", "ratio"]]
+    log(gap_df[gap_df.year == yr][["scenario", "dsr_mw_pipeline", "report_battery_mw", "ratio"]]
         .round(2).to_string(index=False))
 
 # Prerequisites for the residual/dispatch reconstruction (read-only, same sources as
@@ -103,10 +103,10 @@ REAL_SOLAR_SHAPE = ren_shape_all[(ren_shape_all.template_year == 2024)
                                  & (ren_shape_all.island == "NI") & (ren_shape_all.fuel_std == "SOL")]
 register = pd.read_parquet(OUT_DIR / "edgs_plant_register.parquet")
 merit = pd.read_parquet(OUT_DIR / "edgs_merit_order.parquet")
-ef_shipped = pd.read_parquet(OUT_DIR / f"edgs_hourly_emission_factor{SUFFIX}.parquet")
-gen_shipped = pd.read_parquet(OUT_DIR / f"edgs_hourly_generation{SUFFIX}.parquet")
-gen_shipped["year"] = pd.to_datetime(gen_shipped["datetime_hour"]).dt.year
-ef_shipped["year"] = pd.to_datetime(ef_shipped["datetime_hour"]).dt.year
+ef_pipeline = pd.read_parquet(OUT_DIR / f"edgs_hourly_emission_factor{SUFFIX}.parquet")
+gen_pipeline = pd.read_parquet(OUT_DIR / f"edgs_hourly_generation{SUFFIX}.parquet")
+gen_pipeline["year"] = pd.to_datetime(gen_pipeline["datetime_hour"]).dt.year
+ef_pipeline["year"] = pd.to_datetime(ef_pipeline["datetime_hour"]).dt.year
 
 isd = pd.read_excel(ASSUMPTIONS_XLSX, sheet_name="Island share of demand")
 isd = isd[isd["Variable"] == "North Island share of national demand"]
@@ -197,7 +197,7 @@ for scenario in SCENARIOS:
 
         residual_pre = np.clip(nat_demand - nat_ren, 0.0, None)
 
-        dsr_ship = dsr_cap_map_shipped[(scenario, year)]
+        dsr_ship = dsr_cap_map_pipeline[(scenario, year)]
         dsr_rep = report_battery_mw(scenario, year)
         res_ship, dsr_series_ship = peak_shave(residual_pre, dsr_ship, H)
         res_rep, dsr_series_rep = peak_shave(residual_pre, dsr_rep, H)
@@ -207,10 +207,10 @@ for scenario in SCENARIOS:
         peak_hr_rep = int(np.argmax(dsr_series_rep))
         peakshave_rows.append({
             "scenario": scenario, "year": year,
-            "dsr_mw_shipped": dsr_ship, "dsr_mw_report": dsr_rep,
-            "total_shaved_mwh_shipped": float(np.clip(dsr_series_ship, 0, None).sum()),
+            "dsr_mw_pipeline": dsr_ship, "dsr_mw_report": dsr_rep,
+            "total_shaved_mwh_pipeline": float(np.clip(dsr_series_ship, 0, None).sum()),
             "total_shaved_mwh_report": float(np.clip(dsr_series_rep, 0, None).sum()),
-            "worst_shave_hour_shipped": peak_hr_ship, "worst_shave_hour_report": peak_hr_rep,
+            "worst_shave_hour_pipeline": peak_hr_ship, "worst_shave_hour_report": peak_hr_rep,
             "same_worst_hour": peak_hr_ship == peak_hr_rep,
         })
 
@@ -248,9 +248,9 @@ for scenario in SCENARIOS:
         gNI_rep, gSI_rep, tr_rep = thermal_gen_and_transfer(res_rep, dsr_series_rep)
         hvdc_rows.append({
             "scenario": scenario, "year": year,
-            "max_transfer_mw_shipped": float(np.abs(tr_ship).max()),
+            "max_transfer_mw_pipeline": float(np.abs(tr_ship).max()),
             "max_transfer_mw_report": float(np.abs(tr_rep).max()),
-            "n_hours_violate_shipped": int((np.abs(tr_ship) > HVDC_CAPACITY_MW).sum()),
+            "n_hours_violate_pipeline": int((np.abs(tr_ship) > HVDC_CAPACITY_MW).sum()),
             "n_hours_violate_report": int((np.abs(tr_rep) > HVDC_CAPACITY_MW).sum()),
         })
 
@@ -260,11 +260,11 @@ for scenario in SCENARIOS:
         # shape, the CO2 profile reshapes identically to the thermal generation profile. The
         # EF hourly shape change is therefore captured by comparing the NI generation-side EF
         # implied by re-shaping the pipeline's combustion CO2 total over the new thermal shape.
-        efn = ef_shipped[(ef_shipped.scenario == scenario) & (ef_shipped.year == year)
-                        & (ef_shipped.island == "NI") & (ef_shipped.ef_basis == "generation")]
+        efn = ef_pipeline[(ef_pipeline.scenario == scenario) & (ef_pipeline.year == year)
+                        & (ef_pipeline.island == "NI") & (ef_pipeline.ef_basis == "generation")]
         efn = efn.set_index("datetime_hour")["emission_factor_kg_co2e_per_kwh"].reindex(dt, fill_value=0.0).to_numpy()
-        gn_ship_actual = gen_shipped[(gen_shipped.scenario == scenario) & (gen_shipped.year == year)
-                                     & (gen_shipped.island == "NI")].groupby("datetime_hour")["generation_mwh"].sum().reindex(dt, fill_value=0.0).to_numpy()
+        gn_ship_actual = gen_pipeline[(gen_pipeline.scenario == scenario) & (gen_pipeline.year == year)
+                                     & (gen_pipeline.island == "NI")].groupby("datetime_hour")["generation_mwh"].sum().reindex(dt, fill_value=0.0).to_numpy()
         co2_ship_actual = efn * gn_ship_actual * 1000.0  # kg, pipeline baseline
         total_co2 = co2_ship_actual.sum()
         # re-shape total CO2 over the report-battery thermal shape (same total, new hourly pattern)
@@ -275,7 +275,7 @@ for scenario in SCENARIOS:
         mad = np.abs(ef_report_reshaped - efn).mean()
         ef_rows.append({"scenario": scenario, "year": year,
                         "mean_abs_hourly_EF_diff_kg_per_kwh": mad,
-                        "peak_hour_EF_shipped": float(efn[np.argmax(res_ship)]) if H else np.nan,
+                        "peak_hour_EF_pipeline": float(efn[np.argmax(res_ship)]) if H else np.nan,
                         "peak_hour_EF_report": float(ef_report_reshaped[np.argmax(res_ship)]) if H else np.nan})
     log(f"  {scenario}: done")
 
@@ -288,22 +288,22 @@ efd.to_csv(OUT_DIR / f"edgs_battery_sensitivity_ef{SUFFIX}.csv", index=False)
 
 # Summary
 log("\n=== Step 3.1: peak-shaving magnitude (total MWh/yr shaved, national) ===")
-log(f"  Total shaved, shipped DSR: {pk.total_shaved_mwh_shipped.sum()/1e6:.2f} TWh/yr-equiv (135 scenario-years)")
+log(f"  Total shaved, pipeline DSR: {pk.total_shaved_mwh_pipeline.sum()/1e6:.2f} TWh/yr-equiv (135 scenario-years)")
 log(f"  Total shaved, report battery: {pk.total_shaved_mwh_report.sum()/1e6:.2f} TWh/yr-equiv")
-log(f"  Ratio: {pk.total_shaved_mwh_report.sum()/pk.total_shaved_mwh_shipped.sum():.2f}x")
+log(f"  Ratio: {pk.total_shaved_mwh_report.sum()/pk.total_shaved_mwh_pipeline.sum():.2f}x")
 log(f"  Worst-shave hour changes in {(~pk.same_worst_hour).sum()}/135 scenario-years under the larger assumption")
 
-log("\n=== Step 3.2: HVDC capacity violation, shipped DSR vs report battery ===")
-n_ship = (hv.max_transfer_mw_shipped > HVDC_CAPACITY_MW).sum()
+log("\n=== HVDC capacity violation, pipeline DSR against report battery ===")
+n_ship = (hv.max_transfer_mw_pipeline > HVDC_CAPACITY_MW).sum()
 n_rep = (hv.max_transfer_mw_report > HVDC_CAPACITY_MW).sum()
-log(f"  Scenario-years flagged: shipped {n_ship}/135  ->  report-battery {n_rep}/135")
-log(f"  Max transfer overall: shipped {hv.max_transfer_mw_shipped.max():.0f} MW  ->  "
+log(f"  Scenario-years flagged: pipeline {n_ship}/135  ->  report-battery {n_rep}/135")
+log(f"  Max transfer overall: pipeline {hv.max_transfer_mw_pipeline.max():.0f} MW  ->  "
     f"report-battery {hv.max_transfer_mw_report.max():.0f} MW")
 
 log("\n=== Step 3.3: EF hourly shape change ===")
 log(f"  Mean abs hourly EF diff (national NI, all 135 scenario-years): "
     f"{efd.mean_abs_hourly_EF_diff_kg_per_kwh.mean():.5f} kg/kWh")
-log(f"  Peak-shave-hour EF: shipped mean {efd.peak_hour_EF_shipped.mean():.4f} kg/kWh -> "
+log(f"  Peak-shave-hour EF: pipeline mean {efd.peak_hour_EF_pipeline.mean():.4f} kg/kWh -> "
     f"report-battery mean {efd.peak_hour_EF_report.mean():.4f} kg/kWh")
 
 log(f"\nWrote edgs_battery_gap_comparison.csv, edgs_battery_sensitivity_peakshave{SUFFIX}.csv, "

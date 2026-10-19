@@ -64,8 +64,8 @@ print(f"\n=== Real blended monthly GAS EF (recomputed here, independent of month
 print(f"n={len(monthly_blend)}, mean={monthly_blend.mean():.2f}, std={monthly_blend.std():.2f}, "
       f"rel_std={monthly_blend.std()/monthly_blend.mean()*100:.2f}%")
 
-mm_shipped = pd.read_csv(ROOT / "output" / "monthly_fuel_mix_NI_SI.csv")
-shipped_gas = mm_shipped[(mm_shipped.island == "NI") & (mm_shipped.fuel_code == "GAS")]["weighted_ef_kg_per_MWh"].dropna()
-print(f"Shipped monthly_fuel_mix_NI_SI.csv GAS row: mean={shipped_gas.mean():.2f}, "
-      f"std={shipped_gas.std():.2f}, rel_std={shipped_gas.std()/shipped_gas.mean()*100:.2f}% "
+mm_released = pd.read_csv(ROOT / "output" / "monthly_fuel_mix_NI_SI.csv")
+released_gas = mm_released[(mm_released.island == "NI") & (mm_released.fuel_code == "GAS")]["weighted_ef_kg_per_MWh"].dropna()
+print(f"Released monthly_fuel_mix_NI_SI.csv GAS row: mean={released_gas.mean():.2f}, "
+      f"std={released_gas.std():.2f}, rel_std={released_gas.std()/released_gas.mean()*100:.2f}% "
       f"(cross-check -- should closely match the line above)")

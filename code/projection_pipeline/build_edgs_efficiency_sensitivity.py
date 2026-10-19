@@ -134,7 +134,7 @@ nat.to_csv(OUT_DIR / "edgs_efficiency_sensitivity_summary.csv", index=False)
 log(f"Wrote edgs_efficiency_sensitivity_summary.csv ({len(nat):,} scenario-year rows)")
 
 # Report
-log("\nNational combustion CO2 delta vs shipped baseline, by scenario, selected years:")
+log("\nNational combustion CO2 delta against the pipeline baseline, by scenario, selected years:")
 for scenario in SCENARIOS:
     s = nat[nat["scenario"] == scenario].set_index("year")
     parts = []
@@ -158,4 +158,4 @@ log(f"\n2050 across-scenario combustion CO2 delta range: "
     f"{overall_2050['co2_delta_pct'].min():.2f}% to {overall_2050['co2_delta_pct'].max():.2f}%")
 
 (OUT_DIR / "processing_log_efficiency_sensitivity.txt").write_text("\n".join(lines), encoding="utf-8")
-log("\nNOT adopted into the shipped pipeline - standalone sensitivity only (see docstring).")
+log("\nNot adopted in the pipeline: standalone sensitivity only (see docstring).")

@@ -52,11 +52,11 @@ def report_battery_mw(scenario, year):
 targets = pd.read_parquet(OUT_DIR / "edgs_annual_targets.parquet")
 gem = pd.read_parquet(OUT_DIR / "edgs_gem_build.parquet")
 dsr_gem = gem[gem.commodity == "Demand side response"]
-dsr_cap_map_shipped = {}
+dsr_cap_map_pipeline = {}
 for sc in SCENARIOS:
     s = dsr_gem[dsr_gem.scenario == sc]
     for yr in YEARS:
-        dsr_cap_map_shipped[(sc, yr)] = float(s[s.year <= yr]["capacity_mw"].sum())
+        dsr_cap_map_pipeline[(sc, yr)] = float(s[s.year <= yr]["capacity_mw"].sum())
 
 dem_shape = pd.read_parquet(OUT_DIR / "edgs_shape_demand.parquet")
 dem_shape = dem_shape[dem_shape.template_year == TEMPLATE_YEAR]
@@ -160,7 +160,7 @@ for scenario in SCENARIOS:
         raw_diff = abs(demand_peak_hr - residual_peak_hr)
         hour_divergence = min(raw_diff, 24 - raw_diff)  # circular distance within a day
 
-        dsr_ship = dsr_cap_map_shipped[(scenario, year)]
+        dsr_ship = dsr_cap_map_pipeline[(scenario, year)]
         dsr_rep = report_battery_mw(scenario, year)
         res_ship, dsr_series_ship = peak_shave(residual_pre, dsr_ship, H)
         res_rep, dsr_series_rep = peak_shave(residual_pre, dsr_rep, H)
@@ -197,9 +197,9 @@ for scenario in SCENARIOS:
             "scenario": scenario, "year": year,
             "demand_peak_hr": demand_peak_hr, "residual_peak_hr": residual_peak_hr,
             "hour_divergence": hour_divergence,
-            "max_transfer_mw_shipped": float(np.abs(tr_ship).max()),
+            "max_transfer_mw_pipeline": float(np.abs(tr_ship).max()),
             "max_transfer_mw_report": float(np.abs(tr_rep).max()),
-            "continuous_mag_MWh_shipped": mag_ship,
+            "continuous_mag_MWh_pipeline": mag_ship,
             "continuous_mag_MWh_report": mag_rep,
             "continuous_mag_change": mag_rep - mag_ship,
         })
@@ -211,10 +211,10 @@ df.to_csv(OUT_DIR / f"edgs_battery_hvdc_continuous_magnitude{SUFFIX}.csv", index
 # Robustness verdict vs the known ~20/51 MW single-hour calibration discrepancy,
 # rescaled to the same annual-integrated units for a fair comparison.
 log("\n=== Step 1: continuous violation magnitude (MW-hours/yr over 1200 MW) ===")
-tot_ship = df.continuous_mag_MWh_shipped.sum()
+tot_ship = df.continuous_mag_MWh_pipeline.sum()
 tot_rep = df.continuous_mag_MWh_report.sum()
 tot_change = tot_rep - tot_ship
-log(f"  Total across 135 scenario-years: shipped-equiv {tot_ship:,.0f} MWh  ->  "
+log(f"  Total across 135 scenario-years: pipeline-equivalent {tot_ship:,.0f} MWh  ->  "
     f"report-battery {tot_rep:,.0f} MWh  (change {tot_change:+,.0f} MWh, "
     f"{tot_change/tot_ship*100:+.1f}%)")
 
@@ -226,7 +226,7 @@ log(f"  Sign consistency: {n_pos}/135 worsen, {n_neg}/135 improve, {n_zero}/135 
 # Noise-floor rescale: the known ~20 MW mean / 51 MW max single-hour discrepancy, if it
 # persisted across a comparable number of hours per scenario-year as the median violation
 # duration actually observed, gives the annual-integrated noise floor for a fair comparison.
-hours_per_sy_ship = ((df.continuous_mag_MWh_shipped > 0).sum())  # just for context
+hours_per_sy_ship = ((df.continuous_mag_MWh_pipeline > 0).sum())  # just for context
 median_violating_hours = None
 # Typical violation-hours per scenario-year come from the HVDC sensitivity summary
 # (edgs_hvdc_sensitivity_summary.csv). The single-hour floor alone is the lower bound (it
@@ -247,7 +247,7 @@ try:
     _noise_source = f"this template's own {_total_flagged_hours:,} total flagged hours / {_n_flagged_sy} flagged scenario-years"
 except FileNotFoundError:
     avg_violating_hours_baseline = 9961 / 103  # fallback: central-2021 figure
-    _noise_source = "Brief C's central-2021 9,961 total flagged hours / 103 flagged scenario-years (fallback: this template's own edgs_hvdc_sensitivity_summary{SUFFIX}.csv not found)"
+    _noise_source = "the HVDC sensitivity's central-2021 9,961 total flagged hours / 103 flagged scenario-years (fallback: this template's own edgs_hvdc_sensitivity_summary{SUFFIX}.csv not found)"
 noise_floor_scaled_mean = noise_floor_1hr_mean * avg_violating_hours_baseline
 noise_floor_scaled_max = noise_floor_1hr_max * avg_violating_hours_baseline
 log(f"\n  Noise floor (single-hour calibration discrepancy): mean {noise_floor_1hr_mean} MWh, "

@@ -29,7 +29,7 @@ TABLES = Path(__file__).resolve().parents[1] / "tables"
 LOGS = Path(__file__).resolve().parents[1] / "logs"
 YARDSTICK = [2025]
 ISLAND = "NI"
-SHIPPED = 2021
+CENTRAL_TEMPLATE = 2021
 
 lines = []
 def log(m):
@@ -75,8 +75,8 @@ log(t.round(3).to_string())
 log("\nPer-axis leader (all candidates, 2024 included):")
 for c in C:
     lead = t[c].idxmax()
-    log(f"  {c:22s} leader {lead} r={t.loc[lead, c]:.3f} | 2021 r={t.loc[SHIPPED, c]:.3f} "
-        f"rank {int(t[c].rank(ascending=False)[SHIPPED])} | 2024 r={t.loc[2024, c]:.3f} "
+    log(f"  {c:22s} leader {lead} r={t.loc[lead, c]:.3f} | 2021 r={t.loc[CENTRAL_TEMPLATE, c]:.3f} "
+        f"rank {int(t[c].rank(ascending=False)[CENTRAL_TEMPLATE])} | 2024 r={t.loc[2024, c]:.3f} "
         f"rank {int(t[c].rank(ascending=False)[2024])} | 2017 r={t.loc[2017, c]:.3f}")
 log("\nMean rank across the four axes (1 = best):")
 log(t["mean_rank"].sort_values().round(2).to_string())

@@ -106,7 +106,7 @@ log(f"Reconstructed {len(df):,} NI generation-side hourly rows "
 sanity = df[df["delta_kt"] == 0]
 if len(sanity):
     resid = (sanity["new_ef_kg_per_kwh"] - sanity["emission_factor_kg_co2e_per_kwh"]).abs().max()
-    log(f"Sanity check (delta_kt==0 rows, should be ~0): max |new_ef - shipped_ef| = {resid:.2e}")
+    log(f"Sanity check (delta_kt==0 rows, should be ~0): max |new_ef - pipeline_ef| = {resid:.2e}")
 
 # Summary: mean / p99 / max, baseline vs efficiency-adjusted, per scenario-year
 rows = []
@@ -141,4 +141,4 @@ for scenario in SCENARIOS:
 
 (OUT_DIR / "processing_log_efficiency_hourly_dispatch.txt").write_text("\n".join(lines),
                                                                        encoding="utf-8")
-log("\nNOT adopted into the shipped pipeline - standalone sensitivity only (see docstring).")
+log("\nNot adopted in the pipeline: standalone sensitivity only (see docstring).")

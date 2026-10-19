@@ -53,7 +53,7 @@ gen = gen[(gen["TimePeriod"].between(YMIN, YMAX)) & (gen["Scenario"].isin(SCENAR
           & (gen["Variable"] == "Net electricity generation")]
 unknown = sorted(set(gen["Commodity"]) - set(COMMODITY))
 if unknown:
-    log(f"WARNING — commodities in sheet not in crosswalk: {unknown}")
+    log(f"WARNING: commodities in sheet not in crosswalk: {unknown}")
 gen_rows = pd.DataFrame({
     "scenario": gen["Scenario"], "year": gen["TimePeriod"],
     "metric": "net_generation", "commodity": gen["Commodity"], "value": gen["Value"],
@@ -90,9 +90,9 @@ for (sc, yr), mets in grid.items():
         if req not in mets:
             missing.append((sc, yr, req))
 if missing:
-    log(f"WARNING — missing metrics: {missing[:20]}")
+    log(f"WARNING: missing metrics: {missing[:20]}")
 else:
-    log(f"OK — all {len(SCENARIOS)} scenarios x {len(YEARS)} years complete for all 4 metrics")
+    log(f"OK: all {len(SCENARIOS)} scenarios x {len(YEARS)} years complete for all 4 metrics")
 
 out.to_parquet(OUT_DIR / "edgs_annual_targets.parquet", index=False)
 out.to_csv(OUT_DIR / "edgs_annual_targets.csv", index=False)

@@ -50,13 +50,13 @@ ax.set_yticks(list(y))
 ax.set_yticklabels(combined["load_shape"], fontsize=9)
 ax.set_xlabel("Share of total decomposition error (%), 10-year period, Reference scenario, start=2027")
 ax.set_title("Spatial error exceeds temporal error for EVERY tested load shape\n"
-              "— 3 stylised shapes (main assessment) + 6 real office buildings + their average",
+              "3 stylised shapes (main assessment) + 6 real office buildings + their average",
               fontsize=11.5, loc="left")
 
 from matplotlib.lines import Line2D
 legend_elems = [
-    Line2D([0], [0], marker="o", color="none", markerfacecolor=OI["blue"], markersize=9, label="Spatial share — stylised shape"),
-    Line2D([0], [0], marker="D", color="none", markerfacecolor=OI["vermillion"], markersize=8, label="Spatial share — real BDG2 shape"),
+    Line2D([0], [0], marker="o", color="none", markerfacecolor=OI["blue"], markersize=9, label="Spatial share, stylised shape"),
+    Line2D([0], [0], marker="D", color="none", markerfacecolor=OI["vermillion"], markersize=8, label="Spatial share, real BDG2 shape"),
     Line2D([0], [0], marker="|", color=OI["orange"], markersize=14, markeredgewidth=2.5, label="Temporal share (either source)"),
 ]
 ax.legend(handles=legend_elems, loc="upper left", bbox_to_anchor=(1.02, 1.0), frameon=False, fontsize=8.5, borderaxespad=0)

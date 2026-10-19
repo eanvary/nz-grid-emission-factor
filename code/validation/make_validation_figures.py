@@ -125,7 +125,7 @@ cov = ni_year["quantified_coverage_pct"].to_numpy()
 excl = 100 - cov
 ax.bar(x, cov, color=TEAL, label="Quantified (coal+gas+diesel+wood)", zorder=3)
 ax.bar(x, excl, bottom=cov, color=STEEL, edgecolor=AMBER, hatch="///", linewidth=0.8,
-       label="Excluded (geothermal + residual) — no IPCC combustion EF applies", zorder=3)
+       label="Excluded (geothermal + residual): no IPCC combustion EF applies", zorder=3)
 
 for xi, c in zip(x, cov):
     ax.text(xi, c - 4, f"{c:.0f}%", ha="center", va="top", fontsize=8.5, color=WHITE, fontweight="bold")
@@ -146,7 +146,7 @@ fig.text(
 fig.text(
     0.5, 0.02,
     f"the report's wider 52.2–75.6% figure is this same data at monthly resolution "
-    f"({month_cov.min():.1f}%–{month_cov.max():.1f}% here) — annual rollup smooths it",
+    f"({month_cov.min():.1f}%–{month_cov.max():.1f}% here); annual rollup smooths it",
     ha="center", color=MUTED, fontsize=8.7,
 )
 fig.tight_layout(rect=(0.03, 0.13, 0.97, 1))
@@ -214,7 +214,7 @@ ax.set_ylim(0, 100)
 ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.13), ncol=len(order), frameon=False, fontsize=8.5)
 fig.text(
     0.5, 0.015,
-    f"GEO (amber) share over the period: {geo_share.min():.1f}%–{geo_share.max():.1f}% — "
+    f"GEO (amber) share over the period: {geo_share.min():.1f}%–{geo_share.max():.1f}%. "
     "this is what Figure B's 'excluded' band is made of, not a rounding residual.",
     ha="center", color=MUTED, fontsize=8.7,
 )
@@ -265,7 +265,7 @@ axA.legend(loc="upper left", frameon=True, fontsize=9.5)
 axA.text(
     0.985, 0.05,
     f"Pearson r = {r_live:.4f}   |   mean |diff| = {mad_live:.1f}%   |   n = {len(comp)} quarters\n"
-    f"(report's own D1 result: r=0.9787, mean|diff|=9.8%, n=45 — re-derived here from the same 2 source files)",
+    f"(report's own D1 result: r=0.9787, mean|diff|=9.8%, n=45, re-derived here from the same 2 source files)",
     transform=axA.transAxes, ha="right", va="bottom", color=MUTED, fontsize=8.7,
 )
 
@@ -330,7 +330,7 @@ if hourly_ci_path.exists() and daily_ci_path.exists() and annual_from_hourly_pat
         f"The ~{ratio:.0f}x collapse from hourly ({ni_h.mean():.2f}%) to annual-from-hourly "
         f"({ni_ay_h.mean():.3f}%) is a statistical artifact of assuming",
         f"~{hours_per_year:,.0f} independent hourly errors compound across each year "
-        f"(variance shrinks as 1/n) — not a real reduction in uncertainty.",
+        f"(variance shrinks as 1/n), not a real reduction in uncertainty.",
         f"The annual-from-monthly figure ({ni_ay_m.mean():.2f}%, already in the report) is "
         f"the more defensible headline number for exactly this reason;",
         "the hourly figure is the new, valid native-resolution product this rebuild adds.",

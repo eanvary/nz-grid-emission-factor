@@ -105,7 +105,7 @@ for ax, isl in zip(axes, ["NI", "SI"]):
     colours = [FUEL_COLOURS.get(f, "#888888") for f in g["fuel_code"]]
     ax.pie(g["gen_mwh"], labels=g["fuel_code"], autopct="%1.0f%%", colors=colours,
            startangle=90, pctdistance=0.8)
-    ax.set_title(f"{isl} — {target_year} generation mix")
+    ax.set_title(f"{isl}: {target_year} generation mix")
 fig4.tight_layout()
 fig4.savefig(OUT_DIR / f"fuel_mix_share_{target_year}_NI_SI.png", dpi=150)
 print(f"saved fuel_mix_share_{target_year}_NI_SI.png")

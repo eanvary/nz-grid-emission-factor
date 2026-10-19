@@ -48,7 +48,7 @@ import pandas as pd
 from edgs_common import (RESULTS_XLSX, ASSUMPTIONS_XLSX, OUT_DIR, SCENARIOS, YEARS, COMMODITY,
                          RENEWABLE_COMMODITIES, THERMAL_COMMODITIES,
                          MFE_FUEL_EF_KG_PER_GJ, geothermal_ef_kg_per_mwh,
-                         
+                         WOOD_NONBIOGENIC_KG_PER_GJ,
                          log_factory)
 
 log, lines = log_factory()
@@ -248,7 +248,7 @@ for scenario in run_scenarios:
                 fb = ""
                 if (len(wtab) == 0 or wtab["weight"].sum() == 0) and std == "SOL" and not DISABLE_SOLAR_FIX:
                     wtab = REAL_SOLAR_SHAPE
-                    fb = " [A1 solar fallback: real 2024 NI shape - Brief T, adopted]"
+                    fb = " [A1 solar fallback: real 2024 NI shape, adopted]"
                 elif len(wtab) == 0 or wtab["weight"].sum() == 0:
                     wtab = ren_shape[(ren_shape.island == "NI") & (ren_shape.fuel_std == std)]
                     fb = " [A1 fallback: NI shape]"

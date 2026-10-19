@@ -127,7 +127,7 @@ def island_capacity_share(scenario):
     return cap.set_index(["year", "commodity", "island"])["share"].to_dict()
 
 
-def dsr_shipped(residual_pre, dsr_mw, H):
+def dsr_pipeline(residual_pre, dsr_mw, H):
     """Pipeline rule: discharge at the day's max residual hour, charge at the day's min."""
     residual = residual_pre.copy()
     if dsr_mw > 0:
@@ -167,7 +167,7 @@ def dsr_aemo(residual_pre, dsr_mw, H):
 
 
 def run(scenario, year, mode):
-    """mode: 'shipped' (pipeline rule) or 'aemo'"""
+    """mode: 'pipeline' (pipeline rule) or 'aemo'"""
     cal = year_calendar(year)
     H = len(cal)
     cap_share = island_capacity_share(scenario)
@@ -212,8 +212,8 @@ def run(scenario, year, mode):
     nat_ren = island_ren_total["NI"] + island_ren_total["SI"]
     residual_pre = np.clip(nat_demand - nat_ren, 0.0, None)
     dsr_mw = float(dsr_cap_map.get((scenario, year), 0.0))
-    if mode == "shipped":
-        residual, dsr_series = dsr_shipped(residual_pre, dsr_mw, H)
+    if mode == "pipeline":
+        residual, dsr_series = dsr_pipeline(residual_pre, dsr_mw, H)
     else:
         residual, dsr_series = dsr_aemo(residual_pre, dsr_mw, H)
 
@@ -253,14 +253,14 @@ ship_ef = pd.read_parquet(OUT_DIR / "edgs_hourly_emission_factor.parquet",
                                     "emission_factor_kg_co2e_per_kwh"])
 ship_ni = ship_ef[(ship_ef.island == "NI") & (ship_ef.ef_basis == "generation")]
 check_scenario, check_year = "Reference", 2040
-dt_chk, ef_chk, *_ = run(check_scenario, check_year, "shipped")
+dt_chk, ef_chk, *_ = run(check_scenario, check_year, "pipeline")
 ship_chk = (ship_ni[(ship_ni.scenario == check_scenario)]
             .set_index("datetime_hour").loc[dt_chk, "emission_factor_kg_co2e_per_kwh"].to_numpy())
 resid = np.abs(ef_chk - ship_chk).max()
-log(f"Step 0 sanity check ({check_scenario} {check_year}, shipped mode vs shipped baseline): "
+log(f"Step 0 sanity check ({check_scenario} {check_year}, pipeline mode vs pipeline baseline): "
     f"max |diff| = {resid:.2e}")
 if resid > 1e-6:
-    log("WARNING: reconstruction does not match shipped baseline - results below are unreliable")
+    log("WARNING: reconstruction does not match pipeline baseline - results below are unreliable")
 del ship_ef, ship_ni
 
 # Part 1: match rate - how often does the pipeline's own chosen discharge hour
@@ -270,7 +270,7 @@ for scenario in SCENARIOS:
     for year in YEARS:
         cal = year_calendar(year)
         H = len(cal)
-        _, _, _, _, dsr_series, residual_pre = run(scenario, year, "shipped")
+        _, _, _, _, dsr_series, residual_pre = run(scenario, year, "pipeline")
         dsr_mw = float(dsr_cap_map.get((scenario, year), 0.0))
         if dsr_mw <= 0:
             continue
@@ -285,7 +285,7 @@ for scenario in SCENARIOS:
 match_df = pd.DataFrame(match_rows)
 match_df.to_csv(OUT_DIR / "edgs_dsr_realworld_match.csv", index=False)
 overall_match = (match_df.n_days_in_aemo_window.sum() / match_df.n_days.sum() * 100) if len(match_df) else float("nan")
-log(f"\nOverall: shipped model's own discharge hour falls inside AEMO's 1600-2100hrs window "
+log(f"\nOverall: pipeline model's own discharge hour falls inside AEMO's 1600-2100hrs window "
     f"on {overall_match:.1f}% of days ({match_df.n_days_in_aemo_window.sum():,} of "
     f"{match_df.n_days.sum():,} DSR-active scenario-year-days)")
 
@@ -293,41 +293,41 @@ log(f"\nOverall: shipped model's own discharge hour falls inside AEMO's 1600-210
 rows = []
 for scenario in SCENARIOS:
     for year in YEARS:
-        dt, ef_ship, gen_ship, co2_ship, *_ = run(scenario, year, "shipped")
+        dt, ef_pipe, gen_pipe, co2_pipe, *_ = run(scenario, year, "pipeline")
         _, ef_aemo, gen_aemo, co2_aemo, *_ = run(scenario, year, "aemo")
-        ew_ship = co2_ship.sum() / (gen_ship.sum() * 1000.0) if gen_ship.sum() > 0 else np.nan
+        ew_ship = co2_pipe.sum() / (gen_pipe.sum() * 1000.0) if gen_pipe.sum() > 0 else np.nan
         ew_aemo = co2_aemo.sum() / (gen_aemo.sum() * 1000.0) if gen_aemo.sum() > 0 else np.nan
         rows.append({
             "scenario": scenario, "year": year,
-            "annual_ef_energy_weighted_shipped": ew_ship,
+            "annual_ef_energy_weighted_pipeline": ew_ship,
             "annual_ef_energy_weighted_aemo": ew_aemo,
-            "shipped_p99": np.quantile(ef_ship, 0.99), "aemo_p99": np.quantile(ef_aemo, 0.99),
-            "shipped_max": ef_ship.max(), "aemo_max": ef_aemo.max(),
+            "pipeline_p99": np.quantile(ef_pipe, 0.99), "aemo_p99": np.quantile(ef_aemo, 0.99),
+            "pipeline_max": ef_pipe.max(), "aemo_max": ef_aemo.max(),
         })
     log(f"  {scenario}: full sensitivity done")
 
 summ = pd.DataFrame(rows)
-summ["annual_ef_delta_pct"] = np.where(summ.annual_ef_energy_weighted_shipped > 0,
-    (summ.annual_ef_energy_weighted_aemo / summ.annual_ef_energy_weighted_shipped - 1) * 100, np.nan)
-summ["p99_delta_pct"] = np.where(summ.shipped_p99 > 0,
-    (summ.aemo_p99 / summ.shipped_p99 - 1) * 100, np.nan)
-summ["max_delta_pct"] = np.where(summ.shipped_max > 0,
-    (summ.aemo_max / summ.shipped_max - 1) * 100, np.nan)
+summ["annual_ef_delta_pct"] = np.where(summ.annual_ef_energy_weighted_pipeline > 0,
+    (summ.annual_ef_energy_weighted_aemo / summ.annual_ef_energy_weighted_pipeline - 1) * 100, np.nan)
+summ["p99_delta_pct"] = np.where(summ.pipeline_p99 > 0,
+    (summ.aemo_p99 / summ.pipeline_p99 - 1) * 100, np.nan)
+summ["max_delta_pct"] = np.where(summ.pipeline_max > 0,
+    (summ.aemo_max / summ.pipeline_max - 1) * 100, np.nan)
 summ.to_csv(OUT_DIR / "edgs_dsr_realworld_sensitivity_summary.csv", index=False)
 log(f"\nWrote edgs_dsr_realworld_sensitivity_summary.csv ({len(summ):,} scenario-year rows)")
 
 log(f"\nAnnual energy-weighted EF: max |delta| = {summ.annual_ef_delta_pct.abs().max():.2e}% "
     f"(EXPECTED ~0 - same daily energy shifted either way, only timing differs)")
 
-log("\nDirty-hour ceiling (p99 NI generation EF), shipped -> AEMO-window, selected years:")
+log("\nDirty-hour ceiling (p99 NI generation EF), pipeline -> AEMO-window, selected years:")
 for scenario in SCENARIOS:
     s = summ[summ.scenario == scenario].set_index("year")
     parts = []
     for yr in (2024, 2030, 2040, 2050):
         if yr in s.index:
             r = s.loc[yr]
-            parts.append(f"{yr}: {r.shipped_p99:.4f}->{r.aemo_p99:.4f} ({r.p99_delta_pct:+.2f}%)")
+            parts.append(f"{yr}: {r.pipeline_p99:.4f}->{r.aemo_p99:.4f} ({r.p99_delta_pct:+.2f}%)")
     log(f"  {scenario}: " + " | ".join(parts))
 
 (OUT_DIR / "processing_log_dsr_realworld_sensitivity.txt").write_text("\n".join(lines), encoding="utf-8")
-log("\nNOT adopted into the shipped pipeline - standalone sensitivity only (see docstring).")
+log("\nNot adopted in the pipeline: standalone sensitivity only (see docstring).")

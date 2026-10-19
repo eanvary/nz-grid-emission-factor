@@ -123,7 +123,7 @@ log(f"  Denominator scope gap (total net gen vs MBIE primary-activity): "
 # the materialised edgs_hourly_emission_factor.parquet rows and aggregates them
 # energy-weighted (matching the output's weighting convention), rather than re-deriving
 # from annual targets.
-log("\n=== Step 3: consumption >= generation EF assertion — STRONG (table read-back) version ===")
+log("\n=== Consumption >= generation EF assertion (table read-back) ===")
 gen["year"] = pd.to_datetime(gen["datetime_hour"]).dt.year  # restore (dropped by drop_duplicates elsewhere)
 gen_noDSR = gen[gen.fuel_commodity != "Demand side response"]
 g_natgen = gen_noDSR.groupby(["scenario", "year", "datetime_hour"])["generation_mwh"].sum().reset_index()
@@ -142,7 +142,7 @@ if len(assert_fail):
         f"read back from the actual output table):")
     log(assert_fail.reset_index().to_string(index=False))
 else:
-    log(f"  OK — all {len(assert_df)} scenario-years: consumption EF >= generation EF, "
+    log(f"  OK: all {len(assert_df)} scenario-years: consumption EF >= generation EF, "
         f"READ BACK from edgs_hourly_emission_factor.parquet rows (energy-weighted, national), "
         f"not re-derived from source totals.")
 
@@ -155,10 +155,10 @@ _victim = _test.index[0]
 _test.loc[_victim, "cons_ef_readback"] = _test.loc[_victim, "gen_ef_readback"] * 0.5  # force a bad row
 _caught = _test[_test["cons_ef_readback"] + 1e-12 < _test["gen_ef_readback"]]
 if _victim in _caught.index:
-    log(f"    OK — corrupted row {_victim} (cons_ef forced to 50% of gen_ef) was CAUGHT by the "
+    log(f"    OK: corrupted row {_victim} (cons_ef forced to 50% of gen_ef) was CAUGHT by the "
         f"assertion. The check has teeth.")
 else:
-    log(f"    ASSERTION HAS NO TEETH — injected bad row {_victim} was NOT caught. Fix before trusting it.")
+    log(f"    ASSERTION FAILED TO DETECT injected bad row {_victim} was NOT caught. Fix before trusting it.")
 
 # Carry the Check-2 deviation with the data itself, not just the README.
 # reconciliation_flag reflects only Checks 1 & 3 (exact); check2_deviation_pct exposes the
@@ -226,167 +226,168 @@ log(f"\nA1 sensitivity (Reference NI hourly EF shape): wet {sens_wet:.4f}, dry {
     "both template-invariant), so sensitivity appears only in the hourly/seasonal shape.")
 
 # README
-readme = f"""# EDGS 2024 hourly, island-resolved reconstruction — output metadata (v2)
+readme = f"""# EDGS 2024 hourly, island-resolved reconstruction: output metadata
 
-Hourly (8760/yr), NI/SI generation and grid emission-factor trajectories for the five MBIE
-EDGS 2024 scenarios ({', '.join(SCENARIOS)}), {YEARS[0]}-{YEARS[-1]}, disaggregating MBIE's
-published ANNUAL NATIONAL results into hourly island detail. Reconciled to MBIE, not an
-independent forecast. This v2 supersedes the earlier "geothermal residual / 0.0000% Check 2"
-version, which was circular; Check 2 is now a genuine, unforced test.
+Hourly (8760/yr) NI/SI generation and grid emission-factor trajectories for the five MBIE
+EDGS 2024 scenarios ({', '.join(SCENARIOS)}), {YEARS[0]}-{YEARS[-1]}. The outputs disaggregate
+MBIE's published annual national results into hourly island detail. They are reconciled to
+MBIE and are not an independent forecast. Check 2 is an unforced test. No "geothermal residual"
+term is used, because such a term forces Check 2 to 0.0000% and makes the check circular.
 
-## 1. Denominator scope (Step A) — 'primary activity' generation
+## 1. Denominator scope (Step A): 'primary activity' generation
 MBIE's `Emission factors` sheet is computed over "primary activity electricity generation"
-only ({scope[scope.year==2024]['mbie_primary_TWh'].mean():.1f} TWh mean 2024), i.e. it EXCLUDES
-autoproducer / industrial cogeneration (Glenbrook, Kinleith [ACHP]; Whareroa, Kapuni [PCHP] in
-the Generation Stack) — about {scope['scope_gap_pct'].mean():.1f}% below total net generation.
-The model's published generation-side EF (Check 2b) is over TOTAL net generation, so it is a
-slightly broader-scope factor than MBIE's; the scope gap is quantified in
-edgs_reconciliation_report.csv, not absorbed into any residual term. CV gross-vs-net basis was
-investigated and ruled out as the driver (it was basis-consistent on losses, wrong on scope).
+only ({scope[scope.year==2024]['mbie_primary_TWh'].mean():.1f} TWh mean 2024). It excludes
+autoproducer and industrial cogeneration (Glenbrook, Kinleith [ACHP]; Whareroa, Kapuni [PCHP] in
+the Generation Stack). This is about {scope['scope_gap_pct'].mean():.1f}% below total net generation.
+The model's published generation-side EF (Check 2b) is computed over total net generation. It is
+therefore a slightly broader-scope factor than MBIE's. The scope gap is quantified in
+edgs_reconciliation_report.csv and is not absorbed into any residual term. The CV gross-vs-net
+basis was investigated and ruled out as the driver: it was basis-consistent on losses but wrong
+on scope.
 
-## 2. Residual-load fix (Step A2) — generation-level, not demand
-The dispatch residual is now built from GENERATION-level load (energy = MBIE net generation
-total = demand + T&D losses + own use, ~{(grossup_mean-1)*100:.1f}% above demand), using the
-same Assumption-1 historical hourly SHAPE. Previously it used delivered demand, which made
-residual ~7% too small every hour and distorted the thermal hourly shape. Peak validation
-(Check 3) remains anchored to MBIE's demand-side `Peak demand` figure, computed on a separate
-demand series — these are two distinct, correctly-different quantities, not an inconsistency.
+## 2. Residual load at generation level (Step A2)
+The dispatch residual is built from generation-level load. Its energy equals the MBIE net
+generation total (demand + T&D losses + own use, ~{(grossup_mean-1)*100:.1f}% above demand). It
+uses the same Assumption-1 historical hourly shape. Delivered demand is not used for the
+residual. It would make the residual ~7% too small in every hour and distort the thermal hourly
+shape. Peak validation (Check 3) stays anchored to MBIE's demand-side `Peak demand` figure,
+computed on a separate demand series. These are two distinct quantities, and they are expected
+to differ.
 
-## 3. Combustion rebuilt from MBIE fuel use (Step B)
-Combustion CO2 is now computed as MBIE's published `Electricity generation use (Gross PJ)` per
-commodity × MfE factors ({MFE_SOURCE}) — directly, not via plant heat rates (heat-rate
-combustion undershot MBIE by ~11% and the old "geothermal residual" was absorbing that error).
-Heat rates are retained only for the merit-order ranking (Module 3). Non-combustion fuels
-(hydro, wind, solar, geothermal, biogas, wood, waste heat) are excluded from the combustion
-sum. Geothermal fugitive CO2 is NOT added: MBIE's own electricity GHG is combustion-based, and
-model combustion matches it to ~1% in gas-dominated years.
+## 3. Combustion from MBIE fuel use (Step B)
+Combustion CO2 is MBIE's published `Electricity generation use (Gross PJ)` per commodity × MfE
+factors ({MFE_SOURCE}). It is computed directly, not via plant heat rates. Heat-rate combustion
+undershot MBIE by ~11%, and a "geothermal residual" term would absorb that error. Heat rates are
+used only for the merit-order ranking (Module 3). Non-combustion fuels (hydro, wind, solar,
+geothermal, biogas, wood, waste heat) are excluded from the combustion sum. Geothermal fugitive
+CO2 is not added. MBIE's own electricity GHG is combustion-based, and model combustion matches
+it to ~1% in gas-dominated years.
 
 ## 4. Dual EF basis (Step C)
 Both tables carry an explicit `ef_basis` column:
-- `generation` (per island NI/SI): emissions per kWh generated at the station, no T&D losses.
-  Consistent with the historical pipeline's 0%-loss convention. SI ≈ 0 (no SI thermal).
+- `generation` (per island NI/SI): emissions per kWh generated at the station, with no T&D
+  losses. This matches the historical pipeline's 0%-loss convention. SI ≈ 0 (no SI thermal).
 - `consumption` (National): emissions per kWh delivered = national CO2 / national demand. The
-  adjustment is the GENERATION-TO-CONSUMPTION GROSS-UP FACTOR = MBIE `Total electricity demand`
+  adjustment is the generation-to-consumption gross-up factor = MBIE `Total electricity demand`
   / `Electricity generation` net total (mean {grossup_mean:.3f}, ~{(grossup_mean-1)*100:.1f}%).
-  This is NOT a pure T&D line-loss figure: it bundles transmission + distribution losses,
-  generator own-use, and any MBIE demand-vs-generation balancing-item effects. It is MBIE-derived
-  (not an external Transpower/EA loss statistic — switch to a cited external rate if preferred).
-  Reported at NATIONAL level only: island-resolved consumption EF needs HVDC allocation (the
-  historical Consumption pipeline's method) — see TODO_island_consumption_EF.md. This consumption
-  basis is a third quantity beyond the original two assumptions. The historical Consumption
-  pipeline's existing 0%-loss outputs are NOT altered.
+  It is not a pure T&D line-loss figure. It bundles transmission and distribution losses,
+  generator own use and any MBIE demand-vs-generation balancing-item effects. It is derived from
+  MBIE, not from an external Transpower or EA loss statistic. A cited external rate can replace
+  it. In this module the consumption basis is reported at national level only. Island-resolved
+  consumption EF needs HVDC allocation (the historical Consumption pipeline's method) and is
+  built in Module 7. This consumption basis is a third quantity beyond the two original
+  assumptions. The historical Consumption pipeline's 0%-loss outputs are not altered.
   Standing assertion (Module 6): consumption EF >= national generation EF for every scenario-year.
 
-## 5. True, unforced Check 2 result
+## 5. Unforced Check 2 result
 - Check 1 (gen by fuel): max |diff| {report['check1_gen_pct'].max():.4f}% (±{TOL}%, exact by design).
 - Check 3 (peak): max |diff| {report['check3_peak_pct'].max():.4f}% (±{TOL}%).
-- Check 2a (combustion CO2 vs MBIE GHG): EMISSIONS-WEIGHTED |diff| {ew:.1f}% (the fair headline);
+- Check 2a (combustion CO2 vs MBIE GHG): emissions-weighted |diff| {ew:.1f}% (the headline figure);
   unweighted mean |{report['check2a_emissions_pct'].abs().mean():.1f}%|, max |{report['check2a_emissions_pct'].abs().max():.1f}%|.
   Agreement is ~1-4% where emissions are material (>1.5 Mt, 117/135 scenario-years). The large
-  deviations (up to ~-22%) are confined to the Environmental scenario's near-decarbonised later
-  years (~1.3 Mt absolute emissions). The cause is NOT cleanly attributable to a single factor:
-  MBIE publishes no per-fuel emission breakdown, and the discrepancy behaves differently across
-  scenarios (Reference drifts with coal share; Environmental's gap grows as gas use falls with
-  coal flat, pointing instead to a roughly constant non-combustion term, plausibly geothermal
-  fugitive CO2). It is reported, not adjusted — resolving it would require inventing effective
-  factors or MBIE's unpublished per-fuel split, both of which the brief prohibits.
+  deviations (up to ~-22%) occur only in the near-decarbonised later years of the Environmental
+  scenario (~1.3 Mt absolute emissions). No single factor accounts for them. MBIE publishes no
+  per-fuel emission breakdown, and the discrepancy behaves differently across scenarios. In
+  Reference it drifts with coal share. In Environmental the gap grows as gas use falls while coal
+  stays flat. This points instead to a roughly constant non-combustion term, plausibly geothermal
+  fugitive CO2. The deviation is reported, not adjusted. Resolving it would require invented
+  effective factors or MBIE's unpublished per-fuel split, and the method excludes both.
 - Check 2b (gen-side EF vs MBIE EF sheet): mean |{report['check2b_ef_pct'].abs().mean():.1f}%|
   (includes the ~{scope['scope_gap_pct'].mean():.1f}% denominator scope difference of item 1).
-Per scenario-year detail: edgs_check2_emissions.csv, edgs_reconciliation_report.csv. The honest
-Check-2 deviation also travels IN the emission-factor table as column `check2_deviation_pct`.
+Per scenario-year detail: edgs_check2_emissions.csv, edgs_reconciliation_report.csv. The
+Check-2 deviation is also carried in the emission-factor table as column `check2_deviation_pct`.
 
 ## Check-2 gap: biomass rejected, geothermal tested and disproven, intercept unexplained
-(build_edgs_check2_diagnostic.py, all 135 scenario-years — full methodology and rigor detailed
-there; summary below.)
+Source: build_edgs_check2_diagnostic.py, all 135 scenario-years. That script documents the full
+method; a summary follows.
 
-**Biomass/wood: TESTED and REJECTED.** Implied wood factor ~173 g CO2/kWh is implausible for
-biomass (non-CO2 combustion is typically <20 g/kWh under carbon-neutral CO2 accounting), fit is
-weak (R2=0.43), and once geothermal is included wood's coefficient goes negative — it adds
+**Biomass/wood: tested and rejected.** The implied wood factor of ~173 g CO2/kWh is implausible
+for biomass. Non-CO2 combustion is typically <20 g/kWh under carbon-neutral CO2 accounting. The
+fit is weak (R2=0.43). Once geothermal is included, the wood coefficient turns negative and adds
 nothing. The Constraint scenario (no Rankine->biomass conversion, wood=334 GWh flat) still has a
-substantial gap, which biomass cannot explain; Innovation and Environmental track their
-GEOTHERMAL, not their wood.
+substantial gap, which biomass cannot explain. Innovation and Environmental track their
+geothermal, not their wood.
 
-**Geothermal: SOURCED, TESTED, and its regression fit DISPROVEN as a magnitude match** (a follow-
-up round after the finding above). A cited field-level source was found: McLean, K., Richardson,
-I. (2019), "Greenhouse Gas Emissions from New Zealand Geothermal Power Generation in Context,"
-Proceedings 41st NZ Geothermal Workshop, Auckland. Fleet MW-weighted average (2018): 76 g CO2-e/
-kWh — within 2% of the regression-implied 77.4 g/kWh (field range: Wairakei 21 to Ohaaki 341
-g/kWh). Ngawha (304 g/kWh in 2018) is corrected to 0 g/kWh for all EDGS years (2024-2050): Top
-Energy achieved 100% non-condensable-gas reinjection, carbon-zero by end 2023 (cited, dated,
-real-world operational change). The resulting capacity-weighted, time-varying fleet factor is
-61-64 g/kWh for 2024-2050.
+**Geothermal: sourced and tested; the regression fit fails as a magnitude match.** The cited
+field-level source is McLean, K., Richardson, I. (2019), "Greenhouse Gas Emissions from New
+Zealand Geothermal Power Generation in Context," Proceedings 41st NZ Geothermal Workshop,
+Auckland. The fleet MW-weighted average (2018) is 76 g CO2-e/kWh. This is within 2% of the
+regression-implied 77.4 g/kWh (field range: Wairakei 21 to Ohaaki 341 g/kWh). Ngawha (304 g/kWh
+in 2018) is set to 0 g/kWh for all EDGS years (2024-2050). Top Energy achieved 100%
+non-condensable-gas reinjection and was carbon-zero by end 2023 (a cited, dated, real-world
+operational change). The resulting capacity-weighted, time-varying fleet factor is 61-64 g/kWh
+for 2024-2050.
 
-This cited factor was **actually added to the pipeline and Check 2 was re-run** (not just fitted
-statistically) — the acceptance-criteria-mandated test. Result: predicted geothermal CO2
-(~0.6-0.9 Mt/yr) is 2-7x the actual gap it was meant to explain (~0.05-0.4 Mt/yr); adding it
-OVERSHOOTS MBIE's electricity GHG total by ~19-27% (emissions-weighted), substantially WORSE than
-combustion-only (~6.3%). **DECISION: NOT adopted.** The prior regression's R2=0.9995 reflected
-geothermal generation and the small residual gap co-trending upward over the 27-year projection
-(both increase roughly monotonically with time) — a correlation-of-trends artifact, not a valid
-causal/magnitude match. This is an important negative result: high variance-explained is not the
-same claim as "the gap is resolved," and testing the actual magnitude, not just the fitted
-slope, is what exposed it.
+The cited factor was added to the pipeline and Check 2 was re-run, rather than only fitted
+statistically. Predicted geothermal CO2 (~0.6-0.9 Mt/yr) is 2-7x the actual gap it was meant to
+explain (~0.05-0.4 Mt/yr). Adding it overshoots MBIE's electricity GHG total by ~19-27%
+(emissions-weighted). This is substantially worse than combustion only (~6.3%). **Decision: not
+adopted.** The regression's R2=0.9995 reflects geothermal generation and the small residual gap
+both rising over the 27-year projection (both increase roughly monotonically with time). This is
+a correlation of trends, not a valid causal or magnitude match. High variance explained is not
+the same claim as "the gap is resolved". Testing the actual magnitude, not only the fitted slope,
+is what exposed it.
 
-**Correction (this round): the earlier "~839-858 kt structural residual" was an artifact of the
-now-rejected geothermal regression, not a real quantity.** That intercept was a free parameter
-that existed purely to cancel a spurious geothermal slope large enough to make the fitted line
-pass near the small real gap (see above); once the geothermal hypothesis was disproven at
-magnitude, the intercept it produced has no independent physical meaning and should not be read
-as a second, still-open ~850 kt mystery. It has been retired from this documentation.
+**The regression intercept ("~839-858 kt structural residual") is an artifact, not a real
+quantity.** It was a free parameter. It cancelled a spurious geothermal slope that was large
+enough to make the fitted line pass near the small real gap (see above). With the geothermal
+hypothesis rejected at magnitude, the intercept has no independent physical meaning. It should
+not be read as a second open ~850 kt source, and this documentation does not use it.
 
-**Coal fraction, carbon price, and time were re-tested directly against the RAW gap** (MBIE
-electricity GHG minus modelled combustion CO2 — the real, observed quantity, not any regression
-byproduct), properly centered, each reported individually:
+**Coal fraction, carbon price and time tested against the raw gap.** The raw gap is MBIE
+electricity GHG minus modelled combustion CO2. It is the observed quantity, not a regression
+byproduct. Each variable was centred and is reported individually:
 - coal_gwh:      R2 = 0.15 (weak)
 - coal_frac:     R2 = 0.22 (weak)
 - carbon_price:  R2 = 0.10 (weak)
-- **year (time trend): R2 = 0.63** — clearly the strongest single explanatory variable
+- **year (time trend): R2 = 0.63**, the strongest single explanatory variable
 - joint (all four together): R2 = 0.76
 
 Year explains materially more of the gap's variation than coal or carbon price individually.
-This is evidence, not proof, of a slow drift rather than a fixed missing source — consistent
-with the earlier, separately-noted observation that MBIE's own implied coal factor drifts from
-~89.8 to ~107.8 kg/GJ over the projection (not adopted as a constant, since it is not physically
-sensible for a fixed fuel, but plausibly indicative of MBIE's own assumptions evolving smoothly
-over the projection window rather than the pipeline missing a fixed emission source). This
-drift is NOT confirmed as causal and is NOT adopted into the pipeline's calculation.
+This is evidence, not proof, of a slow drift rather than a fixed missing source. It is
+consistent with a separate observation: MBIE's own implied coal factor drifts from ~89.8 to
+~107.8 kg/GJ over the projection. That factor is not adopted as a constant, since a drifting
+factor is not physically sensible for a fixed fuel. It plausibly indicates that MBIE's own
+assumptions change smoothly over the projection window, rather than that the pipeline misses a
+fixed emission source. The drift is not confirmed as causal and is not used in the pipeline's
+calculation.
 
-**Summary — three hypotheses tested and rejected, each for a stated reason:**
+**Summary: three hypotheses tested and rejected, each for a stated reason.**
 1. *Implied coal factor drift* (89.8 -> 107.8 kg/GJ over 2024-2050): physically inconsistent
-   for a fixed fuel; not adopted as a constant, though its direction is consistent with the
-   time-trend finding above.
-2. *Biomass/wood combustion*: implausible fitted factor (~173 g/kWh, non-CO2 combustion should
-   be <20 g/kWh), weak fit (R2=0.43), and contradicted by the Constraint scenario (no biomass
-   conversion, still has a gap tracking geothermal, not wood).
-3. *Geothermal fugitive CO2*: a real, cited, field-level factor (McLean & Richardson 2019) was
-   sourced and tested at its correct real-world magnitude; it overshoots the actual gap by
-   2-7x (adding it makes Check 2 WORSE, ~19-27% vs ~6.3%), despite an excellent but spurious
-   statistical fit against the now-retired intercept.
+   for a fixed fuel. It is not adopted as a constant, though its direction is consistent with
+   the time-trend finding above.
+2. *Biomass/wood combustion*: implausible fitted factor (~173 g/kWh, where non-CO2 combustion
+   should be <20 g/kWh), weak fit (R2=0.43), and contradicted by the Constraint scenario. That
+   scenario has no biomass conversion but still has a gap that tracks geothermal, not wood.
+3. *Geothermal fugitive CO2*: a cited field-level factor (McLean & Richardson 2019) was tested
+   at its real-world magnitude. It overshoots the actual gap by 2-7x and makes Check 2 worse
+   (~19-27% vs ~6.3%). Its close statistical fit depended on the spurious intercept above.
 
-**STATUS: the raw Check-2a gap remains genuinely unexplained** — small where emissions are
-material (~1-4% in 117/135 scenario-years, ~6.3% emissions-weighted overall), with year/time
-the strongest (but unconfirmed, non-causal) correlate found. Three independent, evidence-based
-hypotheses have now been tested and rejected rather than merely asserted. Continuing to search
-for a fourth explanation for a small residual gap is being **deliberately deprioritised** in
-favour of two other open items in this project: closing the battery/BESS capacity gap (MBIE
-publishes DSR/battery only as capacity, never dispatched energy — Assumption 2's current
-treatment) and building the island-resolved consumption-side emission factor (see
-TODO_island_consumption_EF.md). This is a documented decision, not an unexplained stopping point.
+**Status.** The raw Check-2a gap remains unexplained. It is small where emissions are material
+(~1-4% in 117/135 scenario-years, ~6.3% emissions-weighted overall). Year is the strongest
+correlate found, but it is not confirmed as causal. Three independent, evidence-based hypotheses
+were tested and rejected rather than asserted. A search for a fourth explanation of this small
+residual gap is deliberately given lower priority than two other items. The first is the
+battery/BESS capacity gap: MBIE publishes DSR/battery only as capacity, never as dispatched
+energy (the basis of the Assumption 2 treatment). The second is the island-resolved
+consumption-side emission factor (Module 7). This is a documented decision, not an unexplained
+stopping point.
 
 ## Assumptions
 - A1 (renewable/demand hourly shape): {ASSUMPTION_1}
 - A2 (battery/DSR): {ASSUMPTION_2}
-- Consumption-side gross-up (item 4) is an additional, separately-declared quantity, MBIE-derived.
+- Consumption-side gross-up (item 4) is an additional, separately declared quantity, derived from MBIE.
 
 ## Assumption-1 sensitivity (Reference)
-Annual national EF is MBIE-anchored (both fuel use and net generation are template-invariant),
-so hydrology moves only the hourly/seasonal SHAPE: mean abs hourly NI EF diff vs central 2021 =
-{sens_wet:.4f} (wet 2023), {sens_dry:.4f} (dry 2024) kg/kWh. Detail: edgs_sensitivity_A1.csv.
+Annual national EF is MBIE-anchored (both fuel use and net generation are template-invariant).
+Hydrology therefore moves only the hourly and seasonal shape. Mean abs hourly NI EF diff vs
+central 2021 = {sens_wet:.4f} (wet 2023), {sens_dry:.4f} (dry 2024) kg/kWh. Detail:
+edgs_sensitivity_A1.csv.
 
 ## Source workbooks
 Results: {RESULTS_XLSX.name}; Assumptions: {ASSUMPTIONS_XLSX.name}.
 source_tag values: {sorted(SOURCE_TAGS)}.
 """
 (OUT_DIR / "README_EDGS_hourly.md").write_text(readme, encoding="utf-8")
-log("Wrote README_EDGS_hourly.md (v2)")
+log("Wrote README_EDGS_hourly.md")
 (OUT_DIR / "processing_log_reconcile.txt").write_text("\n".join(lines), encoding="utf-8")

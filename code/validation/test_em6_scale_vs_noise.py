@@ -18,7 +18,7 @@ by the same factor, so fuels landing at a ratio near 1.0 rule that out.
 
 It also re-derives this project's own side straight from the raw EMI files, so a
 bug in the cross-check aggregation would show up as a ratio away from 1.0 in the
-ours_rebuilt_over_shipped column (ours rebuilt / ours as published).
+ours_rebuilt_over_released column (ours rebuilt / ours as published).
 
 Run: python test_em6_scale_vs_noise.py
 """
@@ -65,8 +65,8 @@ for fuel in ["HYD", "GEO", "WIN", "SOL", "GAS", "CLG"]:
 
     mine = raw[raw.fl.str.startswith(FUEL_PREFIX[fuel])].groupby("date").mwh.sum()
     chk = s.set_index("date").gen_mwh
-    both = pd.concat([mine.rename("rebuilt"), chk.rename("shipped")], axis=1).dropna()
-    rebuild = (both.rebuilt / both.shipped).mean() if len(both) else float("nan")
+    both = pd.concat([mine.rename("rebuilt"), chk.rename("released")], axis=1).dropna()
+    rebuild = (both.rebuilt / both.released).mean() if len(both) else float("nan")
 
     if abs(ratio - 1) < 0.10 and cv < 0.10:
         v = "agrees"
@@ -82,7 +82,7 @@ for fuel in ["HYD", "GEO", "WIN", "SOL", "GAS", "CLG"]:
                  "mean_ratio_em6_over_ours": round(ratio, 3),
                  "cv_of_ratio_pct": round(cv * 100, 1),
                  "verdict": v,
-                 "ours_rebuilt_over_shipped": round(rebuild, 3)})
+                 "ours_rebuilt_over_released": round(rebuild, 3)})
 
 out = os.path.join(HERE, "em6_scale_vs_noise.csv")
 pd.DataFrame(rows).to_csv(out, index=False)
@@ -90,4 +90,4 @@ print(f"\nwritten: {os.path.basename(out)}")
 print("\nReading it: 'spread' is the coefficient of variation of the daily ratio.")
 print("A small spread away from 1.0 is a coverage or scale difference, not noise.")
 print("'rebuild' recomputes this project's side from the raw EMI files; 1.000")
-print("means the shipped cross-check aggregation reproduces exactly.")
+print("means the released cross-check aggregation reproduces exactly.")

@@ -52,7 +52,7 @@ LOGS = Path(__file__).resolve().parents[1] / "logs"
 
 RECENT = [2024, 2025]          # "the current grid" reference shape
 ISLAND = "NI"                  # the island the paper's headline building sits on
-SHIPPED = 2021                 # template the released results are built on
+CENTRAL_TEMPLATE = 2021                 # template the released results are built on
 
 log_lines = []
 
@@ -123,7 +123,7 @@ t.loc[wettest, "role"] = "wet bound"
 t.loc[driest, "role"] = "dry bound"
 t.loc[t["hydro_rank_driest_first"] == int(np.ceil(len(t) / 2)), "role"] = "hydro median"
 
-t.loc[SHIPPED, "role"] = (t.loc[SHIPPED, "role"] + "; " if t.loc[SHIPPED, "role"] else "") + "shipped template"
+t.loc[CENTRAL_TEMPLATE, "role"] = (t.loc[CENTRAL_TEMPLATE, "role"] + "; " if t.loc[CENTRAL_TEMPLATE, "role"] else "") + "central template"
 
 CORRS = ["corr_" + a for a in AXES]
 cols = ["hydro_twh", "hydro_rank_driest_first", "hydro_pctile", "wind_share_pct",
@@ -141,16 +141,16 @@ log(f"Wettest ({wettest}) and driest ({driest}) reserved as sensitivity bounds; 
 for c in CORRS:
     lead = eligible[c].idxmax()
     log(f"  {c:22s} leader {lead} (r={eligible.loc[lead, c]:.3f});  "
-        f"shipped {SHIPPED} r={t.loc[SHIPPED, c]:.3f}, "
-        f"rank {int(eligible[c].rank(ascending=False).loc[SHIPPED])} of {len(eligible)}")
+        f"central {CENTRAL_TEMPLATE} r={t.loc[CENTRAL_TEMPLATE, c]:.3f}, "
+        f"rank {int(eligible[c].rank(ascending=False).loc[CENTRAL_TEMPLATE])} of {len(eligible)}")
 
 median_year = int(t[t["role"].str.contains("hydro median")].index[0])
 log("\n=== Read-out ===")
 log(f"No single year leads on every axis, so the template is a trade-off, not a ranking.")
-log(f"Shipped {SHIPPED}: best diurnal and seasonal match of any candidate, worst day-of-week "
-    f"match of the record (r={t.loc[SHIPPED, 'corr_day_of_week']:.3f}, weekend/weekday ratio "
-    f"{t.loc[SHIPPED, 'weekend_weekday_ratio']:.3f}, the flattest measured); "
-    f"hydro rank {t.loc[SHIPPED, 'hydro_rank_driest_first']} of {len(t)}.")
+log(f"Central {CENTRAL_TEMPLATE}: best diurnal and seasonal match of any candidate, worst day-of-week "
+    f"match of the record (r={t.loc[CENTRAL_TEMPLATE, 'corr_day_of_week']:.3f}, weekend/weekday ratio "
+    f"{t.loc[CENTRAL_TEMPLATE, 'weekend_weekday_ratio']:.3f}, the flattest measured); "
+    f"hydro rank {t.loc[CENTRAL_TEMPLATE, 'hydro_rank_driest_first']} of {len(t)}.")
 log(f"Hydro-median year {median_year}: leads no shape axis; wind share "
     f"{t.loc[median_year, 'wind_share_pct']:.1f}%, the lowest of the record "
     f"({t['wind_share_pct'].min():.1f}-{t['wind_share_pct'].max():.1f}%). Switching the "

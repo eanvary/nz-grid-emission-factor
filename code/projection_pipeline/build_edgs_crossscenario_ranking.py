@@ -44,7 +44,7 @@ for sc in SCENARIOS:
     h = hvdc[hvdc.scenario == sc].sort_values("year")
     violated = h[h.max_mw_baseline > HVDC_CAPACITY_MW]
     if len(violated) == 0:
-        log(f"  {sc}: NEVER violates under this template — excluded from ranking table")
+        log(f"  {sc}: NEVER violates under this template, excluded from ranking table")
         continue
     first_row = violated.iloc[0]
     first_year = int(first_row.year)

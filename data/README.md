@@ -74,6 +74,21 @@ Other projection files:
 - `edgs_annual_targets.csv`: the MBIE annual totals the reconstruction is scaled to.
 - Plant register, merit order, thermal intensity and hourly shape tables.
 
+## raw/
+
+The Electricity Authority files the database was built from, as published on Electricity Market
+Information (EMI) when the database was built. EMI revises its datasets, so a fresh download can differ
+from these copies.
+
+| Archive | Contents |
+|---|---|
+| `ea_emi_generation_md.zip` | `EA_EMI_raw/YYYYMM_Generation_MD.csv`, half-hourly metered generation, January 2015 to August 2026 |
+| `ea_emi_grid_import.zip` | `EA_EMI_raw/YYYYMM_Grid_import.csv`, half-hourly grid import by point of connection, used for the flagged fills |
+| `ea_emi_hvdc_flows.zip` | `EA_EMI_raw/YYYYMM_HVDC_flows.csv`, half-hourly flows on the HVDC link |
+| `ea_reference_tables.zip` | `EA data/Dispatched generation plant.csv` and `EA data/NSP Tables/` (point of connection to island lookup) |
+
+Unzip all four into the database folder; the paths inside the archives match what the scripts read.
+
 ## analysis_tables/ and paper_results/
 
 These folders hold the intermediate and final tables of the paper's analysis. They include load profiles,
@@ -90,9 +105,13 @@ Coding of the reviewed assessments behind Figures 1, 3 and 8 of the paper.
 
 | Source | Used for | Licence |
 |---|---|---|
-| Electricity Authority, Electricity Market Information: generation output by plant, HVDC flows, Network Supply Points table, https://www.emi.ea.govt.nz | historical database, hourly shapes | CC BY 4.0 |
+| Electricity Authority, Electricity Market Information: Generation_MD, Grid_import, HVDC flows, dispatched generation plant list, Network Supply Points tables, https://www.emi.ea.govt.nz | historical database, hourly shapes | CC BY 4.0 |
 | MBIE, Electricity Demand and Generation Scenarios 2024 (results and assumptions workbooks) | projection | CC BY 4.0 |
-| MBIE, quarterly electricity emissions and energy statistics | validation | CC BY 4.0 |
+| MBIE, quarterly electricity emissions workbook and gas data tables | validation | CC BY 4.0 (MBIE's electricity statistics page states CC BY 3.0 New Zealand) |
 | Ministry for the Environment, measuring emissions guidance, emission factors 2025 | combustion factors | CC BY 4.0 |
 | em6 carbon service | validation | see provider terms |
 | Building Data Genome 2 (Miller et al., 2020) | real-building sensitivity | CC BY 4.0 |
+
+Electricity Authority material is credited as "www.emi.ea.govt.nz provided by the Electricity Authority
+(New Zealand)", as the Authority asks. MBIE material is Crown copyright, credited to the Ministry of
+Business, Innovation and Employment.

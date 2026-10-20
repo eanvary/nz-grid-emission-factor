@@ -33,6 +33,7 @@ files report kg CO2e/kWh (`emission_factor_kg_co2e_per_kwh`). Column definitions
 ## Contents
 
 - `data/`: emission factor tables, and the intermediate tables behind the paper's results.
+- `data/raw/`: the Electricity Authority files the database was built from, as zip archives.
 - `code/`: the three database pipelines, the validation scripts, and the paper's analysis and figure
   scripts. The run order is in `code/README.md`.
 - `docs/DATABASE_SPEC.md`: the database specification.
@@ -53,16 +54,17 @@ file exceeds GitHub's size limit.
   sharing agreement. Building-level data are confidential. Only the aggregated cohort statistics used in the
   paper are released (`data/analysis_tables/phase3_eui_derived_v2.csv`). Requests for the source data
   should go to NZGBC.
-- Raw Electricity Authority files are not redistributed because of their size. Their sources are listed
-  in `data/README.md`. The MBIE workbooks the pipelines read are included, under MBIE's CC BY 4.0 terms.
+- Two Electricity Authority file types that no pipeline reads (`Grid_export`, `Embedded_generation`) are left
+  out. The raw files the pipelines do read are included in `data/raw/`.
 - The Building Data Genome 2 meter data used in the real-building sensitivity test are available from their
   authors (Miller et al., 2020). The script `code/analysis/bdg2_sensitivity/01_extract_sample_buildings.py`
   extracts the sample.
 
 ## Licence
 
-Code is under the MIT licence (`LICENSE`). Data are under Creative Commons Attribution 4.0 International
-(`LICENSE-DATA.md`). Electricity Authority and MBIE source data are used under their own CC BY 4.0 terms.
+Code is under the MIT licence (`LICENSE`). Data produced in this work are under Creative Commons
+Attribution 4.0 International (`LICENSE-DATA.md`). The Electricity Authority and MBIE files included here
+remain under their publishers' Creative Commons licences, listed in `data/README.md`.
 
 ## Citation
 

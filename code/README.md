@@ -16,10 +16,10 @@ folder layout, not for this release layout. To rerun them, rebuild that layout f
 | `data/projection/` | `output/edgs/` |
 | `data/analysis_tables/` | `analysis_paper/tables/` |
 
-Raw inputs go in three places. `EA_EMI_raw/` takes the Electricity Authority generation files and the high-voltage direct current (HVDC) link flow files.
-`EA data/` takes the dispatched generation plant list and the Network Supply Points tables. Sources are
-listed in `data/README.md`. The MBIE workbooks and the other small inputs are included next to the
-scripts that read them.
+Raw Electricity Authority inputs are in `data/raw/`. Unzip the four archives into the database folder:
+they create `EA_EMI_raw/` (generation, grid import and high-voltage direct current link files) and
+`EA data/` (plant list and Network Supply Points tables). The MBIE workbooks and the other small inputs
+are included next to the scripts that read them.
 
 ## Run order
 

@@ -73,4 +73,4 @@ are in `CITATION.cff`.
 
 ## Contact
 
-Ehsan Arab Anvari, Auckland University of Technology.
+Ehsan Arab Anvari, Auckland University of Technology, ehsan.anvari@autuni.ac.nz.

@@ -39,7 +39,7 @@ files report kg CO2e/kWh (`emission_factor_kg_co2e_per_kwh`). Column definitions
 - `docs/DATABASE_SPEC.md`: the database specification.
 - `MANIFEST.csv`: size and SHA-256 checksum of every file in the repository.
 - `zenodo_manifest.csv`: files too large for GitHub, such as hourly generation by fuel and the
-  unsplit hourly factor. They are in the archived data deposit (DOI to be added).
+  unsplit hourly factor. They are in the archived data deposit, https://doi.org/10.5281/zenodo.23487331.
 
 ## Version
 
@@ -68,7 +68,8 @@ remain under their publishers' Creative Commons licences, listed in `data/README
 
 ## Citation
 
-Please cite the paper and this repository. Citation details are in `CITATION.cff`.
+Please cite the paper and this repository (https://doi.org/10.5281/zenodo.23487331). Citation details
+are in `CITATION.cff`.
 
 ## Contact
 

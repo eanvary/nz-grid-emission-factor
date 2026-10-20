@@ -9,7 +9,11 @@ emission factors). Nothing is invented; every constant carries a source string.
 Traceability tags used across the pipeline output:
     MBIE_annual_disaggregated | assumption_1 | assumption_2 | calculated
 """
+import os
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 SCRIPT_DIR = Path(__file__).parent  # this script's folder (holds the MBIE workbooks)
 ROOT = Path(__file__).parent.parent  # repo root, one level above this script's folder
@@ -265,3 +269,71 @@ def log_factory():
         lines.append(str(msg))
 
     return log, lines
+
+
+def map_weights(cal, wtab, template_year=None):
+    """Map normalised template weights onto the target calendar and renormalise to sum=1.
+
+    Weekday alignment: the template is a real metered year, so its
+    hourly weights carry that year's weekday/weekend structure. A plain (month, day, hour)
+    join would place the template's Saturday/Sunday on whatever weekday that calendar date
+    falls on in the projected year (e.g. 2021 weekends would land on Thu/Fri in 2025 and on
+    Wed/Thu in 2030), scrambling the weekly cycle that a weekday-weighted building profile
+    depends on. Each projected day takes the template day with the same weekday that
+    lies nearest to the same calendar date (shift of at most +/-3 days), which preserves
+    the seasonal position to within three days and the weekly cycle exactly. Feb 29 / DST
+    gaps between template and target year are still handled by the renormalisation.
+    template_year=None gives the plain calendar-date join instead (regression knob)."""
+    if template_year is None or os.environ.get("EDGS_DISABLE_WEEKDAY_ALIGN", "0") == "1":
+        m = cal.merge(wtab, on=["month", "day", "hour"], how="left")
+        w = m["weight"].fillna(0.0).to_numpy()
+        s = w.sum()
+        return w / s if s > 0 else w
+    tmpl = wtab.copy()
+    tmpl["tdate"] = pd.to_datetime({"year": template_year, "month": tmpl["month"], "day": tmpl["day"]},
+                                   errors="coerce")
+    tmpl = tmpl.dropna(subset=["tdate"])
+    lut = {(d, h): wgt for d, h, wgt in zip(tmpl["tdate"].dt.normalize(), tmpl["hour"], tmpl["weight"])}
+    tdays = set(tmpl["tdate"].dt.normalize().unique())
+    out = np.zeros(len(cal))
+    days = pd.to_datetime(cal["datetime_hour"]).dt.normalize()
+    hours = cal["hour"].to_numpy()
+    cache = {}
+    for i, (d, h) in enumerate(zip(days, hours)):
+        if d not in cache:
+            # same calendar date in the template year, then the nearest date with the same weekday
+            try:
+                base = pd.Timestamp(year=template_year, month=d.month, day=d.day)
+            except ValueError:            # Feb 29 in a non-leap template year
+                base = pd.Timestamp(year=template_year, month=d.month, day=28)
+            shift = (d.weekday() - base.weekday() + 3) % 7 - 3     # in [-3, 3]
+            cand = base + pd.Timedelta(days=int(shift))
+            if cand not in tdays:         # fell outside the template year (year edges)
+                cand = base + pd.Timedelta(days=int(shift - 7 if shift > 0 else shift + 7))
+            if cand not in tdays:
+                cand = base
+            cache[d] = cand
+        out[i] = lut.get((cache[d], h), 0.0)
+    s = out.sum()
+    return out / s if s > 0 else out
+
+
+def peak_calibrate(shape_w, energy_mwh, peak_mw):
+    """Energy-preserving peak calibration: hourly = mean + (raw-mean)*k so max==peak_mw
+    and sum==energy_mwh. Returns (series, achieved_peak)."""
+    raw = shape_w * energy_mwh
+    mean, mx = raw.mean(), raw.max()
+    if peak_mw <= mean or mx <= mean:
+        return raw, mx
+    k = (peak_mw - mean) / (mx - mean)
+    out = mean + (raw - mean) * k
+    return out, out.max()
+
+
+def island_capacity_share(register, scenario):
+    """Each island's share of a commodity's capacity, by (year, commodity, island), from the plant register."""
+    r = register[register["scenario"] == scenario]
+    cap = r.groupby(["year", "commodity", "island"])["capacity_mw"].sum().reset_index()
+    tot = cap.groupby(["year", "commodity"])["capacity_mw"].transform("sum")
+    cap["share"] = np.where(tot > 0, cap["capacity_mw"] / tot, np.nan)
+    return cap.set_index(["year", "commodity", "island"])["share"].to_dict()

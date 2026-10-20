@@ -38,7 +38,7 @@ import pandas as pd
 from edgs_common import ROOT, OUT_DIR, CONSUMPTION_OUT, log_factory
 
 sys.path.insert(0, str(ROOT / "generation_pipeline"))
-from fuel_attribution import periods_in_day, tp_to_hours  # noqa: E402
+from fuel_attribution import FUEL_STD, periods_in_day, poc_island_map, shape_hours, tp_to_hours  # noqa: E402
 
 log, lines = log_factory()
 
@@ -47,20 +47,7 @@ RENEWABLE_FUELS = ["HYD", "WIN", "SOL", "GEO", "WOOD"]
 NSP_DIR = ROOT / "EA data" / "NSP Tables"
 GEN_DIR = ROOT / "EA_EMI_raw"
 
-FUEL_STD = {  # identical mapping to build_ef_timeseries.py
-    "Coal": "CLG", "CLG": "CLG", "Gas": "GAS", "GAS": "GAS",
-    "Diesel": "DSL", "DSL": "DSL", "Geo": "GEO", "GEO": "GEO",
-    "Hydro": "HYD", "HYD": "HYD", "Solar": "SOL", "SOL": "SOL",
-    "Wind": "WIN", "WIN": "WIN", "Wood": "WOOD", "ELE": "ELE",
-}
-
-# POC to island (same logic as the historical pipeline)
-nsp = pd.concat([pd.read_csv(f, low_memory=False) for f in NSP_DIR.glob("*_NetworkSupplyPointsTable.csv")],
-                ignore_index=True)
-poc_island = (nsp.dropna(subset=["Island"])
-              .sort_values("Start date", ascending=False)
-              .drop_duplicates(subset=["POC code"])
-              .set_index("POC code")["Island"].to_dict())
+poc_island = poc_island_map()
 log(f"POC-to-island lookup: {len(poc_island)} POCs")
 
 # Renewable per-fuel per-island hourly, template years only
@@ -77,12 +64,7 @@ for f in gen_files:
     lower_map = {c.lower(): c for c in df.columns}
     tp = df.reindex(columns=[f"TP{i}" for i in range(1, 51)]).fillna(0).to_numpy(float)
     n_tp = periods_in_day(df[lower_map["trading_date"]])
-    hour_mwh = tp_to_hours(tp, n_tp) / 1000.0  # (n, 24) local clock hours, MWh
-    # A shape needs one value per clock hour: the clocks-back day's repeated 02:00 is averaged,
-    # and the clocks-forward day's missing 02:00 is taken as the mean of 01:00 and 03:00.
-    hour_mwh[n_tp == 50, 2] /= 2
-    fwd = n_tp == 46
-    hour_mwh[fwd, 2] = (hour_mwh[fwd, 1] + hour_mwh[fwd, 3]) / 2
+    hour_mwh = shape_hours(tp_to_hours(tp, n_tp), n_tp) / 1000.0  # (n, 24) local clock hours, MWh
     island = pd.Series(df[lower_map["poc_code"]]).map(poc_island).to_numpy()
     fuel = pd.Series(df[lower_map["fuel_code"]]).map(FUEL_STD).fillna(df[lower_map["fuel_code"]]).to_numpy()
     date = pd.to_datetime(df[lower_map["trading_date"]])
@@ -131,8 +113,7 @@ dem = pd.concat(dem_long, ignore_index=True)
 dem = dem.pivot_table(index=["template_year", "island", "month", "day"], columns="hour", values="mwh", aggfunc="sum")
 n_tp = periods_in_day(pd.to_datetime(dem.index.to_frame(index=False)[["template_year", "month", "day"]]
                                      .rename(columns={"template_year": "year"})))
-dem.loc[n_tp == 50, 2] /= 2
-dem.loc[n_tp == 46, 2] = (dem.loc[n_tp == 46, 1] + dem.loc[n_tp == 46, 3]) / 2
+dem = pd.DataFrame(shape_hours(dem.to_numpy(), n_tp), index=dem.index, columns=dem.columns)
 dem = dem.stack().rename("mwh").reset_index()
 dem["weight"] = dem["mwh"] / dem.groupby(["template_year", "island"])["mwh"].transform("sum")
 dem_out = dem[["template_year", "island", "month", "day", "hour", "weight"]].copy()

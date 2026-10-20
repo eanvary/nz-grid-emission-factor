@@ -278,10 +278,8 @@ record("D1", "External-validation",
 # D2 re-derives national totals from the raw EMI files on MBIE's scope. It uses the
 # pipeline's own attribution module (fuel_attribution.py: generator-level factors,
 # Huntly coal/gas split, Kinleith wood, Matahina fill), so it mirrors the pipeline.
-from fuel_attribution import FuelAttribution
+from fuel_attribution import FUEL_STD, FuelAttribution
 fa = FuelAttribution()
-FUEL_STD = {"Coal": "CLG", "CLG": "CLG", "Gas": "GAS", "GAS": "GAS", "Diesel": "DSL", "DSL": "DSL",
-            "Geo": "GEO", "GEO": "GEO", "Hydro": "HYD", "Wind": "WIN", "Solar": "SOL", "Wood": "WOOD"}
 
 parts2 = []
 for f in gen_files:

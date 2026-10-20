@@ -12,7 +12,6 @@ from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).parent.parent  # project root: the folder above generation_pipeline/
@@ -28,7 +27,9 @@ def log(msg):
     log_lines.append(str(msg))
 
 
-# NSP snapshots: POC-to-island lookup
+# NSP snapshots: POC-to-island lookup and its checks
+from fuel_attribution import FUEL_STD, poc_island_map, raw_files
+
 nsp_files = sorted(glob.glob(str(NSP_DIR / "*_NetworkSupplyPointsTable.csv")))
 log(f"Found {len(nsp_files)} NSP snapshot files")
 
@@ -54,20 +55,13 @@ else:
 # type (verified: zero POCs with conflicting Island across all recon types), so
 # fall back to any NSP record with a non-null Island for POCs not classified as
 # GN/GG/GD (e.g. embedded generation reconciled as 'EN', such as Waipori WPG0331).
-poc_island = (
-    nsp_unique.dropna(subset=["Island"])
-    .sort_values("Start date", ascending=False)
-    .drop_duplicates(subset=["POC code"])
-    .set_index("POC code")["Island"]
-    .to_dict()
-)
+poc_island = poc_island_map()
 log(f"POC-to-island lookup: {len(poc_island)} POCs total "
     f"({len(gen_nsp['POC code'].unique())} from GN/GG/GD generation NSPs, "
     f"remainder from other reconciliation types e.g. embedded generation) "
     f"(NI: {sum(v=='NI' for v in poc_island.values())}, "
     f"SI: {sum(v=='SI' for v in poc_island.values())})")
 
-from fuel_attribution import FUEL_STD, raw_files
 
 
 # Load and normalise Generation_MD files

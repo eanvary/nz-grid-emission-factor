@@ -37,7 +37,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from edgs_common import ASSUMPTIONS_XLSX, OUT_DIR, SCENARIOS, YEARS, COMMODITY, log_factory
+from edgs_common import island_capacity_share, map_weights, ASSUMPTIONS_XLSX, OUT_DIR, SCENARIOS, YEARS, COMMODITY, log_factory
 
 log, lines = log_factory()
 HVDC_CAPACITY_MW = 1200.0
@@ -120,21 +120,6 @@ def year_calendar(year):
     return pd.DataFrame({"datetime_hour": idx, "month": idx.month, "day": idx.day, "hour": idx.hour})
 
 
-def map_weights(cal, wtab):
-    m = cal.merge(wtab, on=["month", "day", "hour"], how="left")
-    w = m["weight"].fillna(0.0).to_numpy()
-    s = w.sum()
-    return w / s if s > 0 else w
-
-
-def island_capacity_share(scenario):
-    r = register[register.scenario == scenario]
-    cap = r.groupby(["year", "commodity", "island"])["capacity_mw"].sum().reset_index()
-    tot = cap.groupby(["year", "commodity"])["capacity_mw"].transform("sum")
-    cap["share"] = np.where(tot > 0, cap["capacity_mw"] / tot, np.nan)
-    return cap.set_index(["year", "commodity", "island"])["share"].to_dict()
-
-
 def peak_shave(residual_pre, dsr_mw, H):
     """Exact replica of build_edgs_dispatch.py's Assumption 2 daily peak-shave logic."""
     residual = residual_pre.copy()
@@ -155,7 +140,7 @@ hvdc_rows = []
 ef_rows = []
 
 for scenario in SCENARIOS:
-    cap_share = island_capacity_share(scenario)
+    cap_share = island_capacity_share(register, scenario)
     for year in YEARS:
         cal = year_calendar(year)
         H = len(cal)

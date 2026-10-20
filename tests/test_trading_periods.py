@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code" / "generation_pipeline"))
-from fuel_attribution import periods_in_day, tp_hours, tp_to_hours  # noqa: E402
+from fuel_attribution import periods_in_day, shape_hours, tp_hours, tp_to_hours  # noqa: E402
 
 
 def test_day_lengths_follow_nz_daylight_saving():
@@ -26,6 +26,17 @@ def test_energy_kept_and_missing_hour_marked():
     assert (h[0] == 2).all()
     assert np.isnan(h[1, 2]) and np.nansum(h[1]) == 46
     assert h[2, 2] == 4 and h[2].sum() == 50
+
+
+def test_shape_has_one_value_per_hour_on_every_day():
+    days = ["2025-06-01", "2024-09-29", "2025-04-06"]  # normal, clocks forward, clocks back
+    n = periods_in_day(days)
+    tp = np.zeros((3, 50))
+    for row, k in enumerate(n):
+        tp[row, :k] = 1.0
+    s = shape_hours(tp_to_hours(tp, n), n)
+    assert s.shape == (3, 24) and not np.isnan(s).any()
+    assert (s == 2).all()  # no gap at 02:00 and no doubled 02:00
 
 
 def test_data_beyond_the_day_length_is_rejected():

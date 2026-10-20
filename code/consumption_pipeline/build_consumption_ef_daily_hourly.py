@@ -51,6 +51,8 @@ log(f"Loaded HVDC transfer: {len(hvdc_daily)} daily rows, {len(hvdc_hourly)} hou
 
 
 # Consumption balance (same formulas as the monthly/annual script)
+# Same as build_consumption in build_consumption_ef_timeseries.py, which runs on import and so cannot be
+# imported here; change both together.
 def build_consumption(gen_df, hvdc_df, group_keys):
     ni = gen_df[gen_df.island == "NI"].set_index(group_keys)
     si = gen_df[gen_df.island == "SI"].set_index(group_keys)

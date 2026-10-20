@@ -94,6 +94,16 @@ def tp_to_hours(tp, n_tp):
     return out
 
 
+def shape_hours(hours, n_tp):
+    """Clock-hour sums from tp_to_hours to one value per hour, for hourly shapes: the clocks-back
+    day's repeated 02:00 is averaged, and the clocks-forward day's missing 02:00 is the mean of 01:00 and 03:00."""
+    out = np.array(hours, dtype=float)
+    out[n_tp == 50, 2] /= 2
+    fwd = n_tp == 46
+    out[fwd, 2] = (out[fwd, 1] + out[fwd, 3]) / 2
+    return out
+
+
 def poc_island_map():
     """POC to 'NI'/'SI' map from the NSP tables, latest record per POC (as in build_ef_timeseries.py)."""
     nsp = pd.concat([pd.read_csv(f, low_memory=False) for f in sorted(NSP_DIR.glob("*_NetworkSupplyPointsTable.csv"))],

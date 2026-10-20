@@ -32,58 +32,67 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent
-EDGS = ROOT / "output" / "edgs"
-CS = EDGS / "consistent_scope"
 COMPONENTS = ["Coal", "Natural gas", "Diesel", "Wood", "Geothermal"]
 
-comp = pd.read_csv(CS / "annual_components_consistent_scope.csv")
-annual = pd.read_csv(CS / "annual_ef_by_variant.csv")
-annual = annual[annual.variant == "consistent_scope"].set_index(["scenario", "year"])
 
-parts = []
-for scen in sorted(comp.scenario.unique()):
-    g = pd.read_parquet(EDGS / "edgs_hourly_generation.parquet", filters=[("scenario", "==", scen)],
-                        columns=["datetime_hour", "island", "fuel_commodity", "generation_mwh"])
-    g["year"] = g.datetime_hour.dt.year
-    g = g[g.year >= 2024]
-    c = comp[comp.scenario == scen].set_index("year")
-    em = pd.Series(0.0, index=pd.MultiIndex.from_frame(g[["island", "datetime_hour"]].drop_duplicates()))
-    for fuel in COMPONENTS:
-        f = g[g.fuel_commodity == fuel]
-        kt = f.year.map(c[f"{fuel}_kt"])
-        tot = f.groupby("year").generation_mwh.transform("sum")
-        missing = sorted(set(c.index[c[f"{fuel}_kt"].abs() > 1e-9]) - set(f.loc[f.generation_mwh > 0, "year"]))
-        if missing:
-            raise RuntimeError(f"{scen} {fuel}: emissions but no hourly generation in {missing}")
-        e = (kt * 1e6 * f.generation_mwh / tot.where(tot > 0, np.nan)).fillna(0.0)  # kg
-        em = em.add(pd.Series(e.to_numpy(), index=pd.MultiIndex.from_frame(f[["island", "datetime_hour"]])).groupby(level=[0, 1]).sum(),
-                    fill_value=0.0)
-    gen = g.groupby(["island", "datetime_hour"]).generation_mwh.sum()
-    h = pd.DataFrame({"emissions_kg": em.reindex(gen.index, fill_value=0.0), "generation_mwh": gen}).reset_index()
-    nat = h.groupby("datetime_hour", as_index=False)[["emissions_kg", "generation_mwh"]].sum().assign(island="National")
-    h = pd.concat([h, nat], ignore_index=True)
-    h["grid_share"] = h.datetime_hour.dt.year.map(c["grid_share"])
+def primary_hourly(edgs, gen_file="edgs_hourly_generation.parquet"):
+    """Hourly primary emissions (kg) and generation (MWh) by scenario and island, with the year's grid
+    share. edgs is the output/edgs folder; gen_file names the hourly generation of one template."""
+    comp = pd.read_csv(edgs / "consistent_scope" / "annual_components_consistent_scope.csv")
+    parts = []
+    for scen in sorted(comp.scenario.unique()):
+        g = pd.read_parquet(edgs / gen_file, filters=[("scenario", "==", scen)],
+                            columns=["datetime_hour", "island", "fuel_commodity", "generation_mwh"])
+        g["year"] = g.datetime_hour.dt.year
+        g = g[g.year >= 2024]
+        c = comp[comp.scenario == scen].set_index("year")
+        em = pd.Series(0.0, index=pd.MultiIndex.from_frame(g[["island", "datetime_hour"]].drop_duplicates()))
+        for fuel in COMPONENTS:
+            f = g[g.fuel_commodity == fuel]
+            kt = f.year.map(c[f"{fuel}_kt"])
+            tot = f.groupby("year").generation_mwh.transform("sum")
+            missing = sorted(set(c.index[c[f"{fuel}_kt"].abs() > 1e-9]) - set(f.loc[f.generation_mwh > 0, "year"]))
+            if missing:
+                raise RuntimeError(f"{scen} {fuel}: emissions but no hourly generation in {missing}")
+            e = (kt * 1e6 * f.generation_mwh / tot.where(tot > 0, np.nan)).fillna(0.0)  # kg
+            em = em.add(pd.Series(e.to_numpy(), index=pd.MultiIndex.from_frame(f[["island", "datetime_hour"]]))
+                        .groupby(level=[0, 1]).sum(), fill_value=0.0)
+        gen = g.groupby(["island", "datetime_hour"]).generation_mwh.sum()
+        h = pd.DataFrame({"emissions_kg": em.reindex(gen.index, fill_value=0.0), "generation_mwh": gen}).reset_index()
+        h["grid_share"] = h.datetime_hour.dt.year.map(c["grid_share"])
+        h["scenario"] = scen
+        parts.append(h)
+    return pd.concat(parts, ignore_index=True)
+
+
+if __name__ == "__main__":
+    EDGS = Path(__file__).resolve().parent.parent / "output" / "edgs"
+    h = primary_hourly(EDGS)
+    nat = (h.groupby(["scenario", "datetime_hour"], as_index=False)
+           .agg(emissions_kg=("emissions_kg", "sum"), generation_mwh=("generation_mwh", "sum"), grid_share=("grid_share", "first"))
+           .assign(island="National"))
+    # Stable sort keeps each scenario's island rows first, then its National rows.
+    h = pd.concat([h, nat], ignore_index=True).sort_values("scenario", kind="stable", ignore_index=True)
     h["grid_generation_mwh"] = h.generation_mwh * h.grid_share
     h["ef_grid_kg_co2e_per_kwh"] = np.where(h.grid_generation_mwh > 0, h.emissions_kg / (h.grid_generation_mwh * 1000.0), np.nan)
     h["ef_total_kg_co2e_per_kwh"] = np.where(h.generation_mwh > 0, h.emissions_kg / (h.generation_mwh * 1000.0), np.nan)
-    h["scenario"] = scen
-    parts.append(h)
-out = pd.concat(parts, ignore_index=True)[["scenario", "island", "datetime_hour", "emissions_kg", "generation_mwh",
-                                           "grid_generation_mwh", "ef_grid_kg_co2e_per_kwh", "ef_total_kg_co2e_per_kwh", "grid_share"]]
-out.to_parquet(EDGS / "edgs_hourly_emission_factor_primary.parquet", index=False)
+    out = h[["scenario", "island", "datetime_hour", "emissions_kg", "generation_mwh",
+             "grid_generation_mwh", "ef_grid_kg_co2e_per_kwh", "ef_total_kg_co2e_per_kwh", "grid_share"]]
+    out.to_parquet(EDGS / "edgs_hourly_emission_factor_primary.parquet", index=False)
+    print(f"Wrote edgs_hourly_emission_factor_primary.parquet: {len(out):,} rows")
 
-# check: annual aggregates reproduce annual_ef_by_variant.csv (consistent_scope)
-a = out.assign(year=out.datetime_hour.dt.year).groupby(["scenario", "year", "island"])[
-    ["emissions_kg", "grid_generation_mwh", "generation_mwh"]].sum()
-worst = {}
-for (s, y), r in annual.iterrows():
-    ni, nat = a.loc[(s, y, "NI")], a.loc[(s, y, "National")]
-    worst.setdefault("NI_kt", []).append(abs(ni.emissions_kg / 1e6 - r.NI_kt))
-    worst.setdefault("EF_NI_grid", []).append(abs(ni.emissions_kg / ni.grid_generation_mwh - r.EF_NI_grid))
-    worst.setdefault("EF_National_grid", []).append(abs(nat.emissions_kg / nat.grid_generation_mwh - r.EF_National_grid))
-    worst.setdefault("EF_National", []).append(abs(nat.emissions_kg / nat.generation_mwh - r.EF_National))
-print(f"Wrote edgs_hourly_emission_factor_primary.parquet: {len(out):,} rows")
-for k, v in worst.items():
-    print(f"  max |hourly annual aggregate - annual_ef_by_variant| {k}: {max(v):.3e}")
+    # Annual aggregates must reproduce annual_ef_by_variant.csv (consistent_scope), which is rounded to 4 decimals.
+    annual = pd.read_csv(EDGS / "consistent_scope" / "annual_ef_by_variant.csv")
+    annual = annual[annual.variant == "consistent_scope"].set_index(["scenario", "year"])
+    a = out.assign(year=out.datetime_hour.dt.year).groupby(["scenario", "year", "island"])[
+        ["emissions_kg", "grid_generation_mwh", "generation_mwh"]].sum()
+    worst = {}
+    for (s, y), r in annual.iterrows():
+        ni, nat = a.loc[(s, y, "NI")], a.loc[(s, y, "National")]
+        worst.setdefault("NI_kt", []).append(abs(ni.emissions_kg / 1e6 - r.NI_kt))
+        worst.setdefault("EF_NI_grid", []).append(abs(ni.emissions_kg / ni.grid_generation_mwh - r.EF_NI_grid))
+        worst.setdefault("EF_National_grid", []).append(abs(nat.emissions_kg / nat.grid_generation_mwh - r.EF_National_grid))
+        worst.setdefault("EF_National", []).append(abs(nat.emissions_kg / nat.generation_mwh - r.EF_National))
+    for k, v in worst.items():
+        print(f"  max |hourly annual aggregate - annual_ef_by_variant| {k}: {max(v):.3e}")
+        assert max(v) < 1e-4, f"{k}: hourly annual aggregates do not reproduce annual_ef_by_variant.csv"

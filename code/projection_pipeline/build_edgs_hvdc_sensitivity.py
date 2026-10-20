@@ -38,7 +38,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from edgs_common import ASSUMPTIONS_XLSX, OUT_DIR, SCENARIOS, YEARS, log_factory
+from edgs_common import map_weights, ASSUMPTIONS_XLSX, OUT_DIR, SCENARIOS, YEARS, log_factory
 
 log, lines = log_factory()
 HVDC_CAPACITY_MW = 1200.0
@@ -79,13 +79,6 @@ w2024_solar = sol_2024[sol_2024.island == "NI"][["month", "day", "hour", "weight
 def year_calendar(year):
     idx = pd.date_range(f"{year}-01-01", f"{year}-12-31 23:00", freq="h")
     return pd.DataFrame({"datetime_hour": idx, "month": idx.month, "day": idx.day, "hour": idx.hour})
-
-
-def map_weights(cal, wtab):
-    m = cal.merge(wtab, on=["month", "day", "hour"], how="left")
-    w = m["weight"].fillna(0.0).to_numpy()
-    s = w.sum()
-    return w / s if s > 0 else w
 
 
 w_ni_base = dem_shape_2021[dem_shape_2021.island == "NI"][["month", "day", "hour", "weight"]]

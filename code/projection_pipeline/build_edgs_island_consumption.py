@@ -78,7 +78,7 @@ edgs_hourly_generation.parquet.
 import numpy as np
 import pandas as pd
 
-from edgs_common import ASSUMPTIONS_XLSX, OUT_DIR, SCENARIOS, YEARS, ROOT, log_factory
+from edgs_common import ASSUMPTIONS_XLSX, OUT_DIR, SCENARIOS, YEARS, ROOT, log_factory, map_weights
 
 log, lines = log_factory()
 
@@ -105,44 +105,6 @@ ni_share_map = isd.set_index(["Scenario", "TimePeriod"])["Value"].to_dict()
 def year_calendar(year):
     idx = pd.date_range(f"{year}-01-01", f"{year}-12-31 23:00", freq="h")
     return pd.DataFrame({"datetime_hour": idx, "month": idx.month, "day": idx.day, "hour": idx.hour})
-
-
-def map_weights(cal, wtab, template_year=2021):
-    """Weekday-aligned template mapping: identical logic to
-    build_edgs_dispatch.map_weights so the consumption denominator uses the same template
-    day as the dispatch demand series. Each projected day takes the template day with the
-    same weekday nearest to the same calendar date (shift <= 3 days)."""
-    import os as _os
-    if _os.environ.get("EDGS_DISABLE_WEEKDAY_ALIGN", "0") == "1":
-        m = cal.merge(wtab, on=["month", "day", "hour"], how="left")
-        w = m["weight"].fillna(0.0).to_numpy()
-        s = w.sum()
-        return w / s if s > 0 else w
-    tmpl = wtab.copy()
-    tmpl["tdate"] = pd.to_datetime({"year": template_year, "month": tmpl["month"], "day": tmpl["day"]}, errors="coerce")
-    tmpl = tmpl.dropna(subset=["tdate"])
-    lut = {(d, h): wgt for d, h, wgt in zip(tmpl["tdate"].dt.normalize(), tmpl["hour"], tmpl["weight"])}
-    tdays = set(tmpl["tdate"].dt.normalize().unique())
-    out = np.zeros(len(cal))
-    days = pd.to_datetime(cal["datetime_hour"]).dt.normalize()
-    hours = cal["hour"].to_numpy()
-    cache = {}
-    for i, (d, h) in enumerate(zip(days, hours)):
-        if d not in cache:
-            try:
-                base = pd.Timestamp(year=template_year, month=d.month, day=d.day)
-            except ValueError:
-                base = pd.Timestamp(year=template_year, month=d.month, day=28)
-            shift = (d.weekday() - base.weekday() + 3) % 7 - 3
-            cand = base + pd.Timedelta(days=int(shift))
-            if cand not in tdays:
-                cand = base + pd.Timedelta(days=int(shift - 7 if shift > 0 else shift + 7))
-            if cand not in tdays:
-                cand = base
-            cache[d] = cand
-        out[i] = lut.get((cache[d], h), 0.0)
-    s = out.sum()
-    return out / s if s > 0 else out
 
 
 w_ni_base = dem_shape[dem_shape.island == "NI"][["month", "day", "hour", "weight"]]
@@ -192,8 +154,8 @@ for scenario in SCENARIOS:
         ni_share = float(ni_share_map.get((scenario, year), 0.61))
         demand_mwh = demand_twh * 1e6
 
-        w_ni = map_weights(cal, w_ni_base)
-        w_si = map_weights(cal, w_si_base)
+        w_ni = map_weights(cal, w_ni_base, template_year=2021)
+        w_si = map_weights(cal, w_si_base, template_year=2021)
 
         # Island demand (EF denominator only)
         island_demand_NI = demand_mwh * ni_share * w_ni

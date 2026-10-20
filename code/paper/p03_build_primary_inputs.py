@@ -36,35 +36,10 @@ import pandas as pd
 
 ROOT = Path(sys.argv[1]).resolve()
 EDGS = ROOT / "output" / "edgs"
-CS = EDGS / "consistent_scope"
 ASSUMPTIONS = ROOT / "edgs_pipeline" / "electricity-demand-generation-scenarios-2024-assumptions.xlsx"
-COMPONENTS = ["Coal", "Natural gas", "Diesel", "Wood", "Geothermal"]
-comp = pd.read_csv(CS / "annual_components_consistent_scope.csv")
-
-
-def primary_hourly(gen_file):
-    """Hourly primary emissions and generation by island, all scenarios (build_edgs_primary_hourly.py)."""
-    parts = []
-    for scen in sorted(comp.scenario.unique()):
-        g = pd.read_parquet(EDGS / gen_file, filters=[("scenario", "==", scen)],
-                            columns=["datetime_hour", "island", "fuel_commodity", "generation_mwh"])
-        g["year"] = g.datetime_hour.dt.year
-        g = g[g.year >= 2024]
-        c = comp[comp.scenario == scen].set_index("year")
-        em = pd.Series(0.0, index=pd.MultiIndex.from_frame(g[["island", "datetime_hour"]].drop_duplicates()))
-        for fuel in COMPONENTS:
-            f = g[g.fuel_commodity == fuel]
-            kt = f.year.map(c[f"{fuel}_kt"])
-            tot = f.groupby("year").generation_mwh.transform("sum")
-            e = (kt * 1e6 * f.generation_mwh / tot.where(tot > 0, np.nan)).fillna(0.0)
-            em = em.add(pd.Series(e.to_numpy(), index=pd.MultiIndex.from_frame(f[["island", "datetime_hour"]]))
-                        .groupby(level=[0, 1]).sum(), fill_value=0.0)
-        gen = g.groupby(["island", "datetime_hour"]).generation_mwh.sum()
-        h = pd.DataFrame({"emissions_kg": em.reindex(gen.index, fill_value=0.0), "generation_mwh": gen}).reset_index()
-        h["grid_share"] = h.datetime_hour.dt.year.map(c["grid_share"])
-        h["scenario"] = scen
-        parts.append(h)
-    return pd.concat(parts, ignore_index=True)
+sys.path.insert(0, str(ROOT / "edgs_pipeline"))
+from build_edgs_primary_hourly import primary_hourly  # noqa: E402
+from edgs_common import map_weights  # noqa: E402
 
 
 def ef_rows(h):
@@ -84,32 +59,6 @@ def ef_rows(h):
     return out
 
 
-def map_weights(cal, wtab, template_year=2021):
-    """Weekday-aligned template mapping, identical to build_edgs_island_consumption.map_weights."""
-    tmpl = wtab.copy()
-    tmpl["tdate"] = pd.to_datetime({"year": template_year, "month": tmpl["month"], "day": tmpl["day"]}, errors="coerce")
-    tmpl = tmpl.dropna(subset=["tdate"])
-    lut = {(d, h): w for d, h, w in zip(tmpl["tdate"].dt.normalize(), tmpl["hour"], tmpl["weight"])}
-    tdays = set(tmpl["tdate"].dt.normalize().unique())
-    out = np.zeros(len(cal)); days = pd.to_datetime(cal["datetime_hour"]).dt.normalize(); hours = cal["hour"].to_numpy(); cache = {}
-    for i, (d, h) in enumerate(zip(days, hours)):
-        if d not in cache:
-            try:
-                base = pd.Timestamp(year=template_year, month=d.month, day=d.day)
-            except ValueError:
-                base = pd.Timestamp(year=template_year, month=d.month, day=28)
-            shift = (d.weekday() - base.weekday() + 3) % 7 - 3
-            cand = base + pd.Timedelta(days=int(shift))
-            if cand not in tdays:
-                cand = base + pd.Timedelta(days=int(shift - 7 if shift > 0 else shift + 7))
-            if cand not in tdays:
-                cand = base
-            cache[d] = cand
-        out[i] = lut.get((cache[d], h), 0.0)
-    s = out.sum()
-    return out / s if s > 0 else out
-
-
 def consumption_rows(h):
     dem = pd.read_parquet(EDGS / "edgs_shape_demand.parquet")
     dem = dem[dem.template_year == 2021]
@@ -124,7 +73,7 @@ def consumption_rows(h):
         idx = pd.date_range(f"{year}-01-01", f"{year}-12-31 23:00", freq="h")
         cal = pd.DataFrame({"datetime_hour": idx, "month": idx.month, "day": idx.day, "hour": idx.hour})
         if year not in wcache:
-            wcache[year] = (map_weights(cal, w_ni_base), map_weights(cal, w_si_base))
+            wcache[year] = (map_weights(cal, w_ni_base, template_year=2021), map_weights(cal, w_si_base, template_year=2021))
         w_ni, w_si = wcache[year]
         ni_share = float(ni_share_map.get((scen, year), 0.61))
         p = g.pivot_table(index="datetime_hour", columns="island", values=["emissions_kg", "generation_mwh"], aggfunc="sum").reindex(idx, fill_value=0.0)
@@ -158,7 +107,7 @@ if __name__ == "__main__":
         src, keep = EDGS / f"{f}.parquet", EDGS / f"{f}_combustion_only.parquet"
         if src.exists() and not keep.exists():
             src.rename(keep)
-    h = primary_hourly("edgs_hourly_generation.parquet")
+    h = primary_hourly(EDGS, "edgs_hourly_generation.parquet")
     ef = ef_rows(h)
     cons, load = consumption_rows(h)
     out = pd.concat([ef, cons], ignore_index=True)
@@ -171,6 +120,6 @@ if __name__ == "__main__":
     print(f"central: {len(out):,} rows; max |diff| against edgs_hourly_emission_factor_primary.parquet = {d:.2e} kg/kWh")
     print(out.groupby(["island", "ef_basis"]).emission_factor_kg_co2e_per_kwh.agg(["size", "mean", "max"]).to_string())
     for ty in (2017, 2023, 2024):
-        ht = primary_hourly(f"edgs_hourly_generation_tmpl{ty}.parquet")
+        ht = primary_hourly(EDGS, f"edgs_hourly_generation_tmpl{ty}.parquet")
         ef_rows(ht).to_parquet(EDGS / f"edgs_hourly_emission_factor_tmpl{ty}.parquet", index=False)
         print(f"template {ty}: written")

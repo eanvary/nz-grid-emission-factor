@@ -36,12 +36,15 @@ are included next to the scripts that read them.
    and `test_*` scripts.
 5. Paper analysis (`code/paper/`), run in a copy of the database:
    - `p03_build_primary_inputs.py <copy_root>`
-   - `p03_eui_all_ni_cities.py <copy_root>`, which needs the confidential NABERSNZ file. Its output is the
-     released `phase3_eui_derived_v2.csv`.
+   - `p03_eui_all_ni_cities.py <copy_root> <NABERSNZ workbook>`. The workbook is confidential; the script's
+     output is the released `phase3_eui_derived_v2.csv`.
    - `p03_run_chain.py <copy_root> <python>`
-   - `p03_new_analyses.py`, `p03_six_order_sensitivity.py`, `p03_temporal_by_year.py`, `p03_build_supplement.py`
-6. Figures and tables (`code/figures/`): `build_fig*.py` and `build_table*.py`.
+   - `p03_new_analyses.py <copy_root> <out_dir>`, `p03_six_order_sensitivity.py <copy_root> <out_dir>`,
+     `p03_temporal_by_year.py <copy_root> <out_dir>`, `p03_build_supplement.py <out.docx> <copy_root>`
+6. Figures and tables (`code/figures/`):
+   - `build_fig2_prisma.py <extraction workbook>` and `build_fig3_disclosure.py <extraction workbook>`
+   - `build_fig4_treatment_schematic_v2.py <copy_root>`
+   - the other `build_fig*.py` scripts and `build_table2_spec.py`, without arguments
 
-Some figure and paper scripts contain the author's local paths. Edit them to point at your copy.
-`build_fig2_prisma.py` and `build_fig3_disclosure.py` read the review extraction workbook, which is not
-released. The coding they produce is in `data/literature_review/`.
+The review extraction workbook read by Figures 2 and 3 is not released. The coding they produce is in
+`data/literature_review/`.

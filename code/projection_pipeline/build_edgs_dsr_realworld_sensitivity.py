@@ -50,7 +50,7 @@ Outputs (output/edgs/):
 import numpy as np
 import pandas as pd
 
-from edgs_common import (RESULTS_XLSX, ASSUMPTIONS_XLSX, OUT_DIR, SCENARIOS, YEARS, COMMODITY,
+from edgs_common import (island_capacity_share, map_weights, RESULTS_XLSX, ASSUMPTIONS_XLSX, OUT_DIR, SCENARIOS, YEARS, COMMODITY,
                          RENEWABLE_COMMODITIES, THERMAL_COMMODITIES,
                          MFE_FUEL_EF_KG_PER_GJ, WOOD_NONBIOGENIC_KG_PER_GJ, log_factory)
 
@@ -111,21 +111,6 @@ def year_calendar(year):
     return pd.DataFrame({"datetime_hour": idx, "month": idx.month, "day": idx.day, "hour": idx.hour})
 
 
-def map_weights(cal, wtab):
-    m = cal.merge(wtab, on=["month", "day", "hour"], how="left")
-    w = m["weight"].fillna(0.0).to_numpy()
-    s = w.sum()
-    return w / s if s > 0 else w
-
-
-def island_capacity_share(scenario):
-    r = register[register["scenario"] == scenario]
-    cap = r.groupby(["year", "commodity", "island"])["capacity_mw"].sum().reset_index()
-    tot = cap.groupby(["year", "commodity"])["capacity_mw"].transform("sum")
-    cap["share"] = np.where(tot > 0, cap["capacity_mw"] / tot, np.nan)
-    return cap.set_index(["year", "commodity", "island"])["share"].to_dict()
-
-
 def dsr_pipeline(residual_pre, dsr_mw, H):
     """Pipeline rule: discharge at the day's max residual hour, charge at the day's min."""
     residual = residual_pre.copy()
@@ -169,7 +154,7 @@ def run(scenario, year, mode):
     """mode: 'pipeline' (pipeline rule) or 'aemo'"""
     cal = year_calendar(year)
     H = len(cal)
-    cap_share = island_capacity_share(scenario)
+    cap_share = island_capacity_share(register, scenario)
     merit_s = merit[(merit["scenario"] == scenario) & (merit["year"] == year)].sort_values("merit_rank")
 
     t = targets[(targets["scenario"] == scenario) & (targets["year"] == year)]

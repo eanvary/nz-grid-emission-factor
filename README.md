@@ -37,7 +37,8 @@ files report kg CO2e/kWh (`emission_factor_kg_co2e_per_kwh`). Column definitions
 - `code/`: the three database pipelines, the validation scripts, and the paper's analysis and figure
   scripts. The run order is in `code/README.md`.
 - `docs/DATABASE_SPEC.md`: the database specification.
-- `tests/`: checks for the trading-period to clock-hour mapping (`python tests/test_trading_periods.py`).
+- `tests/`: checks for the clock-hour mapping and the released tables (`python tests/test_trading_periods.py`,
+  `python tests/test_released_data.py`).
 - `MANIFEST.csv`: size and SHA-256 checksum of every file in the repository.
 - `zenodo_manifest.csv`: files too large for GitHub, such as hourly generation by fuel and the
   unsplit hourly factor. They are in the archived data deposit, https://doi.org/10.5281/zenodo.23487331.

@@ -1,0 +1,5 @@
+scenario,sigma_geo_max,approach1_valid_under_ipcc_cv_limit,approach1_mean_band_pct,approach1_negative_lower_bound_hours,approach2_mean_band_pct
+as released: by rule step (7.07% / station / spread),0.9397,no,12.9,0,12.8
+"previous: full between-station spread, one draw",0.9397,no,67.3,2425,61.5
+"same spread, station errors independent",0.2195,yes,19.4,0,19.4
+only the fallback plants are uncertain,0.0,yes,10.3,0,10.3

@@ -1,5 +1,5 @@
 """
-Figure 2 -- treatment schematic (Methods figure, no result magnitudes).
+Figure 2: treatment schematic (Methods figure, no result magnitudes).
 [Manuscript numbering: this is "Figure 2" in the manuscript ("Figure 2.
 Schematic of the four-treatment, three-stage decomposition of
 static/national emission-factor simplification error"). The script/output
@@ -21,58 +21,59 @@ faint ghosts: those are the prior panel's own plotted series, which the
 legend describes.)
 
 The temporal error (E_b - E_a) is not a gap between two annual factor
-values; it has two parts, checked against Table 6 of the manuscript
+values. It has two parts, checked against Table 6 of the manuscript
 (numbers below are for the solar-corrected data; see the data-vintage
 note below):
   (i)  weighting-basis part = (generation-weighted annual mean) - (plain
-       hourly time-mean). Identical across load-shape profiles (it does not
-       depend on demand): -0.085031 kgCO2e/kWh cumulative over 2025-2049
-       (-11.39 kgCO2e/m2 at median EUI) for all three profiles.
+       hourly time-mean). It does not depend on demand, so it is identical
+       across load-shape profiles: -0.085031 kgCO2e/kWh cumulative over
+       2025-2049 (-11.39 kgCO2e/m2 at median EUI) for all three profiles.
   (ii) demand-alignment part = (plain hourly time-mean) - (profile's
-       demand-weighted mean). This is the part that depends on how building
-       demand aligns with hourly carbon intensity: +39.07 kgCO2e/m2 for
+       demand-weighted mean). This part depends on how building demand
+       aligns with hourly carbon intensity: +39.07 kgCO2e/m2 for
        daytime_office, +8.55 for evening_weighted, exactly 0.00 for
        continuous_24_7 (flat demand has no alignment to exploit).
   Their sum reproduces Table 6's corrected temporal_component exactly for
   all three profiles (daytime_office +27.68, evening_weighted -2.84,
   continuous_24_7 -11.39 kgCO2e/m2; table values +27.7/-2.8/-11.4, matching
-  to rounding), and the implied E_b (1.917430 kgCO2e/kWh cumulative, i.e.
-  256.87 kgCO2e/m2 at median EUI) is identical across all three profiles,
-  as required by construction (all three demand shapes share one annual
-  energy total).
-A single January week cannot illustrate this: the mean of the representative
-week used in build_fig4_treatment_schematic.py sits at the 43rd percentile of the full 2025 NI
-hourly distribution, materially below the 2025 annual mean, so shading office
-hours on that week alone could visually suggest the wrong sign. Panel (a) is
-therefore a full-2025 hour-of-week mean profile (mean NI
+  to rounding). The implied E_b (1.917430 kgCO2e/kWh cumulative, i.e.
+  256.87 kgCO2e/m2 at median EUI) is identical across all three profiles.
+  The construction requires this, because all three demand shapes share
+  one annual energy total.
+A single January week cannot illustrate this. The mean of the representative
+week used in build_fig4_treatment_schematic.py sits at the 43rd percentile of
+the full 2025 NI hourly distribution, materially below the 2025 annual mean.
+Shading office hours on that week alone could therefore suggest the wrong
+sign. Panel (a) is instead a full-2025 hour-of-week mean profile: the mean NI
 generation-basis EF for each of the 168 (day-of-week, hour) slots, averaged
-over all of 2025), with the two-part mechanism drawn directly onto it: the
-generation-weighted annual mean (=panel (b)'s first value), the daytime_office
-demand-weighted mean, and (since the two differ by more than 2% of the
-y-axis range) the plain hourly time-mean, plus shading over the profile's own
-occupied hours.
+over all of 2025. The two-part mechanism is drawn onto it as reference lines.
+These are the generation-weighted annual mean (equal to panel (b)'s first
+value) and the daytime_office demand-weighted mean. The plain hourly
+time-mean is added where it sits more than 2% of the y-axis range from the
+annual mean. Shading marks the profile's own occupied hours.
 
 Data vintage: output/edgs/edgs_hourly_emission_factor.parquet
-(all-scenario) includes a fix in projection_pipeline/build_edgs_dispatch.py.
-Pre-2024 dispatch templates (the default CENTRAL_TEMPLATE=2021) carry no
-Solar fuel code, so without the fix solar generation falls back to a flat
-24-hour spread, i.e. non-zero solar output at night, "a known-wrong
-physical impossibility" per the pipeline's own code comment. The fix
-replaces that fallback with the observed 2024 NI hourly solar shape (zero
-18:00-06:00, peaked at midday). Checked directly: the pre-fix
-single-scenario file (edgs_hourly_emission_factor_Reference.parquet)
-has NI solar generation constant at 78.165 MWh in every hour of a sampled
-day; the corrected all-scenario file has it at exactly 0 from 18:00-06:00
-and ~220 MWh at midday. The correction matters: against the corrected data
-the daytime_office headline temporal component changes sign, from -17.1 to
-+27.7 kgCO2e/m2 (25yr, median EUI). Office demand overlaps the
-solar-suppressed midday window, so it is cleaner than the annual average in
-every year 2025-2049, not dirtier-then-cleaner as the pre-fix data implied.
+(all-scenario) is built with the solar-shape correction in
+projection_pipeline/build_edgs_dispatch.py. Pre-2024 dispatch templates (the
+default CENTRAL_TEMPLATE=2021) carry no Solar fuel code. Without the
+correction, solar generation falls back to a flat 24-hour spread, i.e.
+non-zero solar output at night, "a known-wrong physical impossibility" per
+the pipeline's own code comment. The correction replaces that fallback with
+the observed 2024 NI hourly solar shape (zero 18:00-06:00, peaked at
+midday). In the uncorrected single-scenario file
+(edgs_hourly_emission_factor_Reference.parquet), NI solar generation is
+constant at 78.165 MWh in every hour of a sampled day. The corrected
+all-scenario file has it at exactly 0 from 18:00-06:00 and about 220 MWh at
+midday. The correction matters: with the corrected data the daytime_office
+headline temporal component changes sign, from -17.1 to +27.7 kgCO2e/m2
+(25yr, median EUI). Office demand overlaps the solar-suppressed midday
+window, so it is cleaner than the annual average in every year 2025-2049.
+The uncorrected data implied dirtier-then-cleaner.
 phase3_decomposition.py, phase3_contextualise_v2_finalEUI.py and
 build_table3_headline.py use the corrected EDGS output, and so do
 phase3_annual_island_ef.csv, phase3_annual_national_ef.csv,
-phase3_decomposition_full.csv and Table 6. This script takes all of panel
-(a)'s hourly data from the same corrected, all-scenario file (filtered
+phase3_decomposition_full.csv and Table 6. All of panel (a)'s hourly data
+come from the same corrected, all-scenario file (filtered
 scenario=="Reference"), for consistency with panels (b)-(d) and Table 6.
 """
 import sys
@@ -135,8 +136,8 @@ nat = pd.read_csv(DB_TABLES / "phase3_annual_national_ef.csv")
 c_series = nat[(nat["scenario"] == "Reference") & (nat["year"].between(START_YEAR, END_YEAR))].sort_values("year")
 assert len(c_series) == PERIOD_YRS
 
-# (d) static base-year national value -- E_d is defined as base_national_ef * n_years
-# (a cumulative quantity, per scripts/phase3_decomposition.py); the per-year rate is
+# (d) static base-year national value. E_d is defined as base_national_ef * n_years
+# (a cumulative quantity, per phase3_decomposition.py); the per-year rate is
 # E_d / n_years, which equals the start-year national annual EF.
 d_value = hl["E_d_static_base"] / hl["n_years_used"]
 d_value_from_series = c_series[c_series["year"] == START_YEAR]["annual_national_ef"].iloc[0]
@@ -160,12 +161,12 @@ assert len(hourweek) == 168
 a_hours = np.arange(168)
 a_vals = hourweek["emission_factor_kg_co2e_per_kwh"].to_numpy()
 
-# Plain (unweighted) time-mean of ALL 8760 hours of 2025 (not the 168-slot
-# average above, which is a mean-of-means and differs from it at the ~1e-5
-# level since not every slot occurs exactly 52 times in a 365-day year).
+# Plain (unweighted) time-mean of all 8760 hours of 2025. The 168-slot
+# average above is a mean of means and differs from it at the 1e-5 level,
+# because not every slot occurs exactly 52 times in a 365-day year.
 plain_mean_2025 = ni_2025["emission_factor_kg_co2e_per_kwh"].mean()
 
-# Generation-weighted annual mean, 2025 -- must equal panel (b)'s first value
+# Generation-weighted annual mean, 2025; must equal panel (b)'s first value
 gen_hourly = pd.read_parquet(HOURLY_GEN_PARQUET)
 gen_hourly["datetime_hour"] = pd.to_datetime(gen_hourly["datetime_hour"])
 gen_ni_2025 = (gen_hourly[(gen_hourly["island"] == "NI") & (gen_hourly["scenario"] == "Reference") &
@@ -181,13 +182,13 @@ office_shape = shapes[shapes["label"] == "daytime_office"][["dow", "hour", "raw_
 ni_2025_office = ni_2025.merge(office_shape, on=["dow", "hour"], how="left")
 office_weighted_mean_2025 = np.average(ni_2025_office["emission_factor_kg_co2e_per_kwh"], weights=ni_2025_office["raw_intensity"])
 
-# Occupied hours of the daytime_office profile
-# Rule: weekday weight strictly exceeds the shape's own night/evening off-peak
-# tier (0.3). NOTE: the office day-block peak weight is 1.0, exactly equal to
-# (never exceeding) the continuous_24_7 flat weight of 1.0, so "exceeds the
-# flat 24/7 weight" selects zero hours and is not usable here; this shape's
-# actual off-peak tiers are 0.2 (night, h0-6) and 0.3 (evening, h18-23), and
-# thresholding at 0.3 isolates exactly the day block (h7-17 each weekday).
+# Occupied hours of the daytime_office profile.
+# Rule: the weekday weight strictly exceeds the shape's own night/evening
+# off-peak tier (0.3). The office day-block peak weight is 1.0, equal to the
+# continuous_24_7 flat weight of 1.0 and never above it. A rule of "exceeds
+# the flat 24/7 weight" would therefore select zero hours. This shape's
+# off-peak tiers are 0.2 (night, h0-6) and 0.3 (evening, h18-23), and a
+# threshold of 0.3 isolates exactly the day block (h7-17 each weekday).
 OCCUPIED_THRESHOLD = 0.3
 office_map = shapes[shapes["label"] == "daytime_office"].set_index(["dow", "hour"])["raw_intensity"]
 occupied_by_dowhour = office_map > OCCUPIED_THRESHOLD
@@ -201,8 +202,8 @@ y_range = y_max - y_min
 # if it sits at least 2% of the y-axis range away from the annual mean.
 plain_gap = abs(genw_mean_2025 - plain_mean_2025)
 draw_plain_mean = (plain_gap / y_range) >= 0.02
-print(f"Plain-vs-annual-mean gap = {plain_gap:.6f} ({100*plain_gap/y_range:.2f}% of y-range) "
-      f"-> {'drawing' if draw_plain_mean else 'omitting'} the plain time-mean line")
+print(f"Gap between plain and annual mean = {plain_gap:.6f} ({100*plain_gap/y_range:.2f}% of y-range); "
+      f"{'drawing' if draw_plain_mean else 'omitting'} the plain time-mean line")
 
 # Draw
 fig, axes = plt.subplots(1, 4, figsize=(8.6, 5.6), sharey=True,
@@ -210,7 +211,7 @@ fig, axes = plt.subplots(1, 4, figsize=(8.6, 5.6), sharey=True,
 
 def tag(ax, text, color, xy=(0.97, 0.95), va="top"):
     """Small colour-matched corner tag naming the collapse this panel embodies,
-    so the story reads locally within the panel, not just from the arrow above."""
+    so the panel can be read on its own and not only from the arrow above."""
     ax.text(xy[0], xy[1], text, transform=ax.transAxes, ha="right", va=va,
              fontsize=7.4, fontweight="bold", color=color,
              bbox=dict(boxstyle="round,pad=0.25", facecolor="white", edgecolor=color, linewidth=1.0, alpha=0.9))
@@ -229,12 +230,12 @@ ax.text(2.5 * 24, y_max * 0.10, "office occupied hours", ha="center", va="bottom
 
 ax.plot(a_hours, a_vals, color=BASELINE_C, lw=1.0, zorder=3)
 
-# Reference lines: annual mean used in (b), and the office demand-weighted mean.
-# The three candidate reference lines (plain/office/annual) sit within ~7% of
-# each other on the y-axis, so labelling each one directly on the line (as
-# for the shading below) crowds and overlaps the data. Instead they get their
-# own small legend below panel (a) (matching handle colour/style to the
-# plotted axhlines), well clear of the data.
+# Reference lines: the annual mean used in (b) and the office demand-weighted
+# mean. The three candidate reference lines (plain/office/annual) sit within
+# about 7% of each other on the y-axis. Labels placed on each line, as for the
+# shading below, would crowd and overlap the data. They get their own small
+# legend below panel (a) instead, with handle colour and style matching the
+# plotted axhlines, well clear of the data.
 ax.axhline(genw_mean_2025, color=TEMPORAL_C, lw=1.2, ls=(0, (4, 1.5)), zorder=2, label="annual mean (b)")
 ax.axhline(office_weighted_mean_2025, color=REFERENCE_LINE_C, lw=1.2, ls=(0, (4, 1.5)), zorder=2, label="office demand mean")
 if draw_plain_mean:
@@ -306,9 +307,9 @@ for i, (label, color) in enumerate(labels):
 
 # Telescoping identity, colour-matched terms.
 # matplotlib's mathtext has no \underbrace/\color, so the equation is built
-# as a sequence of separately-coloured text runs placed left to right, each
-# positioned from the rendered width of the run before it (measured via the
-# actual renderer, not an assumed character width).
+# as a sequence of separately-coloured text runs placed left to right. Each
+# run is positioned from the rendered width of the run before it, measured
+# via the renderer rather than from an assumed character width.
 eq_y = 0.05
 lead = r"$E_d - E_a \;=\;$ "
 terms = [

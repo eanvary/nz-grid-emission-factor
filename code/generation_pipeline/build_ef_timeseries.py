@@ -1,5 +1,6 @@
 """
-NI/SI monthly grid emission factor time series (2021-2025).
+NI/SI monthly grid emission factor time series, over every Generation_MD month
+on disk (2015-2025 in the released database).
 Sources: NSP daily snapshots (EA data/NSP Tables), Dispatched generation
 plant SCD2 (EA data/Dispatched generation plant.csv), Generation_MD
 half-hourly files (EA_EMI_raw/*_Generation_MD.csv).
@@ -14,7 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).parent.parent  # repo root (this script lives in generation_pipeline/, one level down)
+ROOT = Path(__file__).parent.parent  # project root: the folder above generation_pipeline/
 NSP_DIR = ROOT / "EA data" / "NSP Tables"
 PLANT_FILE = ROOT / "EA data" / "Dispatched generation plant.csv"
 GEN_DIR = ROOT / "EA_EMI_raw"
@@ -29,7 +30,7 @@ def log(msg):
     log_lines.append(str(msg))
 
 
-# NSP snapshots: POC -> Island lookup
+# NSP snapshots: POC-to-island lookup
 nsp_files = sorted(glob.glob(str(NSP_DIR / "*_NetworkSupplyPointsTable.csv")))
 log(f"Found {len(nsp_files)} NSP snapshot files")
 
@@ -62,7 +63,7 @@ poc_island = (
     .set_index("POC code")["Island"]
     .to_dict()
 )
-log(f"POC -> Island lookup: {len(poc_island)} POCs total "
+log(f"POC-to-island lookup: {len(poc_island)} POCs total "
     f"({len(gen_nsp['POC code'].unique())} from GN/GG/GD generation NSPs, "
     f"remainder from other reconciliation types e.g. embedded generation) "
     f"(NI: {sum(v=='NI' for v in poc_island.values())}, "
@@ -71,11 +72,11 @@ log(f"POC -> Island lookup: {len(poc_island)} POCs total "
 # Plant SCD2: thermal EF lookup keyed by (POC, standardised fuel)
 plant = pd.read_csv(PLANT_FILE, low_memory=False)
 plant["eff_start"] = pd.to_datetime(plant["effective_start_datetime"], utc=True, errors="coerce")
-# "9999-12-31..." (still-active record, no superseding end date) overflows pandas'
-# nanosecond timestamp range and silently parses to NaT with errors="coerce", which
-# would make every currently-active SCD2 record fail every date-range match below.
-# Clamp any year >= 9999 to pd.Timestamp.max (~2262) before parsing so "still active"
-# records correctly cover all real-world query dates.
+# An end date of "9999-12-31..." marks a still-active record (no superseding end date).
+# It overflows pandas' nanosecond timestamp range and parses to NaT under
+# errors="coerce", so every currently active SCD2 record would fail every date-range
+# match below. Years >= 9999 are clamped to pd.Timestamp.max (about 2262) before
+# parsing, so still-active records cover all query dates.
 eff_end_raw = plant["effective_end_datetime"].astype(str).str.replace(
     r"^9999-.*$", "2200-01-01T00:00:00.000Z", regex=True
 )
@@ -83,13 +84,13 @@ plant["eff_end"] = pd.to_datetime(eff_end_raw, utc=True, errors="coerce")
 still_active = plant["effective_end_datetime"].astype(str).str.startswith("9999-")
 n_recovered = (still_active & plant["eff_end"].notna()).sum()
 log(f"Recovered {n_recovered} still-active SCD2 records with 9999-year end dates "
-    f"(previously parsed to NaT and would never match any lookup date)")
+    f"(without the clamp these parse to NaT and match no lookup date)")
 plant["EF_kg_per_MWh"] = plant["HeatRate"] * plant["EmissionsFactor"] / 1e6
 
-# Replace the register's flat 99.996 kg/MWh geothermal assumption with
-# real per-station values (McLean & Richardson 2019), falling back
-# to their fleet mean for the 6 POCs their 2018 study doesn't cover -- see
-# geothermal_ef_correction.py for the full mapping and rationale.
+# The register's flat 99.996 kg/MWh geothermal value is replaced with
+# per-station values (McLean & Richardson 2019). The 6 POCs their 2018 study
+# does not cover take their fleet mean. The mapping and rationale are in
+# geothermal_ef_correction.py.
 from geothermal_ef_correction import apply_geothermal_ef_correction
 apply_geothermal_ef_correction(plant)
 
@@ -127,14 +128,14 @@ def get_thermal_ef(poc, fuel_std, ref_dt):
 # Load and normalise Generation_MD files
 def load_generation_md(filepath):
     df = pd.read_csv(filepath, low_memory=False)
-    # Column casing changed at some point pre-2020 (Trading_date -> Trading_Date);
-    # normalise so both eras load identically.
+    # The column is Trading_date in older files and Trading_Date in later ones
+    # (the change predates 2020); normalising lets both eras load the same way.
     df = df.rename(columns={c: c for c in df.columns})
     lower_map = {c.lower(): c for c in df.columns}
     trading_date_col = lower_map["trading_date"]
     # <=50, not <=48: NZ's DST fall-back day (first Sunday of April) has 50 trading
-    # periods (TP49/TP50 are the extra repeated hour); excluding them silently drops
-    # ~3,500-3,900 MWh of real generation on that one day, every year.
+    # periods (TP49/TP50 are the extra repeated hour). Excluding them would drop
+    # about 3,500-3,900 MWh of generation on that day each year.
     tp_cols = [c for c in df.columns if re.match(r"^TP\d+$", c) and int(c[2:]) <= 50]
     df["gen_mwh"] = df[tp_cols].sum(axis=1, skipna=True) / 1000.0
     df["trading_date"] = pd.to_datetime(df[trading_date_col])
@@ -172,9 +173,9 @@ for isl, tot in gen.groupby("island")["gen_mwh"].sum().items():
 # Flagged fills (fuel_attribution.fills): Huntly 1-4 September 2020 (Genesis
 # quarterly output), and Grid_import fills: Huntly E3P/P40 September 2020 and norskeskog
 # 2015-2019 (scaled), Matahina October 2021 to December 2025 (measured). See the override table.
-# Every filled trading period is written to filled_generation_log.csv; one row per fill and
-# month, with the Grid_import ratio and any cross-check (FILLCHECK_ rows), to
-# filled_generation_summary.csv.
+# Every filled trading period is written to filled_generation_log.csv.
+# filled_generation_summary.csv has one row per fill and month, with the Grid_import
+# ratio and any cross-check (FILLCHECK_ rows).
 from fuel_attribution import FuelAttribution
 fa = FuelAttribution()
 fill_tp = fa.fills()
@@ -270,7 +271,7 @@ spot_checks = [  # (unit or POC/fuel, year, expected kg/MWh), resolved through f
 for ref, fuel, yr, name, expected in spot_checks:
     ef = fa.unit_ef(ref, yr, 6) if fuel is None else fa.pooled_ef(ref, fuel, yr, 6)
     status = "OK" if abs(ef - expected) < 5 else "CHECK"
-    log(f"  [{status}] {name}: {ef:.0f} kg/MWh (expected ~{expected})")
+    log(f"  [{status}] {name}: {ef:.0f} kg/MWh (expected about {expected})")
 
 for island, lo, hi in [("NI", 15, 28), ("SI", 12, 24)]:
     yr_gen = annual[annual["island"] == island].assign(twh=lambda d: d["total_gen_MWh"] / 1e6)
@@ -285,7 +286,7 @@ si_annual = annual[annual["island"] == "SI"].set_index("year")["EF_kg_per_MWh"]
 common_years = sorted(ni_annual.index.intersection(si_annual.index))
 if common_years:
     si_lower = (si_annual[common_years] < ni_annual[common_years]).mean()
-    log(f"  SI lower than NI in {si_lower:.0%} of years (expect ~100%), years: {common_years}")
+    log(f"  SI lower than NI in {si_lower:.0%} of years (expected: about 100%), years: {common_years}")
 log(f"  NI annual EF by year: {ni_annual.round(1).to_dict()}")
 log(f"  SI annual EF by year: {si_annual.round(1).to_dict()}")
 
@@ -350,31 +351,30 @@ fig.savefig(OUT_DIR / "EF_timeseries_NI_SI.png", dpi=150)
 log("Wrote: EF_timeseries_NI_SI.png")
 
 log("\n=== NOTES ===")
-log("1. SI EF is 0.0 in every year. This is not a bug: the 'Dispatched generation "
-    "plant' SCD2 file (the only source of HeatRate/EmissionsFactor in this pipeline) "
-    "contains zero thermal (CLG/GAS/DSL/GEO) plants located in the South Island: "
-    "every thermal POC (Huntly, Kawerau, Napier, Otahuhu, Southdown, Whirinaki, etc.) "
-    "is in the North Island. SI generation in this dataset is 100% hydro/wind, so a "
-    "zero combustion EF is the correct result given this data source, not a join failure.")
+log("1. SI EF is 0.0 in every year. The 'Dispatched generation plant' SCD2 file is the "
+    "only source of HeatRate/EmissionsFactor in this pipeline, and it lists no thermal "
+    "(CLG/GAS/DSL/GEO) plant in the South Island. Every thermal POC (Huntly, Kawerau, "
+    "Napier, Otahuhu, Southdown, Whirinaki, etc.) is in the North Island. SI generation in "
+    "this dataset is 100% hydro/wind, so a zero combustion EF is the correct result for "
+    "this data source, not a join failure.")
 log("2. The rule table above shows the generation and CO2 carried by each attribution rule. "
-    "Thermal generation with no active register record gets EF 0; since 2026-09-28 that is only "
+    "Thermal generation with no active register record gets EF 0; this applies only to "
     "the post-decommissioning Southdown residual (note 5).")
-log("3. Revised 2026-09-28 (fuel_attribution.py): factors are resolved by generator code and "
-    "register unit, not by (POC, fuel) pool. Huntly E3P/P40 and Rotokawa/Te Huka take their own "
-    "units; Huntly 1-4 are split coal/gas by Genesis's quarterly Rankine coal share (gas portion "
-    "an estimate); Kinleith is wood (CH4+N2O only, estimate); Matahina is filled from Manawa "
-    "fiscal-year totals (flagged). Stratford stays pooled (one generator code for TCC and the "
+log("3. Factors are resolved by generator code and register unit (fuel_attribution.py), "
+    "not by (POC, fuel) pool. Huntly E3P/P40 and Rotokawa/Te Huka take their own units. "
+    "Huntly 1-4 are split coal/gas by Genesis's quarterly Rankine coal share (gas portion "
+    "an estimate). Kinleith is wood (CH4+N2O only, estimate). Matahina from October 2021 to "
+    "December 2025 is filled from the EMI Grid_import generator stream at MAT1101, taken as "
+    "measured (flagged). Stratford stays pooled (one generator code for TCC and the "
     "peakers), with combined-cycle and peaker bound columns. Sources: fuel_attribution_overrides.csv.")
-log("4. Fixed 2026-08 (systematic reliability assessment): NZ's DST fall-back day (first "
-    "Sunday of April) has 50 trading periods, not 48; TP49/TP50 (the extra repeated hour) "
-    "were previously excluded by every raw-file loader in this pipeline, silently dropping "
-    "~3,500-3,900 MWh of real generation on that single day, every year, since the pipeline "
-    "was first built. Fixed by including TP49/TP50 in the daily/monthly/annual sum.")
-log("5. Revised 2026-09-28: 'Southdown 5' (SWN2201/GAS, unit SWN5) has DateDecommissioned="
-    "2016-01-19 but an SCD2 effective_end_datetime of 9999-12-31. Register records are now "
-    "inactive after their DateDecommissioned (RULE_DECOMMISSIONED), so the ~3,750 MWh recorded "
-    "at SWN2201 in 2018-2022 has no active record and carries EF 0. 2015 generation still takes "
-    "the mean of the two records active that year (SWN0 and SWN5).")
+log("4. NZ's DST fall-back day (first Sunday of April) has 50 trading periods, not 48. "
+    "TP49/TP50 (the extra repeated hour) are included in the daily, monthly and annual sums. "
+    "Excluding them would drop about 3,500-3,900 MWh of generation on that day each year.")
+log("5. 'Southdown 5' (SWN2201/GAS, unit SWN5) has DateDecommissioned="
+    "2016-01-19 but an SCD2 effective_end_datetime of 9999-12-31. Register records are "
+    "inactive after their DateDecommissioned (RULE_DECOMMISSIONED). About 3,750 MWh was "
+    "recorded at SWN2201 in 2018-2022; it has no active record and carries EF 0. 2015 "
+    "generation takes the mean of the two records active that year (SWN0 and SWN5).")
 
 (OUT_DIR / "processing_log.txt").write_text("\n".join(log_lines), encoding="utf-8")
 log("Wrote: processing_log.txt")

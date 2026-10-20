@@ -4,20 +4,20 @@ BDG2 real-data sensitivity test (script 2 of 4): build an empirical hourly load
 load-weighted decomposition method as the main (stylised-shape) assessment.
 
 Key assumption, Southern Hemisphere calendar shift:
-all 6 sample buildings are Northern Hemisphere (US/UK/Ireland). To make
-their SEASONAL pattern (the thing stylised shapes cannot capture at all)
-line up sensibly with New Zealand's grid data, each building's calendar
-month is shifted by 6 months when building the shape: BDG2 December/January
-(Northern winter) is mapped to NZ June/July (Southern winter), etc. This is
-an explicit proxy assumption, not a claim about real NZ building behaviour --
-stated plainly here and in every downstream output.
+all 6 sample buildings are Northern Hemisphere (US/UK/Ireland). Their
+seasonal pattern is what stylised shapes cannot capture at all. To line it
+up with New Zealand's grid data, each building's calendar month is shifted
+by 6 months when building the shape. BDG2 December/January (Northern
+winter) maps to NZ June/July (Southern winter), and so on. This is a proxy
+assumption, not a claim about real NZ building behaviour, and it is stated
+here and in every downstream output.
 
-Shape granularity: (nz_month, is_weekend, hour) -- averaged across both 2016
-and 2017 -- rather than exact calendar dates, because BDG2's 2016/2017
-calendar does not line up date-for-date with the NZ EDGS projection years
-(different weekday offsets, different leap-year placement). This preserves
-the real month-to-month (seasonal/weather-driven) and weekday/weekend
-structure the stylised shapes lacked, at the cost of day-to-day granularity
+Shape granularity: (nz_month, is_weekend, hour), averaged across both 2016
+and 2017, rather than exact calendar dates. BDG2's 2016/2017 calendar does
+not line up date-for-date with the NZ EDGS projection years (different
+weekday offsets, different leap-year placement). The shape keeps the real
+month-to-month (seasonal, weather-driven) and weekday/weekend structure
+that the stylised shapes lack, at the cost of day-to-day granularity
 within a month.
 """
 import pandas as pd
@@ -48,8 +48,8 @@ elec_interp["hour"] = elec_interp["timestamp"].dt.hour
 
 # Southern Hemisphere calendar shift: NZ_month = ((month + 5) % 12) + 1
 elec_interp["nz_month"] = ((elec_interp["month"] + 5) % 12) + 1
-log("\nHemisphere-shift check (BDG2 month -> NZ month): "
-    + ", ".join(f"{m}->{((m+5)%12)+1}" for m in range(1, 13)))
+log("\nHemisphere-shift check (BDG2 month to NZ month): "
+    + ", ".join(f"{m} to {((m+5)%12)+1}" for m in range(1, 13)))
 
 # Build empirical shape: mean kWh by (building, nz_month, is_weekend, hour)
 shape_rows = []
@@ -61,9 +61,9 @@ for b in BUILDINGS:
     shape_rows.append(agg)
 shapes = pd.concat(shape_rows, ignore_index=True)
 
-# Also build the SAMPLE-AVERAGE shape (all 6 buildings pooled, each first
+# Also build the sample-average shape (all 6 buildings pooled, each first
 # normalised to its own annual total so no single building's absolute scale
-# dominates the average) -- this is the headline "real shape" candidate.
+# dominates the average). This is the headline "real shape" candidate.
 norm_rows = []
 for b in BUILDINGS:
     sub = shapes[shapes["building_id"] == b].copy()
@@ -87,8 +87,8 @@ log("\n=== Mean normalised weight by NZ month, per building (seasonal signature)
 seasonal = all_shapes.groupby(["building_id", "nz_month"])["norm_weight"].sum().unstack("nz_month")
 log(seasonal.round(4).to_string())
 
-# Sanity: weekday vs weekend contrast (does this look like a real office?)
-log("\n=== Weekday vs weekend mean hourly weight, per building ===")
+# Sanity: weekday and weekend contrast (does this look like a real office?)
+log("\n=== Weekday and weekend mean hourly weight, per building ===")
 wnd = all_shapes.groupby(["building_id", "is_weekend"])["norm_weight"].mean().unstack("is_weekend")
 wnd.columns = ["weekday_mean", "weekend_mean"]
 wnd["weekend_pct_of_weekday"] = 100 * wnd["weekend_mean"] / wnd["weekday_mean"]

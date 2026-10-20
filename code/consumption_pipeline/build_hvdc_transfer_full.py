@@ -1,8 +1,8 @@
 """
 Inter-island (HVDC, Cook Strait link) power transfer, 2015-2025, from the raw
 EMI "HVDC flows" metered dataset (../EA_EMI_raw/*_HVDC_flows.csv, the root
-pipeline's shared raw-data folder; this script keeps no copy of its own),
-rather than the hand-exported EMI report file, which covers only 2021-2025.
+pipeline's shared raw-data folder; this script keeps no copy of its own).
+The hand-exported EMI report file is not used, since it covers only 2021-2025.
 
 The HVDC transfer outputs live in this folder, since both the consumption-EF
 calculation (this folder) and the generation-side pipeline (root) need them.
@@ -10,11 +10,11 @@ Raw inputs are read from the root-level shared EA_EMI_raw/ folder (single
 source of truth, no duplicate local copy that could go stale); only the
 output is written here.
 
-Convention: energy transfer is read at the RECEIVING end's Import (I) flow
-direction at each converter station -- this is the delivered-energy reading,
+Convention: energy transfer is read at the receiving end's Import (I) flow
+direction at each converter station. This is the delivered-energy reading,
 already net of DC-link losses:
-  - Northward (SI -> NI) = HAY2201 (Haywards, NI) Flow_Direction "I"
-  - Southward (NI -> SI) = BEN2201 (Benmore, SI) Flow_Direction "I"
+  - Northward (SI to NI) = HAY2201 (Haywards, NI) Flow_Direction "I"
+  - Southward (NI to SI) = BEN2201 (Benmore, SI) Flow_Direction "I"
 """
 import re
 from pathlib import Path
@@ -64,17 +64,16 @@ for f in files:
     keep = df[poc_col].isin(["BEN2201", "HAY2201"]) & (df[dir_col] == "I")
     d = df.loc[keep, [poc_col, date_col] + tp_cols].copy()
     d = d.rename(columns={poc_col: "poc", date_col: "trading_date"})
-    # Date formats: raw files switch format partway through the series.
-    # Pre-2020 files are DD/MM/YYYY ("01/04/2015"), 2020-onward files are ISO
-    # YYYY-MM-DD ("2020-04-01"). One parse with pd.to_datetime(..., format="mixed",
-    # dayfirst=True) is unsafe for the ISO half: pandas' dayfirst flag still
-    # swaps day/month in "mixed" mode whenever both components are <=12, even
-    # though ISO YYYY-MM-DD is unambiguous, so "2020-04-01" (April 1) parses as
-    # 2020-01-04 (Jan 4). That corrupts the 1st-12th of every month in every
-    # 2020+ file, scattering the data across up to 12 wrong months of the same
-    # year (annual totals survive, because the swap never crosses a year
-    # boundary, but daily, hourly and monthly figures do not). Each era is
-    # therefore parsed with its own explicit format.
+    # Raw files switch date format partway through the series. Pre-2020 files
+    # are DD/MM/YYYY ("01/04/2015"); 2020-onward files are ISO YYYY-MM-DD
+    # ("2020-04-01"). A single pd.to_datetime(..., format="mixed", dayfirst=True)
+    # call is unsafe for the ISO files. In "mixed" mode pandas' dayfirst flag still
+    # swaps day and month whenever both are <=12, though ISO YYYY-MM-DD is
+    # unambiguous, so "2020-04-01" (April 1) parses as 2020-01-04 (Jan 4). That
+    # would corrupt the 1st-12th of every month in every 2020+ file, scattering
+    # data across up to 12 wrong months of the same year. Annual totals survive,
+    # because the swap never crosses a year boundary; daily, hourly and monthly
+    # figures do not. Each era is therefore parsed with its own explicit format.
     parsed_iso = pd.to_datetime(d["trading_date"], format="%Y-%m-%d", errors="coerce")
     parsed_slash = pd.to_datetime(d["trading_date"], format="%d/%m/%Y", errors="coerce")
     d["trading_date"] = parsed_iso.fillna(parsed_slash)
@@ -82,13 +81,13 @@ for f in files:
         bad = df.loc[keep, date_col][d["trading_date"].isna()].unique()
         raise ValueError(f"{f.name}: {len(bad)} trading_date value(s) matched neither "
                           f"YYYY-MM-DD nor DD/MM/YYYY: {bad[:10]}")
-    d["gwh"] = d[tp_cols].fillna(0).sum(axis=1) / 1e6  # kWh -> GWh
+    d["gwh"] = d[tp_cols].fillna(0).sum(axis=1) / 1e6  # kWh to GWh
     parts.append(d[["poc", "trading_date", "gwh"]])
 
-    # Hourly: pair TP(2h+1)+TP(2h+2) -> hour h (0-23); TP49/TP50 folded into
-    # hour 23, same convention as the generation-side hourly pipeline.
+    # Hourly: TP(2h+1)+TP(2h+2) form hour h (0-23). TP49/TP50 fold into
+    # hour 23, as in the generation-side hourly pipeline.
     tp48 = df.loc[keep, tp_cols_48].fillna(0).to_numpy(dtype=float)
-    hour_mwh = tp48.reshape(len(d), 24, 2).sum(axis=2) / 1000.0  # kWh -> MWh, (n,24)
+    hour_mwh = tp48.reshape(len(d), 24, 2).sum(axis=2) / 1000.0  # kWh to MWh, shape (n, 24)
     if "TP49" in df.columns:
         extra = df.loc[keep, ["TP49", "TP50"]].fillna(0).to_numpy(dtype=float)
         hour_mwh[:, 23] += extra.sum(axis=1) / 1000.0
@@ -111,7 +110,7 @@ wide = wide.reset_index().rename(columns={"trading_date": "date"})
 wide["year"] = wide["date"].dt.year
 wide["month"] = wide["date"].dt.month
 
-# Aggregate & write outputs (daily / monthly / annual / hourly), full 2015-2025
+# Aggregate and write outputs (daily, monthly, annual, hourly), full 2015-2025
 daily = wide[["date", "SI_to_NI_GWh", "NI_to_SI_GWh", "net_to_NI_GWh"]].sort_values("date")
 daily.to_csv(OUT_DIR / "daily_hvdc_transfer_NI_SI.csv", index=False)
 log(f"\nWrote daily_hvdc_transfer_NI_SI.csv ({len(daily)} rows, "
@@ -134,7 +133,7 @@ h2d = hourly_wide.groupby("date").agg(
 ).reset_index()
 chk_h2d = h2d.merge(daily, on="date", suffixes=("_h", "_d"))
 max_h2d_diff = (chk_h2d["SI_to_NI_GWh_h"] - chk_h2d["SI_to_NI_GWh_d"]).abs().max()
-log(f"Hourly->daily reconciliation: max |SI_to_NI diff| = {max_h2d_diff:.9f} GWh (expect ~0)")
+log(f"Hourly-to-daily reconciliation: max |SI_to_NI diff| = {max_h2d_diff:.9f} GWh (expected: about 0)")
 
 monthly = (
     wide.groupby(["year", "month"])[["SI_to_NI_GWh", "NI_to_SI_GWh", "net_to_NI_GWh"]]
@@ -164,8 +163,8 @@ log(annual_ctx[["SI_to_NI_GWh", "NI_to_SI_GWh", "net_to_NI_GWh",
 
 total_north = annual["SI_to_NI_GWh"].sum()
 total_south = annual["NI_to_SI_GWh"].sum()
-log(f"\n2015-2025 totals: SI->NI = {total_north:,.0f} GWh, NI->SI = {total_south:,.0f} GWh, "
-    f"net SI->NI = {total_north - total_south:,.0f} GWh "
+log(f"\n2015-2025 totals: SI to NI = {total_north:,.0f} GWh, NI to SI = {total_south:,.0f} GWh, "
+    f"net SI to NI = {total_north - total_south:,.0f} GWh "
     f"({(total_north-total_south)/ni_gen.sum()*100:.1f}% of NI's own generation, "
     f"{(total_north-total_south)/si_gen.sum()*100:.1f}% of SI's own generation)")
 

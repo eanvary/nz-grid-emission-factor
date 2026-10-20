@@ -1,17 +1,16 @@
 """
-Figure 7 -- conditional sign (rebuild of fig3_scenario_dependence_sign_flip
-from phase4_figures.py). Kept: daytime_office, 25-year nominal period,
+Figure 7: conditional sign. Daytime_office, 25-year nominal period,
 grouped by trajectory (scenario) then by start year, coloured by sign,
 hatched where truncated.
 
-Added:
-  - Rows flagged pct_breakdown_unstable are EXCLUDED from the bars (not just
-    hatched); the exclusion count is stated in the printed caption text.
-  - A count strip beneath each trajectory group giving the number of
-    negative-error combinations out of the total tested for that trajectory
-    -- computed across the FULL 120-row factorial (all load shapes, all
-    periods), not just the 15 bars shown, because that is "the total
-    tested" the k-of-n rule refers to.
+Further elements:
+  - Rows flagged pct_breakdown_unstable are excluded from the bars, not
+    only hatched; the exclusion count is stated in the printed caption text.
+  - A count strip beneath each trajectory group gives the number of
+    negative-error combinations out of the total tested for that
+    trajectory. The count spans the full 120-row factorial (all load
+    shapes, all periods), not only the 15 bars shown, because that is
+    "the total tested" the k-of-n rule refers to.
 """
 import sys
 import numpy as np
@@ -30,8 +29,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from journal_palette import set_journal_style, CATEGORICAL, BASE  # noqa: E402
 
 set_journal_style()
-# Understate = CATEGORICAL[0] (deep navy). Overstate is a filled bar -> per
-# the palette rules, amber_fill (not the raw print-amber) with a dark edge.
+# Understate = CATEGORICAL[0] (deep navy). Overstate is a filled bar, so the
+# palette rules give it amber_fill (not the raw print-amber) with a dark edge.
 UNDERSTATE_C, OVERSTATE_C = CATEGORICAL[0], BASE["amber_fill"]
 
 decomp_full = pd.read_csv(TABLES / "phase3_decomposition_full.csv")
@@ -40,7 +39,7 @@ decomp_full = decomp_full.merge(
     t1[["load_shape", "scenario", "start_year", "study_period_yrs_requested", "pct_breakdown_unstable"]],
     on=["load_shape", "scenario", "start_year", "study_period_yrs_requested"], how="left")
 
-# Count strip: negative-error combinations per trajectory, out of the FULL
+# Count strip: negative-error combinations per trajectory, out of the full
 # 120-row factorial (all load shapes, all periods)
 neg_counts = decomp_full.groupby("scenario").apply(
     lambda g: pd.Series({"n_negative": int((g["total_error_d_minus_a"] < 0).sum()), "n_total": len(g)}),
@@ -48,8 +47,7 @@ neg_counts = decomp_full.groupby("scenario").apply(
 print("=== Per-trajectory negative-error count strip (full 120-row factorial) ===")
 print(neg_counts.to_string())
 
-# Panel data: daytime_office, 25yr nominal (same subset as the original
-# fig3_scenario_dependence_sign_flip), minus rows flagged unstable
+# Panel data: daytime_office, 25yr nominal, minus rows flagged unstable
 s25 = decomp_full[(decomp_full["load_shape"] == "daytime_office") &
                    (decomp_full["study_period_yrs_requested"] == 25)].copy()
 n_total_subset = len(s25)
@@ -65,7 +63,7 @@ start_years = sorted(s25["start_year"].unique())
 fig, ax = plt.subplots(figsize=(7.4, 4.6))
 width = 0.22
 x = np.arange(len(scenario_order))
-# one alpha shade per start year, lightest = earliest -- a display-order
+# one alpha shade per start year, lightest = earliest; a display-order
 # choice (3 levels), not a data value
 start_year_alphas = np.linspace(0.45, 1.0, len(start_years))
 

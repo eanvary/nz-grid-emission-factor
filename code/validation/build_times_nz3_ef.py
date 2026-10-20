@@ -30,7 +30,7 @@ publishes no EF itself, so every variant is a derived quantity:
                   and stay in. Emissions removed:
                     generic biogas and wood cogeneration: fuel PJ x MfE factor, per plant (exact)
                     generic geothermal cogeneration: its own technology row in ems (exact)
-                    generic geothermal generation: ESTIMATE, a generation-weighted share of the
+                    generic geothermal generation: an estimate, a generation-weighted share of the
                       "Geothermal" technology's emissions, because ems has no plant column.
 
 EDGS comparison:
@@ -154,10 +154,10 @@ hist_nat["island"] = "National"
 hist = pd.concat([hist_isl[["island", "year", "total_CO2_kg", "total_gen_MWh"]], hist_nat])
 hist["metered_EF"] = hist.total_CO2_kg / hist.total_gen_MWh  # kg/MWh = g/kWh
 
-# Comparison 1: national, TIMES-NZ vs MBIE EDGS 2024 published EF vs metered
+# Comparison 1: national, TIMES-NZ, MBIE EDGS 2024 published EF and metered
 edgs = pd.read_csv(ROOT / "output" / "edgs" / "edgs_annual_targets.csv")
 edgs = edgs[edgs.metric == "grid_emission_factor"][["scenario", "year", "value"]]
-edgs["EDGS_EF"] = edgs.value * 1000  # kg/kWh -> g/kWh
+edgs["EDGS_EF"] = edgs.value * 1000  # kg/kWh to g/kWh
 
 n = df[df.Region == "National"].copy()
 n["edgs_scenario"] = n.Scenario.map(TIMES_TO_EDGS)
@@ -169,7 +169,7 @@ cmp = cmp[["Scenario", "edgs_scenario", "Period", "EF_reported", "EF_plus_coal_c
 cmp.to_csv(OUT / "times_nz3_vs_edgs_vs_metered.csv", index=False, float_format="%.2f")
 
 
-# Comparison 2: island, TIMES-NZ vs this project's EDGS island EF(i), generation basis
+# Comparison 2: island, TIMES-NZ and this project's EDGS island EF(i), generation basis
 def edgs_island_annual():
     """Annual generation-weighted EF by scenario x island, generation basis (phase1 method)."""
     E = ROOT / "output" / "edgs"
@@ -221,7 +221,7 @@ ic = ic.sort_values(["Scenario", "island", "Period"])
 ic.to_csv(OUT / "times_nz3_vs_edgs_island.csv", index=False, float_format="%.2f")
 
 # 2023 scope reconciliation: TIMES-NZ plants vs metered Generation_MD generators
-# TIMES plant(s) -> metered Gen_Code(s). Plants listed together are one station or scheme.
+# Maps TIMES plant(s) to metered Gen_Code(s). Plants listed together are one station or scheme.
 PLANT_MAP = [
     (["Glenbrook Steel"], ["glenbrook_kilns"]),
     (["Huntly Units 1-4"], ["huntly_1_4"]),

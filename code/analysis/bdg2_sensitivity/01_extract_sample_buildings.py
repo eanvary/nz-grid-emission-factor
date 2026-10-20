@@ -1,15 +1,15 @@
 """
 BDG2 real-data sensitivity test (script 1 of 4): extract a small, diverse sample of
 real hourly office-building electricity meters from the Building Data Genome
-Project 2 (Miller et al. 2020, Sci Data 7:368), for use as a REAL (not
-stylised) building load shape in a sensitivity re-run of the Phase 3
-decomposition. NZ building data is not accessible; BDG2 is Northern-
-Hemisphere (US/UK/Ireland) and is used here explicitly as an out-of-region
-proxy to test whether real (vs. stylised) hourly demand timing changes the
-error decomposition -- not as a claim about NZ building behaviour.
+Project 2 (Miller et al. 2020, Sci Data 7:368). The sample gives a real, not
+stylised, building load shape for a sensitivity re-run of the Phase 3
+decomposition. NZ building data is not accessible. BDG2 is Northern-Hemisphere
+(US/UK/Ireland) and is used here only as an out-of-region proxy, to test
+whether real rather than stylised hourly demand timing changes the error
+decomposition. It makes no claim about NZ building behaviour.
 
-Kept entirely separate from analysis_paper/{scripts,tables,figures,logs} --
-this whole exercise lives under analysis_paper/sensitivity_realdata_bdg2/.
+Kept separate from analysis_paper/{scripts,tables,figures,logs}; the whole
+exercise lives under analysis_paper/sensitivity_realdata_bdg2/.
 """
 import pandas as pd
 from pathlib import Path

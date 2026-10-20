@@ -7,7 +7,7 @@ Geothermal CO2 is split into independent pseudo-fuels:
                   rel_sigma = sqrt(AD^2 + EF^2) from NIR 2026 Vol 1, section 3.2.3, Table 3.2.3
                   "Uncertainty for New Zealand's energy sector emission estimates for 2024" (printed
                   pp72-73): "Fugitive - Other forms of energy production (geothermal)", activity data
-                  +/-5.0%, emission factor +/-5.0% (CO2; the CH4 row gives the same) -> 7.07%.
+                  +/-5.0%, emission factor +/-5.0% (CO2; the CH4 row gives the same), so 7.07%.
   GEO_S2_<station> step 2 (the same station's nearest published year, including 2025 values held
                   from 2024 and every 2026 month). rel_sigma = sqrt(7.07%^2 + s_station^2), where
                   s_station is the station's own year-to-year relative variation in the NZGA series:
@@ -20,9 +20,9 @@ Geothermal CO2 is split into independent pseudo-fuels:
                   (geothermal_mclean_richardson_stations.csv).
 Step classification is per generator-month, from the attribution rule and the basis recorded in
 generation_pipeline/geothermal_intensity_nzga.csv. The hourly file splits each hour's GEO row by that
-month's shares of geothermal generation and CO2 by term (geothermal output is close to flat within a
-month; an approximation, stated).
-Outputs (docs/validation/): geo_uncertainty_sigma.csv (one row per term, with s_station),
+month's shares of geothermal generation and CO2 by term (an approximation: geothermal output is close
+to flat within a month).
+Outputs (this folder): geo_uncertainty_sigma.csv (one row per term, with s_station),
 geo_step2_station_variation.csv, monthly_fuel_mix_uncertainty.csv, hourly_fuel_mix_uncertainty.csv.
 """
 import math
@@ -102,7 +102,7 @@ def classify(r):
 
 a["group"] = [classify(r) for r in a.itertuples()]
 for st in sorted({r.rule.replace("GEO_NZGA_", "").replace("_NEARESTYEAR", "") for r in a.itertuples() if r.group.startswith("GEO_S2_")}):
-    if st not in S2.index:  # no NZGA series at all (e.g. Te Huka 3, operator figure only): fewer than 3 years -> pooled
+    if st not in S2.index:  # no NZGA series (e.g. Te Huka 3, operator figure only): fewer than 3 years, so pooled
         S2.loc[st] = {"n_published_years": 0, "n_changes": 0, "s_station_own": np.nan, "s_station_used": S_POOLED,
                       "basis": "pooled (no NZGA series)", "rel_sigma_step2": math.sqrt(SIG_MEASURED ** 2 + S_POOLED ** 2)}
         print(f"  {st}: no NZGA series, pooled s_station {S_POOLED:.4f}")

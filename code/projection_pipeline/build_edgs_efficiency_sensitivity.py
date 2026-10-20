@@ -1,6 +1,6 @@
 """
-Thermal plant efficiency improvement, as a standalone sensitivity test, not a pipeline
-change. This script does not modify build_edgs_dispatch.py, edgs_common.py,
+Thermal plant efficiency improvement, as a standalone sensitivity test outside the pipeline.
+It does not modify build_edgs_dispatch.py, edgs_common.py,
 build_edgs_plant_register.py, or any pipeline output parquet. It reads only the pipeline's
 saved intermediates and recomputes combustion CO2 in parallel under a counterfactual
 efficiency-improvement assumption, for comparison against the baseline.
@@ -21,21 +21,21 @@ External source (cited):
   U.S. EIA, "Natural gas-fired electricity conversion efficiency grows as coal remains stable"
   (Today in Energy, 27 Jan 2016), https://www.eia.gov/todayinenergy/detail.php?id=32572
   - US fleet-average heat rate, 2006-2015 (EIA-923/860 generator-level data):
-      Natural gas-fired generation:  8,471 -> ~7,878 Btu/kWh  (-7% over the 9-year period)
-      Coal-fired generation:         ~10,251 -> ~10,351 Btu/kWh (+1%, "remained stable")
-  - Driven substantially by combined-cycle's rising share of gas generation (75% in 2006 ->
+      Natural gas-fired generation:  8,471 to about 7,878 Btu/kWh  (-7% over the 9-year period)
+      Coal-fired generation:         about 10,251 to about 10,351 Btu/kWh (+1%, "remained stable")
+  - Driven substantially by combined-cycle's rising share of gas generation (75% in 2006,
     85% in 2015) displacing older/simple-cycle units, not purely per-unit engineering upgrades.
 
 Derivation (this script's own arithmetic, not an EIA-stated annual rate):
   compound annual gas heat-rate improvement = (1 - 0.07)^(1/9) - 1 = -0.803%/yr (heat rate
-  falling, i.e. efficiency rising). Applied only to the "Natural gas" MBIE commodity (MBIE's
-  Electricity generation use / GHG sheets carry no CCGT/OCGT/cogen sub-split, so "Natural gas"
-  is the finest grain available and the single rate applies to NZ's whole gas fleet, mirroring
-  the US fleet-average basis it was measured on). Coal held flat (0%, not the EIA's +1%
-  worsening: this tests an improvement scenario, not a degradation one, and 1% over 9 years is
-  noise-scale). Diesel/LPG/Fuel oil: no cited fleet trend was found (thin literature; NZ's
-  diesel/LPG peakers are low-utilisation reserve plant, not represented in the EIA CCGT/coal
-  dataset), so they are held flat and left untested rather than assumed.
+  falling, i.e. efficiency rising). It is applied only to the "Natural gas" MBIE commodity.
+  MBIE's Electricity generation use / GHG sheets carry no CCGT/OCGT/cogen sub-split, so
+  "Natural gas" is the finest grain available. The single rate therefore applies to NZ's whole
+  gas fleet, mirroring the US fleet-average basis it was measured on. Coal is held flat (0%,
+  not the EIA's +1% worsening): this tests an improvement scenario, not a degradation one, and
+  1% over 9 years is noise-scale. Diesel/LPG/Fuel oil have no cited fleet trend (thin
+  literature; NZ's diesel/LPG peakers are low-utilisation reserve plant, not represented in the
+  EIA CCGT/coal dataset), so they are held flat and left untested rather than assumed.
 
 Caveat: extrapolating a 2006-2015 US fleet trend forward to 2050 (35 years beyond the
 observed window, a different country and fleet) is a real methodological stretch. The script
@@ -52,7 +52,7 @@ isolates the efficiency lever only; updates to the MfE factors are out of scope 
 Standalone: reads only edgs_thermal_intensity.parquet (pipeline output), writes only new CSVs.
 
 Outputs (output/edgs/):
-  edgs_efficiency_sensitivity.csv          per scenario/year/fuel: baseline vs efficiency-
+  edgs_efficiency_sensitivity.csv          per scenario/year/fuel: baseline and efficiency-
                                             adjusted fuel_use_pj, combustion_co2_kt, delta
   edgs_efficiency_sensitivity_summary.csv  per scenario/year: national combustion CO2 delta
                                             (Mt, %) and implied generation-EF delta (kg/kWh)
@@ -69,17 +69,17 @@ EIA_SOURCE = ("U.S. EIA, 'Natural gas-fired electricity conversion efficiency gr
               "(https://www.eia.gov/todayinenergy/detail.php?id=32572) - "
               "US fleet heat rate 2006-2015: natural gas -7%, coal +1% ('stable')")
 BASE_YEAR = 2024
-GAS_ANNUAL_IMPROVEMENT = 1 - (1 - 0.07) ** (1 / 9)  # 0.00803 -> heat rate shrinks 0.803%/yr
+GAS_ANNUAL_IMPROVEMENT = 1 - (1 - 0.07) ** (1 / 9)  # 0.00803: heat rate falls 0.803%/yr
 EFFICIENCY_RATE_BY_FUEL = {
     "Natural gas": GAS_ANNUAL_IMPROVEMENT,
-    "Coal": 0.0,     # EIA found coal essentially flat (+1%/9yr, noise-scale) - held at 0, not applied
-    "Diesel": 0.0,   # no cited fleet trend found for NZ-scale diesel peakers - flat, untested
-    "LPG": 0.0,      # no cited fleet trend found - flat, untested
-    "Fuel oil": 0.0, # no cited fleet trend found - flat, untested
+    "Coal": 0.0,     # EIA found coal nearly flat (+1%/9yr, noise-scale); held at 0
+    "Diesel": 0.0,   # no cited fleet trend found for NZ-scale diesel peakers; flat, untested
+    "LPG": 0.0,      # no cited fleet trend found; flat, untested
+    "Fuel oil": 0.0, # no cited fleet trend found; flat, untested
 }
 log(f"Source: {EIA_SOURCE}")
 log(f"Derived compound annual gas heat-rate improvement: {GAS_ANNUAL_IMPROVEMENT*100:.3f}%/yr "
-    f"(applied {BASE_YEAR}->2050, cumulative {1-(1-GAS_ANNUAL_IMPROVEMENT)**(2050-BASE_YEAR):.1%} "
+    f"(applied {BASE_YEAR} to 2050, cumulative {1-(1-GAS_ANNUAL_IMPROVEMENT)**(2050-BASE_YEAR):.1%} "
     f"by 2050)")
 
 # Load the baseline (reconciled thermal fuel/CO2, per scenario-year-fuel)
@@ -111,7 +111,7 @@ detail = base[detail_cols].sort_values(["scenario", "year", "fuel"])
 detail.to_csv(OUT_DIR / "edgs_efficiency_sensitivity.csv", index=False)
 log(f"\nWrote edgs_efficiency_sensitivity.csv ({len(detail):,} rows)")
 
-# National summary: combustion CO2 delta per scenario-year (Mt, %) + implied
+# National summary: combustion CO2 delta per scenario-year (Mt, %) and implied
 # generation-side EF delta (using the same MBIE net-generation denominator the
 # pipeline's generation EF uses, i.e. total generation is unaffected).
 targets = pd.read_parquet(OUT_DIR / "edgs_annual_targets.parquet")
@@ -149,7 +149,7 @@ for scenario in SCENARIOS:
     row = nat[(nat["scenario"] == scenario) & (nat["year"] == 2050)]
     if len(row):
         r = row.iloc[0]
-        log(f"  {scenario}: baseline {r.baseline_ef_kg_per_kwh:.5f} -> "
+        log(f"  {scenario}: baseline {r.baseline_ef_kg_per_kwh:.5f}, "
             f"efficient {r.efficient_ef_kg_per_kwh:.5f} kg/kWh "
             f"({r.ef_delta_kg_per_kwh:+.5f}, national-generation basis)")
 

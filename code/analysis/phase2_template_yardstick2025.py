@@ -7,14 +7,14 @@ candidate year's timing against the mean of metered 2024 and 2025. That makes
 by construction. The question it answers: if recent years are good enough
 to be the reference, why not use one as the template?
 
-This re-runs the identical method with 2025 alone as the yardstick, so 2024
+The same method runs here with 2025 alone as the yardstick, so 2024
 becomes an eligible candidate and can be compared with 2021 on equal terms.
 No released output is overwritten.
 
 Method, as in phase2_template_shape_selection.py: for each complete metered year,
-normalise the NI generation-basis hourly EF by that year's mean, average it by
-hour of day, day of week, hour of week and month of year, and correlate each
-profile with the yardstick year's profile.
+normalise the NI generation-basis hourly EF by that year's mean and average it
+by hour of day, day of week, hour of week and month of year. Each profile is
+then correlated with the yardstick year's profile.
 
 Inputs   output/hourly_emission_factor_NI_SI.csv (metered hourly EF, EA/EMI)
 Outputs  analysis_paper/tables/phase2_template_yardstick2025.csv

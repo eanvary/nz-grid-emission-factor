@@ -10,8 +10,8 @@ def log(m):
 annual = pd.read_csv(TABLES / "phase1_annual_trajectory_projected.csv")
 gen_side = annual[annual["ef_basis"] == "generation"].copy()
 
-log("=== NI-ONLY data-driven percentile thresholds (SI excluded: trivially ~0 all "
-    "years, no thermal fleet -- see Phase 0) ===")
+log("=== NI-only data-driven percentile thresholds (SI excluded: near 0 in all "
+    "years, no thermal fleet; see Phase 0) ===")
 ni = gen_side[gen_side["island"] == "NI"]["gen_weighted_mean_ef"].dropna()
 pcts = {p: ni.quantile(p / 100) for p in [75, 50, 25, 10, 5]}
 log(f"NI-only pooled percentile values (kg/kWh): { {k: round(v,5) for k,v in pcts.items()} }")
@@ -28,11 +28,11 @@ df = pd.DataFrame(rows).sort_values("scenario")
 log(df.to_string(index=False))
 df.to_csv(TABLES / "phase1_percentile_crossing_years_NIonly.csv", index=False)
 
-log("\nSI note: South Island generation-side EF is at/near its floor (~0 kg/kWh) "
-    "from 2024 in every scenario -- there is no meaningful percentile-crossing "
-    "dynamic to report for SI on the generation side; this is a real structural "
-    "feature (no thermal fleet), not a data gap. SI is only dynamically interesting "
-    "on the CONSUMPTION side (see phase1_spatial.py).")
+log("\nSI note: South Island generation-side EF is at or near its floor (about 0 kg/kWh) "
+    "from 2024 in every scenario. SI has no meaningful percentile-crossing "
+    "dynamic to report on the generation side. This is a structural "
+    "feature (no thermal fleet), not a data gap. SI shows dynamics only "
+    "on the consumption side (see phase1_spatial.py).")
 
 with open(LOGS / "phase1_trajectories_fix_log.txt", "w", encoding="utf-8") as f:
     f.write("\n".join(log_lines))

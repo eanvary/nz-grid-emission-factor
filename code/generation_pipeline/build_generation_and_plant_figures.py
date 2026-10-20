@@ -1,25 +1,23 @@
 """
-Additional figures (does not touch the report or existing pipeline outputs):
-  1. Monthly total generation, NI vs SI (2015-2025)
-  2. Daily total generation, NI vs SI (2015-2025)
-  3. Fleet-wide per-plant landscape: generation volume vs emission intensity
-     vs total emissions (bubble chart, log generation axis)
+Generation and per-plant figures (the report and the existing pipeline
+outputs are not modified):
+  1. Monthly total generation, NI and SI (2015-2025)
+  2. Daily total generation, NI and SI (2015-2025)
+  3. Fleet-wide per-plant landscape: generation volume, emission intensity
+     and total emissions (bubble chart, log generation axis)
   4. Top-15 plants by total generation: output (bars) and emission
      intensity (markers), ranked
 
-Design rationale for (3)/(4), per-plant generation and emissions:
-A flat list of ~90 plants cannot be shown legibly as a single bar chart
-without becoming illegible, and showing "generation" and "emissions" as two
-separate bar charts hides the relationship between them (a plant's emissions
-are a function of both how much it runs AND how dirty it is per MWh). A
-bubble chart with generation on x, emission factor (intensity) on y, and
-bubble area proportional to total emissions lets all three be read at once:
-position on the y-axis immediately separates renewables (y=0) from thermal
-plant; position on the x-axis shows scale of operation; bubble size shows
-which plants actually matter for total emissions (a small, very dirty peaker
-can still be a minor contributor if it barely runs). This is supplemented by
-a ranked top-15 bar+marker chart for readability of the largest contributors
-by name.
+Design rationale for (3) and (4), per-plant generation and emissions:
+A single bar chart of about 90 plants is not legible. Separate bar charts
+for generation and emissions would hide the relationship between them: a
+plant's emissions depend on both how much it runs and its emissions per MWh.
+A bubble chart shows all three at once, with generation on x, emission factor
+(intensity) on y, and bubble area proportional to total emissions. The y
+position separates renewables (y=0) from thermal plant. The x position shows
+scale of operation. Bubble size shows which plants matter for total emissions;
+a small, high-intensity peaker that rarely runs contributes little. A ranked
+top-15 bar and marker chart names the largest contributors.
 """
 import re
 from pathlib import Path
@@ -30,7 +28,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import sys
 
-ROOT = Path(__file__).parent.parent  # repo root (this script lives in generation_pipeline/, one level down)
+ROOT = Path(__file__).parent.parent  # project root: the folder above generation_pipeline/
 GEN_DIR = ROOT / "EA_EMI_raw"
 NSP_DIR = ROOT / "EA data" / "NSP Tables"
 OUT_DIR = ROOT / "output"
@@ -48,8 +46,8 @@ FUEL_LABELS = {
     "CLG": "Coal", "DSL": "Diesel", "SOL": "Solar", "WOOD": "Wood", "ELE": "Other/elec",
 }
 
-# 1 & 2: Monthly / daily total generation, NI vs SI
-# (re-uses the already-validated outputs of the EF pipelines: no recompute)
+# 1 and 2: Monthly and daily total generation, NI and SI
+# (read from the validated EF pipeline outputs, not recomputed)
 monthly = pd.read_csv(OUT_DIR / "monthly_emission_factor_NI_SI.csv", parse_dates=["period"])
 daily = pd.read_csv(OUT_DIR / "daily_emission_factor_NI_SI.csv", parse_dates=["date"])
 
@@ -94,7 +92,7 @@ poc_island = poc_island_map()
 
 
 def base_name(name):
-    # "Huntly Rankine 1".."Huntly Rankine 4" -> "Huntly Rankine"; "Huntly 5"/"Huntly 6" -> "Huntly"
+    # "Huntly Rankine 1" to "Huntly Rankine 4" become "Huntly Rankine"; "Huntly 5" and "Huntly 6" become "Huntly"
     return re.sub(r"\s*\d+$", "", str(name)).strip()
 
 
@@ -106,7 +104,7 @@ poc_fuel_to_plant = (
     reg.groupby(["PointOfConnectionCode", "FuelCode"])["base_plant_name"].agg(lambda s: s.mode().iat[0]).to_dict()
 )
 
-# fallback by POC alone where the metered fuel differs from the register's (Kinleith: Wood vs GAS)
+# fallback by POC alone where the metered fuel differs from the register's (Kinleith: metered Wood, register GAS)
 poc_to_plant = reg.groupby("PointOfConnectionCode")["base_plant_name"].agg(lambda s: s.mode().iat[0]).to_dict()
 
 gen = fa.generation("month")
@@ -126,9 +124,8 @@ plant_totals = (
 )
 plant_totals["EF_kg_per_MWh"] = plant_totals["total_CO2_kg"] / plant_totals["total_gen_MWh"]
 
-# Collapse multiple POCs of the same plant+fuel (e.g. Huntly's 2 gas units
-# under one POC already; a few plants have >1 POC, e.g. Manapouri/Roxburgh
-# extensions) into one bubble per (plant, fuel).
+# One bubble per (plant, fuel). A few plants have more than one POC (e.g.
+# Manapouri and Roxburgh extensions); Huntly's 2 gas units already share one POC.
 plant_agg = (
     plant_totals.groupby(["plant_name", "fuel_std", "island"])
     .agg(total_gen_MWh=("total_gen_MWh", "sum"), total_CO2_kg=("total_CO2_kg", "sum"))
@@ -142,7 +139,7 @@ plant_agg.to_csv(OUT_DIR / "plant_level_generation_emissions_2015_2025.csv", ind
 print(f"saved plant_level_generation_emissions_2015_2025.csv ({len(plant_agg)} plant x fuel rows, "
       f"{plant_agg['total_gen_MWh'].sum()/1e6:.2f} TWh total)")
 
-# 3: Fleet-wide bubble chart: generation vs intensity vs total emissions
+# 3: Fleet-wide bubble chart: generation, intensity and total emissions
 fig3, ax3 = plt.subplots(figsize=(10, 6.5))
 size_scale = 4000 / plant_agg["total_CO2_kt"].max()
 fuel_order = ["HYD", "WIN", "SOL", "GEO", "GAS", "CLG", "DSL", "WOOD", "ELE"]
@@ -153,17 +150,16 @@ for fuel in [f for f in fuel_order if f in plant_agg["fuel_std"].unique()]:
                 color=FUEL_COLOURS.get(fuel, "#888888"), alpha=0.6,
                 edgecolors="white", linewidths=0.6)
 
-# Fixed-size proxy handles for the legend (real bubble sizes vary by 2 orders
-# of magnitude and would otherwise blow up the legend swatches)
+# Fixed-size proxy handles for the legend: plotted bubble sizes span 2 orders
+# of magnitude and would make the legend swatches unreadable.
 legend_handles = [
     plt.scatter([], [], s=80, color=FUEL_COLOURS[f], edgecolors="white", linewidths=0.6, label=FUEL_LABELS[f])
     for f in fuel_order if f in plant_agg["fuel_std"].unique()
 ]
 ax3.legend(handles=legend_handles, loc="upper left", fontsize=8, framealpha=0.9, title="Fuel")
 
-# Label only the handful of plants that matter for the emissions story:
-# the largest emitters (thermal) and largest generators (renewables), with
-# small manual y-offsets to reduce overlap between adjacent points.
+# Labels go only on the largest emitters (thermal) and the largest generators
+# (renewables), with small manual y-offsets to reduce overlap between adjacent points.
 top_emit = plant_agg.nlargest(5, "total_CO2_kt")
 top_gen = plant_agg.nlargest(3, "total_gen_GWh")
 labelled = pd.concat([top_emit, top_gen]).drop_duplicates(subset=["plant_name", "fuel_std"])
@@ -183,7 +179,7 @@ fig3.tight_layout()
 fig3.savefig(OUT_DIR / "plant_landscape_generation_vs_intensity.png", dpi=150)
 print("saved plant_landscape_generation_vs_intensity.png")
 
-# 4: Top-15 plants by generation: bars (generation) + markers (EF)
+# 4: Top-15 plants by generation: bars (generation) and markers (EF)
 top15 = (
     plant_agg.groupby("plant_name")
     .agg(total_gen_GWh=("total_gen_GWh", "sum"), total_CO2_kt=("total_CO2_kt", "sum"))

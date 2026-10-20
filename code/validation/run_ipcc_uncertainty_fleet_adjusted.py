@@ -8,8 +8,7 @@ unavailable fleet estimate, so they keep the IPCC default, as build_fleet_uncert
 reports.
 
 The IPCC-default results (ipcc_uncertainty_by_island_{month,year,hour,day}.csv) are
-not overwritten; both sets are kept side by side, so no earlier result is silently
-replaced.
+not overwritten; both sets are kept side by side.
 """
 import math
 from pathlib import Path
@@ -21,10 +20,10 @@ HERE = Path(__file__).resolve().parent
 
 fleet = pd.read_csv(HERE / "fleet_uncertainty_by_fuel.csv").set_index("fuel_std")["rel_sigma_adopted"].to_dict()
 
-# Exact IPCC Table 2.2 relative half-widths -- recomputed from the same
-# (default, lower, upper) triplets as run_ipcc_uncertainty_quantification.py,
-# not hand-copied rounded constants, so the "original" baseline below
-# reproduces the IPCC-default results byte for byte.
+# Exact IPCC Table 2.2 relative half-widths, recomputed from the same
+# (default, lower, upper) triplets as run_ipcc_uncertainty_quantification.py
+# rather than copied as rounded constants. The "original" baseline below
+# therefore reproduces the IPCC-default results byte for byte.
 IPCC_TABLE_2_2 = {
     "CLG": (96100.0, 92800.0, 100000.0),
     "GAS": (56100.0, 54300.0, 58300.0),
@@ -41,10 +40,10 @@ REL_SIGMA_ORIGINAL = {f: rel_half_width(*v) for f, v in IPCC_TABLE_2_2.items()}
 REL_SIGMA_FLEET_ADJUSTED = dict(REL_SIGMA_ORIGINAL)
 REL_SIGMA_FLEET_ADJUSTED["GAS"] = fleet["GAS"]  # rel_sigma_adopted: per-unit carbon + heat-rate uncertainty (build_fleet_uncertainty.py)
 
-print("Relative sigma used, original vs. fleet-adjusted:")
+print("Relative sigma used, original and fleet-adjusted:")
 for f in REL_SIGMA_ORIGINAL:
     tag = " <- CHANGED" if REL_SIGMA_FLEET_ADJUSTED[f] != REL_SIGMA_ORIGINAL[f] else ""
-    print(f"  {f}: {REL_SIGMA_ORIGINAL[f]:.4f} -> {REL_SIGMA_FLEET_ADJUSTED[f]:.4f}{tag}")
+    print(f"  {f}: {REL_SIGMA_ORIGINAL[f]:.4f} to {REL_SIGMA_FLEET_ADJUSTED[f]:.4f}{tag}")
 
 ZERO_EF_FUELS = {"HYD", "WIN", "SOL"}
 EXCLUDED_FUELS = {"GEO", "ELE"}
@@ -91,12 +90,12 @@ monthly_fleet.to_csv(HERE / "ipcc_uncertainty_by_island_month_fleet_adjusted.csv
 
 ni_orig = monthly_orig[monthly_orig.island == "NI"]["ci95_pct_of_point"].dropna()
 ni_fleet = monthly_fleet[monthly_fleet.island == "NI"]["ci95_pct_of_point"].dropna()
-print(f"\nNI monthly CI% -- original:        min={ni_orig.min():.2f}% max={ni_orig.max():.2f}% mean={ni_orig.mean():.2f}%")
-print(f"NI monthly CI% -- fleet-adjusted:  min={ni_fleet.min():.2f}% max={ni_fleet.max():.2f}% mean={ni_fleet.mean():.2f}%")
+print(f"\nNI monthly CI%, original:        min={ni_orig.min():.2f}% max={ni_orig.max():.2f}% mean={ni_orig.mean():.2f}%")
+print(f"NI monthly CI%, fleet-adjusted:  min={ni_fleet.min():.2f}% max={ni_fleet.max():.2f}% mean={ni_fleet.mean():.2f}%")
 widen_pct = (ni_fleet.mean() / ni_orig.mean() - 1) * 100
 print(f"Mean widening from fleet adjustment: {widen_pct:+.1f}%")
 
-# Annual roll-up (same disclosed simplification as the existing scripts)
+# Annual roll-up (same stated simplification as the other propagation scripts)
 monthly_fleet["year"] = monthly_fleet["year"].astype(int)
 annual_rows = []
 for (island, year), g in monthly_fleet.groupby(["island", "year"]):
@@ -112,8 +111,8 @@ annual_fleet.to_csv(HERE / "ipcc_uncertainty_by_island_year_fleet_adjusted.csv",
 ni_annual_orig = pd.read_csv(HERE / "ipcc_uncertainty_by_island_year.csv")
 ni_annual_orig = ni_annual_orig[ni_annual_orig.island == "NI"]["ci95_pct_of_point"]
 ni_annual_fleet = annual_fleet[annual_fleet.island == "NI"]["ci95_pct_of_point"]
-print(f"\nNI annual CI% -- original:       min={ni_annual_orig.min():.2f}% max={ni_annual_orig.max():.2f}%")
-print(f"NI annual CI% -- fleet-adjusted: min={ni_annual_fleet.min():.2f}% max={ni_annual_fleet.max():.2f}%")
+print(f"\nNI annual CI%, original:       min={ni_annual_orig.min():.2f}% max={ni_annual_orig.max():.2f}%")
+print(f"NI annual CI%, fleet-adjusted: min={ni_annual_fleet.min():.2f}% max={ni_annual_fleet.max():.2f}%")
 print(f"\nWrote ipcc_uncertainty_by_island_month_fleet_adjusted.csv and "
       f"ipcc_uncertainty_by_island_year_fleet_adjusted.csv")
 
@@ -158,8 +157,8 @@ if hourly_path.exists():
 
     ni_h_orig = hourly_orig[(hourly_orig.island == "NI") & (hourly_orig.point_ef_kg_per_mwh > 0)]["ci95_pct_of_point"]
     ni_h_fleet = hourly_fleet[(hourly_fleet.island == "NI") & (hourly_fleet.point_ef_kg_per_mwh > 0)]["ci95_pct_of_point"]
-    print(f"NI hourly CI% -- original:       min={ni_h_orig.min():.2f}% max={ni_h_orig.max():.2f}% mean={ni_h_orig.mean():.2f}%")
-    print(f"NI hourly CI% -- fleet-adjusted: min={ni_h_fleet.min():.2f}% max={ni_h_fleet.max():.2f}% mean={ni_h_fleet.mean():.2f}%")
+    print(f"NI hourly CI%, original:       min={ni_h_orig.min():.2f}% max={ni_h_orig.max():.2f}% mean={ni_h_orig.mean():.2f}%")
+    print(f"NI hourly CI%, fleet-adjusted: min={ni_h_fleet.min():.2f}% max={ni_h_fleet.max():.2f}% mean={ni_h_fleet.mean():.2f}%")
     print(f"Wrote ipcc_uncertainty_by_island_hour_fleet_adjusted.csv ({len(hourly_fleet):,} rows)")
 else:
     print("\nSkipping hourly fleet-adjusted run: hourly_fuel_mix_NI_SI.csv not found "

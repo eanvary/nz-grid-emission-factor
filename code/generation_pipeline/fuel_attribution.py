@@ -9,18 +9,21 @@ and URL):
   Huntly Units 1-4    split into coal and gas by Genesis Energy's quarterly Rankine coal share,
                       uniform within the quarter. Coal portion at the register coal record
                       (994.08 kg/MWh); gas portion at the Rankine heat rate x register gas
-                      factor (575.52 kg/MWh, ESTIMATE). 2015 Q1-Q2: share = Genesis coal GWh /
+                      factor (575.52 kg/MWh, an estimate). 2015 Q1-Q2: share = Genesis coal GWh /
                       metered Rankine GWh, capped at 1. No Genesis figure: all coal, flagged.
-  Unit mapping        huntly_e3p -> HLY5, huntly_p40 -> HLY6, rotokawa -> RKA0, tehuka -> TAA0.
+  Unit mapping        huntly_e3p to HLY5, huntly_p40 to HLY6, rotokawa to RKA0, tehuka to TAA0.
   Decommissioned      a register record is inactive after its DateDecommissioned (Southdown 5).
   Kinleith            fuel Wood; EF = projection wood CH4+N2O factor (1.52 kg/GJ) x MBIE wood
-                      fuel input / wood generation for the year (ESTIMATE).
+                      fuel input / wood generation for the year (an estimate).
   Stratford           primary series stays pooled; two bound columns (combined cycle SPL0,
                       peaker SFD21) are carried alongside.
-  Matahina            generation filled from Manawa Energy fiscal-year station totals (FY23,
-                      FY24) and, for April 2024 to December 2025, the independent adviser's
-                      long-term average (not measured). Every value is flagged with its
-                      fill_basis; see matahina_fill().
+  Matahina            missing from Generation_MD from October 2021. October 2021 to December
+                      2025 is taken from the EMI Grid_import generator stream at MAT1101
+                      (Generation_Type GG) as measured, since that stream equals Generation_MD
+                      Matahina in every month from January 2015 to September 2021
+                      (GRIDIMPORT_FILL_MAT1101, flagged 'Grid_import, measured'; see
+                      grid_import_fill()). matahina_fill() reads MATAHINA_ fiscal-year rows;
+                      the override table has none, so it adds no rows.
 
 Everything else takes the mean of the active register records for (POC, fuel).
 Non-thermal fuels carry EF 0, except Wood (Kinleith) as above.
@@ -49,7 +52,7 @@ NSP_DIR = ROOT / "EA data" / "NSP Tables"
 
 
 def poc_island_map():
-    """POC -> 'NI'/'SI' from the NSP tables, latest record per POC (as build_ef_timeseries.py)."""
+    """POC to 'NI'/'SI' map from the NSP tables, latest record per POC (as in build_ef_timeseries.py)."""
     nsp = pd.concat([pd.read_csv(f, low_memory=False) for f in sorted(NSP_DIR.glob("*_NetworkSupplyPointsTable.csv"))],
                     ignore_index=True)
     nsp = nsp.drop_duplicates(subset=["POC code", "Reconciliation type", "Island", "Start date", "End date"])
@@ -112,7 +115,7 @@ class FuelAttribution:
         if nzga_geothermal:
             t = pd.read_csv(HERE / "geothermal_intensity_nzga.csv")
             self.nzga = {(r.station, int(r.year)): float(r.g_co2e_per_kwh) for r in t.itertuples()}
-            # gen_code -> [(start, end, station)]; blank dates mean open-ended
+            # {gen_code: [(start, end, station)]}; blank dates mean open-ended
             self.geo_map = {}
             for r in self.ov[self.ov.override_id.str.startswith("GEO_MAP_")].itertuples():
                 s = pd.Timestamp(r.period_start) if isinstance(r.period_start, str) and r.period_start else pd.Timestamp.min
@@ -252,12 +255,12 @@ class FuelAttribution:
     def blended_ef(self, gen):
         """One factor per (poc, gen_code, fuel_std, year, month) key: CO2 / generation, i.e. the
         share-weighted factor where a key is split (Huntly 1-4 coal/gas). For scripts that need
-        a factor lookup at trading-period level. gen must carry real gen_mwh with every month
+        a factor lookup at trading-period level. gen must carry actual gen_mwh with every month
         of each quarter it covers (the 2015 Q1-Q2 Huntly share uses metered quarterly output)."""
         g = gen[KEY + ["gen_mwh"]].groupby(KEY, as_index=False).gen_mwh.sum()
         # attribute() splits a key into parts and relabels each part's fuel_std (Huntly 1-4:
-        # CLG -> CLG + GAS), so CO2 is summed back by row, not by KEY. Summing by KEY dropped
-        # the GAS part's CO2 (fixed in ef-database-v1.0.1).
+        # CLG becomes CLG and GAS), so CO2 is summed back by row, not by KEY. Summing by KEY
+        # would drop the GAS part's CO2.
         g["_row"] = np.arange(len(g))
         a = self.attribute(g.copy())
         c = g.assign(co2_kg=g["_row"].map(a.groupby("_row").co2_kg.sum()).fillna(0.0)).drop(columns="_row")
@@ -354,9 +357,10 @@ class FuelAttribution:
 
     # Matahina fill
     def matahina_fill(self):
-        """Trading-period rows for Matahina from Manawa fiscal-year totals (Apr-Mar).
-        Returns trading_date, tp (1-48), gen_mwh, override_id. Hydro, EF 0, all flagged.
-        No MATAHINA_ rows remain in the override table; GRIDIMPORT_FILL_MAT1101 covers Matahina."""
+        """Trading-period rows for Matahina from MATAHINA_ overrides (Manawa fiscal-year
+        totals, Apr-Mar). Returns trading_date, tp (1-48), gen_mwh, override_id, fill_basis.
+        Hydro, EF 0, all flagged. The override table has no MATAHINA_ rows, so the result is
+        empty; Matahina is filled by GRIDIMPORT_FILL_MAT1101 in grid_import_fill()."""
         if not self.ov.override_id.str.startswith("MATAHINA_").any():
             return pd.DataFrame([], columns=["trading_date", "tp", "gen_mwh", "override_id", "fill_basis"])
         parts = []
@@ -376,7 +380,7 @@ class FuelAttribution:
         daily = hist.sum(axis=1)
         monthly = daily.groupby([daily.index.year, daily.index.month]).sum()
         monthly.index.names = ["year", "month"]
-        # FY (Apr-Mar) monthly shares over complete FYs FY2016-FY2021 (Apr 2015 - Mar 2021)
+        # FY (Apr-Mar) monthly shares over complete FYs FY2016-FY2021 (Apr 2015 to Mar 2021)
         shares = []
         for fy in range(2016, 2022):
             months = [(fy - 1, mm) for mm in range(4, 13)] + [(fy, mm) for mm in range(1, 4)]

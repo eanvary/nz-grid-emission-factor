@@ -1,18 +1,17 @@
 """
-Figure 3 -- disclosure matrix, built from extraction_output_reviewed_Output_v12.xlsx,
+Figure 3: disclosure matrix, built from extraction_output_reviewed_Output_v12.xlsx,
 sheet 'Extraction', restricted to the 68 Include==Yes records.
 
 Columns 1 and 2 are regex-derived from Operational_Carbon / Standards_Referenced
-(rules below, also written to the provenance file).
+(rules below).
 
 Columns 3-6 (grid EF source named / spatial / temporal / trajectory) are
-each a judgement call on free text, and are the paper's central disclosure
-claim, so they are NOT left to a fragile keyword regex. Every one of the 68
-records' Emission_Factor_Source text was read by hand (see
-figures/FIG2_FIG3_PROVENANCE.md for the full read-through) and the verdict
-recorded explicitly per Study_ID in COL3456_CODING below -- this is the
-single source of truth for those four columns, fully auditable and
-reproducible without re-running any regex.
+each a judgement call on free text. They carry the paper's central
+disclosure claim, so they are not left to a fragile keyword regex. The
+Emission_Factor_Source text of all 68 records was read by hand, and the
+verdict is recorded per Study_ID in COL3456_CODING below. That table is the
+single source of truth for those four columns. It can be audited and
+reproduced without running any regex.
 """
 import re
 import sys
@@ -42,20 +41,19 @@ ie = df["Include_Exclude"].astype(str).str.strip()
 inc = df[ie == "Include"].copy()
 assert len(inc) == 68, f"expected 68 included records, got {len(inc)}"
 
-# Row labels: academic author-year citations, not the internal Study_ID code.
-# The workbook's `Authors` field has no single consistent format across its
-# 68 included records (semicolon "Surname, First" lists, comma "and"-joined
-# "First Last" lists, APA comma/initial lists, single bare names in various
-# orders, one middle-dot-separated list, one affiliation-letter-suffixed
-# list) -- too heterogeneous for one regex to parse reliably for a citation
-# that will appear in a submitted figure. CITATION_LABEL below was built by
-# reading each of the 68 `Authors`/`Year_Verified` values directly (see
-# FIG2_FIG3_PROVENANCE.md for the full row-by-row derivation) and is
-# guarded at run time, not just typed: for every Study_ID the code below
-# asserts (a) the label's year matches `Year_Verified` and (b) the first
-# author's surname used in the label appears verbatim inside the raw
-# `Authors` string -- so a transcription slip fails loudly instead of
-# silently printing a wrong citation.
+# Row labels are academic author-year citations, not the internal Study_ID code.
+# The workbook's `Authors` field has no consistent format across its 68
+# included records. The formats include semicolon "Surname, First" lists,
+# comma "and"-joined "First Last" lists, APA comma/initial lists, single
+# bare names in various orders, one middle-dot-separated list and one
+# affiliation-letter-suffixed list. One regex cannot parse these reliably
+# for a citation in a submitted
+# figure. CITATION_LABEL below was built by reading each of the 68
+# `Authors`/`Year_Verified` values, and it is checked at run time. For every
+# Study_ID the code asserts that (a) the label's year matches `Year_Verified`
+# and (b) the first author's surname in the label appears verbatim in the raw
+# `Authors` string. A transcription slip therefore fails loudly instead of
+# printing a wrong citation.
 CITATION_LABEL = {
     "S001": "Ghose (2017)", "S002": "Ghose et al. (2017a)", "S004": "Bui (2023)",
     "S010": "Dowdell & Berg (2016)", "S011": "Berg et al. (2016)", "S012": "MacGregor et al. (2018)",
@@ -103,23 +101,22 @@ inc["citation_label"] = inc["Study_ID"].map(CITATION_LABEL)
 dup_labels = inc["citation_label"].value_counts()
 assert dup_labels.max() == 1, f"duplicate citation labels remain: {dup_labels[dup_labels > 1].to_dict()}"
 
-# Column 1: Operational carbon quantified -- true where Operational_Carbon
+# Column 1: Operational carbon quantified. True where Operational_Carbon
 # begins with "Yes" (covers "Yes", "Yes: 86%...", "Yes (informal...)", etc.)
 inc["col1_opcarbon"] = inc["Operational_Carbon"].astype(str).str.strip().str.startswith("Yes")
 
 # Column 2: EN 15978 or equivalent WLC-assessment standard referenced.
-# Matching rule (written here verbatim for the provenance file): true if
-# Standards_Referenced contains "15978" in any citation format (EN 15978,
-# BS EN 15978, NS 3720 "based on EN 15978", etc.), OR names ISO 21931
-# (the ISO whole-life-carbon-assessment framework standard, the recognised
-# international equivalent to EN 15978), OR explicitly names the "RICS
-# Whole Life Carbon Assessment" methodology (RICS's own WLC standard,
-# built on and referencing EN 15978).
+# Matching rule: true if Standards_Referenced passes any of three tests.
+# (1) It contains "15978" in any citation format (EN 15978, BS EN 15978,
+# NS 3720 "based on EN 15978", etc.). (2) It names ISO 21931, the ISO
+# whole-life-carbon-assessment framework standard and the recognised
+# international equivalent to EN 15978. (3) It names the "RICS Whole Life
+# Carbon Assessment" methodology, RICS's own WLC standard, built on and
+# referencing EN 15978.
 STD_PATTERN = re.compile(r"15978|21931|RICS\s+Whole\s+Life\s+Carbon", re.I)
 inc["col2_en15978"] = inc["Standards_Referenced"].astype(str).apply(lambda s: bool(STD_PATTERN.search(s)))
 
-# Columns 3-6: hand-coded per Study_ID from a full read of Emission_Factor_Source
-# (see FIG2_FIG3_PROVENANCE.md for the read-through of all 68 records).
+# Columns 3-6: hand-coded per Study_ID from a full read of Emission_Factor_Source.
 # Default is False for every record; only True cells are listed.
 COL3_GRID_EF_NAMED_TRUE = {
     "S054": "LCAQuick v3.4.3 embedded database (BRANZ CO2NSTRUCT-derived reference-building "
@@ -216,16 +213,15 @@ for c, title in zip(COLS, COL_TITLES):
 
 # Figure: compact two-panel matrix, laid out for legibility as an academic
 # figure.
-#   - "true" cells are small square markers, not full-column-width bars
-#     (which would read as a bar chart, not a matrix). This matches the
-#     marker convention used in fig1_evidence_map.png and is immune to axes
-#     aspect distortion because marker size is defined in points, not data
-#     units.
+#   - "true" cells are small square markers, not full-column-width bars,
+#     which would read as a bar chart. This matches the marker convention
+#     of fig1_evidence_map.png. Marker size is defined in points, not data
+#     units, so axes aspect distortion does not affect it.
 #   - The 68 rows are split into two side-by-side panels so the figure is
-#     wide/short (journal-appropriate) rather than one tall/narrow panel of
-#     68 rows. The split
-#     point is chosen at run time to balance the two panels' row counts as
-#     evenly as possible, not hardcoded to a specific block name.
+#     wide and short (suited to a journal) rather than one tall, narrow
+#     panel of 68 rows. The split point is chosen at run time to balance
+#     the two panels' row counts as evenly as possible, not hardcoded to a
+#     specific block name.
 COL_TITLES_SHORT = ["Operational carbon", "EN 15978+ equivalent", "Grid EF named",
                      "Spatial resolution", "Temporal resolution", "Trajectory"]
 
@@ -249,11 +245,11 @@ panel_rows = max(len(left_df), len(right_df))
 print(f"Panel split: left={list(left_blocks)} (n={len(left_df)}), "
       f"right={list(right_blocks)} (n={len(right_df)})")
 
-# Block group names are shown as their own header ROW (like a sub-heading
-# in a table), not squeezed into a narrow left margin next to the row
-# labels, where block names collide with study-ID labels. Column headers
-# get real spacing (COL_SPACING) so 6 two-line labels do not run into each
-# other, as they do with unit column spacing.
+# Block group names are shown as their own header row, like a sub-heading
+# in a table. In a narrow left margin next to the row labels they would
+# collide with the study labels. Column headers get extra spacing
+# (COL_SPACING) so that six two-line labels do not run into each other, as
+# they do with unit column spacing.
 COL_SPACING = 1.55
 PER_ROW_IN = 0.150
 n_cols = len(COLS)
@@ -299,10 +295,10 @@ def draw_panel(ax, items):
     ax.set_xlim(-2.9, col_x[-1] + 0.9)
     ax.set_ylim(-0.8, y_top + 1.6)
     ax.set_xticks(col_x)
-    # Angled headers: with 6 columns this close together, horizontal
-    # two-line labels run into each other regardless of column spacing;
-    # angled single-line labels take diagonal, not
-    # horizontal, room and don't collide.
+    # Angled headers: with six columns this close together, horizontal
+    # two-line labels run into each other at any column spacing. Angled
+    # single-line labels take diagonal rather than horizontal room and do
+    # not collide.
     ax.set_xticklabels(COL_TITLES_SHORT, fontsize=7.4, fontweight="bold",
                        rotation=32, ha="left", rotation_mode="anchor")
     ax.xaxis.tick_top()
@@ -315,9 +311,9 @@ draw_panel(axL, left_items)
 draw_panel(axR, right_items)
 fig.subplots_adjust(wspace=0.45, top=0.66, bottom=0.02)
 
-# Compact title: one bold headline + one smaller detail line, then the
-# legend on its OWN line below both (not competing with the headline for
-# the same top-right corner, where the two collide)
+# Compact title: one bold headline and one smaller detail line, with the
+# legend on its own line below both. Sharing the top-right corner with the
+# headline would make the two collide.
 headline = f"Disclosure of carbon method and grid emission factor attributes by reviewed record (n = 68)"
 detail = (f"n={N} · Operational carbon {pct['col1_opcarbon']:.0f}% · EN 15978+ "
           f"{pct['col2_en15978']:.0f}% · Grid EF named {pct['col3_gridef']:.0f}% · "
@@ -339,7 +335,7 @@ fig.savefig(FIGS / "fig3_disclosure_matrix.png", bbox_inches="tight", dpi=300)
 plt.close(fig)
 print("Saved fig3_disclosure_matrix.svg/.pdf/.png (two-panel layout, 68 rows)")
 
-# export the coded table for the provenance file / independent re-check
+# export the coded table for an independent re-check
 inc[["Study_ID", "citation_label", "Segmentation_Group", "platform"] + COLS].to_csv(
     ROOT / "analysis" / "FIG3_DISCLOSURE_CODING.csv", index=False)
 print(f"Wrote analysis/FIG3_DISCLOSURE_CODING.csv ({len(inc)} rows)")

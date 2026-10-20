@@ -1,7 +1,7 @@
 """Energy use intensity cohort for Paper 3, with every North Island city in the NABERSNZ data.
-Same filters as analysis_paper/scripts/phase3_eui_derivation_v2.py (pre-2004 construction, Whole Building rating,
-gas share <= 5%, rated area and electricity use > 0), but the island is assigned from a complete city list: the
-list in that script leaves out Lower Hutt, Upper Hutt, Porirua and Paeroa. Writes the cohort table the analysis reads
+Same filters as the analysis_paper cohort derivation (pre-2004 construction, Whole Building rating,
+gas share <= 5%, rated area and electricity use > 0), but the island is assigned from a complete city list. The
+list in that derivation leaves out Lower Hutt, Upper Hutt, Porirua and Paeroa. Writes the cohort table the analysis reads
 (<copy_root>/analysis_paper/tables/phase3_eui_derived_v2.csv; the file it replaces is kept as *_before_all_cities.csv).
 Usage: python p03_eui_all_ni_cities.py <copy_root>"""
 import re, shutil, sys

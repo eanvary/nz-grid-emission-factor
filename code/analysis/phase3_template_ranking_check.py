@@ -5,7 +5,7 @@ change of Assumption-1 shape template?
 Why this check. The paper's decomposition uses the central template (2021).
 The hydro-template sensitivity covers the annual EF trajectory, not the
 decomposition, so whether the ranking depends on the template needs its own
-test. This script compares phase3_decomposition_full.csv (central 2021)
+test. The check compares phase3_decomposition_full.csv (central 2021)
 with the _tmpl2023 (wet), _tmpl2024 (dry) and _tmpl2017 (hydro-median) runs
 produced by `EDGS_TEMPLATE_YEAR=<year> python phase3_decomposition.py`.
 
@@ -63,7 +63,7 @@ for label, suffix in TEMPLATES.items():
     })
 
 t = pd.DataFrame(rows).set_index("template")
-log("=== Spatial vs temporal ranking under each Assumption-1 shape template ===")
+log("=== Spatial against temporal ranking under each Assumption-1 shape template ===")
 log(f"Headline row = {HEADLINE}")
 log(t.round(3).to_string())
 

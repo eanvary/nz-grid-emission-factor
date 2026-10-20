@@ -2,35 +2,36 @@
 Finds the cause of the em6 cross-check gaps (GEO 3.3%, HYD 8.8% "good but not perfect"
 agreement; GAS 39.9% "systematic level offset").
 
-The cheapest hypothesis is tested first: day-boundary /
-trading-date alignment between this project's own `trading_date` (NZ trading-day
-convention: TP1 = 00:00-00:30 NZT) and em6's `trading_date` field, whose labelling
-convention was never verified against ours.
+The cheapest hypothesis is tested first: day-boundary or trading-date alignment
+between this project's `trading_date` (NZ trading-day convention: TP1 = 00:00-00:30
+NZT) and em6's `trading_date` field, whose labelling convention had not been checked
+against ours.
 
-Diagnostic: re-merge the SAME two cached series (`generation_by_fuel_daily_2026.csv`,
-`em6_free_generation_by_fuel_daily.csv` -- no re-fetch needed, only the date alignment
-changes) at date lags of -2..+2 days and compare r / mean|diff%| per fuel:
+Diagnostic: the same two cached series (`generation_by_fuel_daily_2026.csv`,
+`em6_free_generation_by_fuel_daily.csv`; no re-fetch, only the date alignment
+changes) are re-merged at date lags of -2..+2 days, and r and mean|diff%| are
+compared per fuel:
 
   lag   GAS(r, diff%)     GEO(r, diff%)     HYD(r, diff%)     WIN(r, diff%)
-  +0d   0.802, 39.9%      0.896, 3.3%       0.779, 8.8%       0.513, 54.7%   <- unshifted
-  +1d   0.941, 24.4%      0.990, 2.7%       0.998, 1.9%       0.999, 3.3%    <- best fit, by far
+  +0d   0.802, 39.9%      0.896, 3.3%       0.779, 8.8%       0.513, 54.7%   (unshifted)
+  +1d   0.941, 24.4%      0.990, 2.7%       0.998, 1.9%       0.999, 3.3%    (best fit by a wide margin)
 
 Root cause: em6's `trading_date` is one calendar day earlier than this
-project's trading-date convention for the same physical generation. HYD and WIN
-(fuels with real day-to-day variability, so a 1-day misalignment shows strongly in
-correlation) rise from r=0.78/0.51 to r=0.998/0.999 once the 1-day shift is applied. GEO
-(near-constant baseload) and GAS (partly cogen-driven, see below) improve but less
-dramatically, exactly as expected for fuels whose daily total doesn't swing much even when
-mislabelled by a day. This is consistent with a UTC-vs-NZT trading-day boundary
-convention difference (NZT is UTC+12/+13, more than half a day ahead, so a UTC-anchored
-date field flips to the previous NZ calendar date for periods before ~noon UTC / midday+).
+project's trading-date convention for the same physical generation. HYD and WIN vary
+strongly from day to day, so a 1-day misalignment shows up in their correlation.
+They rise from r=0.78/0.51 to r=0.998/0.999 once the 1-day shift is applied. GEO
+(near-constant baseload) and GAS (partly cogeneration-driven) improve less, as expected
+for fuels whose daily total changes little when mislabelled by a day. This is
+consistent with a difference between UTC and NZT trading-day boundaries. NZT is
+UTC+12/+13, more than half a day ahead, so a UTC-anchored date field flips to the
+previous NZ calendar date for periods before about noon UTC.
 
-CLG is unaffected (still ~50/111 days em6 reports zero coal, the already-documented,
-independently confirmed em6 free-tier data gap -- unrelated to date alignment, correctly
-still excluded from the verdict).
+CLG is unaffected. On about 50 of 111 days em6 reports zero coal, a known and
+independently confirmed em6 free-tier data gap that is unrelated to date alignment,
+so CLG stays excluded from the verdict.
 
-This script applies the +1 day correction to the cached em6 series and rebuilds
-em6_crosscheck_overlap.csv / em6_crosscheck_summary_by_fuel.csv. It does not need network
+The script applies the +1 day correction to the cached em6 series and rebuilds
+em6_crosscheck_overlap.csv and em6_crosscheck_summary_by_fuel.csv. It needs no network
 access (the diagnosis uses data already on disk); the live-fetch build script
 (build_2026_extension_and_em6_crosscheck.py) applies the same shift.
 """
@@ -41,7 +42,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 
 EM6_TO_PROJECT = {"GAS": "GAS", "CG": "CLG", "HYD": "HYD", "WIN": "WIN", "SOL": "SOL", "GEO": "GEO"}
-DAY_SHIFT = 1  # calendar days added to em6's trading_date to align with ours -- see docstring
+DAY_SHIFT = 1  # calendar days added to em6's trading_date to align with ours (see docstring)
 
 ours = pd.read_csv(HERE / "generation_by_fuel_daily_2026.csv", parse_dates=["trading_date"])
 em6 = pd.read_csv(HERE / "em6_free_generation_by_fuel_daily.csv", parse_dates=["trading_date"])

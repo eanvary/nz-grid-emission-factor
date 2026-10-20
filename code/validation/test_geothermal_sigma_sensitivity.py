@@ -4,7 +4,7 @@ geothermal's relative sigma should be.
 
 Why this test
 run_ipcc_uncertainty_montecarlo.py sets GEO's relative sigma to the MW-weighted
-spread ACROSS the 12 McLean & Richardson (2019) stations, 93.97%, and draws one
+spread across the 12 McLean & Richardson (2019) stations, 93.97%, and draws one
 multiplier per fuel per trial. That is a fuel-level parameter.
 
 But the point estimate does not use a fleet value for geothermal:
@@ -16,9 +16,9 @@ So for most of the fleet the between-station spread is information the database
 already holds, not uncertainty about it. Re-using that spread as a fuel-level
 sigma therefore risks counting known heterogeneity twice.
 
-This script does not decide the question. It re-runs the same Monte Carlo under
-three readings of what is actually uncertain, changing nothing else, so the size
-of the effect is on record.
+The question is left open here. The same Monte Carlo is re-run under
+the adopted reading of what is uncertain and three alternatives, changing nothing
+else, so the size of the effect is on record.
 
   0. adopted           by proxy-rule step, independent draws: step 1 at the NIR
                        2026 measurement uncertainty (7.07%), step 2 at 7.07% with the

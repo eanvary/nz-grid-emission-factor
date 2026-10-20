@@ -1,19 +1,19 @@
 """
 Diagnostics for build_edgs_battery_sensitivity.py. That script finds the HVDC flag count
-worsening from 101/135 to 104/135 scenario-years under the report battery figures. This
-script checks that change against the reconstruction's own known ~20 MW / 51 MW calibration
-noise floor, using a continuous violation-magnitude metric instead of a hard 1,200 MW
-threshold flag, and tests the proposed mechanism (demand-peak vs residual-peak divergence)
-directly.
+rising from 101/135 to 104/135 scenario-years under the report battery figures. The change
+is compared with the reconstruction's known calibration noise floor (about 20 MW mean,
+51 MW max). The comparison uses a continuous violation-magnitude metric in place of a hard
+1,200 MW threshold flag. The proposed mechanism (divergence between the demand-peak hour and
+the residual-peak hour) is tested directly.
 
-It reuses the same reconstruction logic as build_edgs_battery_sensitivity.py (same formulas,
-same inputs, no recalibration of the known ~20/51 MW discrepancy; that noise floor is used
-as-is) but keeps the full hourly transfer series in memory to compute:
+The reconstruction logic is that of build_edgs_battery_sensitivity.py (same formulas and
+inputs; the 20/51 MW discrepancy is not recalibrated and serves as the noise floor). The full
+hourly transfer series is kept in memory to compute:
   1. continuous violation magnitude: sum_t max(0, |transfer(t)| - 1200) MW, per
      scenario-year, both variants. Compared against the noise floor rescaled to the
      same annual-integrated units.
-  2. demand-peak-hour vs residual-peak-hour divergence, correlated against the change
-     in continuous violation magnitude (report-battery minus pipeline-DSR).
+  2. divergence between the demand-peak hour and the residual-peak hour, correlated against
+     the change in continuous violation magnitude (report-battery minus pipeline-DSR).
 
 Standalone: reads only existing saved parquets, writes only new CSVs. Does not modify
 build_edgs_dispatch.py, edgs_common.py, build_edgs_battery_sensitivity.py, or any pipeline
@@ -150,11 +150,11 @@ for scenario in SCENARIOS:
 
         residual_pre = np.clip(nat_demand - nat_ren, 0.0, None)
 
-        # 1: demand-peak-hour vs residual-peak-hour divergence
-        # "demand" here = the generation-level load series (nat_demand), the actual quantity
-        # driving the transfer target in this pipeline; "residual" = demand minus renewables,
-        # the quantity thermal/DSR actually respond to. Divergence measured in hours (0-23,
-        # circular distance within the day, matching the daily peak-shave cycle's own scope).
+        # 1: divergence between the demand-peak hour and the residual-peak hour.
+        # "demand" is the generation-level load series (nat_demand), the quantity that
+        # drives the transfer target in this pipeline. "residual" is demand minus renewables,
+        # the quantity thermal and DSR respond to. Divergence is in hours (0-23, circular
+        # distance within the day, the scope of the daily peak-shave cycle).
         demand_peak_hr = int(np.argmax(nat_demand)) % 24
         residual_peak_hr = int(np.argmax(residual_pre)) % 24
         raw_diff = abs(demand_peak_hr - residual_peak_hr)
@@ -208,13 +208,13 @@ for scenario in SCENARIOS:
 df = pd.DataFrame(rows)
 df.to_csv(OUT_DIR / f"edgs_battery_hvdc_continuous_magnitude{SUFFIX}.csv", index=False)
 
-# Robustness verdict vs the known ~20/51 MW single-hour calibration discrepancy,
-# rescaled to the same annual-integrated units for a fair comparison.
+# Verdict against the known 20/51 MW single-hour calibration discrepancy,
+# rescaled to the same annual-integrated units.
 log("\n=== Step 1: continuous violation magnitude (MW-hours/yr over 1200 MW) ===")
 tot_ship = df.continuous_mag_MWh_pipeline.sum()
 tot_rep = df.continuous_mag_MWh_report.sum()
 tot_change = tot_rep - tot_ship
-log(f"  Total across 135 scenario-years: pipeline-equivalent {tot_ship:,.0f} MWh  ->  "
+log(f"  Total across 135 scenario-years: pipeline-equivalent {tot_ship:,.0f} MWh, "
     f"report-battery {tot_rep:,.0f} MWh  (change {tot_change:+,.0f} MWh, "
     f"{tot_change/tot_ship*100:+.1f}%)")
 
@@ -223,16 +223,16 @@ n_neg = (df.continuous_mag_change < 0).sum()
 n_zero = (df.continuous_mag_change == 0).sum()
 log(f"  Sign consistency: {n_pos}/135 worsen, {n_neg}/135 improve, {n_zero}/135 unchanged")
 
-# Noise-floor rescale: the known ~20 MW mean / 51 MW max single-hour discrepancy, if it
-# persisted across a comparable number of hours per scenario-year as the median violation
-# duration actually observed, gives the annual-integrated noise floor for a fair comparison.
+# Noise-floor rescale: the known single-hour discrepancy (20 MW mean, 51 MW max), if it
+# persisted for as many hours per scenario-year as the observed median violation
+# duration, gives the annual-integrated noise floor.
 hours_per_sy_ship = ((df.continuous_mag_MWh_pipeline > 0).sum())  # just for context
 median_violating_hours = None
 # Typical violation-hours per scenario-year come from the HVDC sensitivity summary
-# (edgs_hvdc_sensitivity_summary.csv). The single-hour floor alone is the lower bound (it
-# assumes noise affects only 1 hour, understating the noise floor); the wider estimate uses
-# the central-2021 ~9,960 total flagged hours (~74 hours/scenario-year average among
-# flagged years).
+# (edgs_hvdc_sensitivity_summary.csv). The single-hour floor alone is the lower bound: it
+# assumes the noise affects one hour only, so it understates the floor. The wider estimate
+# uses the central-2021 total of about 9,960 flagged hours (about 74 hours per scenario-year
+# among flagged years).
 noise_floor_1hr_mean = 20.0     # MWh, single hour, mean discrepancy
 noise_floor_1hr_max = 51.0      # MWh, single hour, max discrepancy
 # Rescale using this template's own baseline flagged-hours/scenario-year among violators,
@@ -254,20 +254,20 @@ log(f"\n  Noise floor (single-hour calibration discrepancy): mean {noise_floor_1
     f"max {noise_floor_1hr_max} MWh (per scenario-year, single hour).")
 log(f"  Rescaled to annual-integrated units (x{avg_violating_hours_baseline:.1f} avg violating "
     f"hours/scenario-year, from {_noise_source}): "
-    f"mean {noise_floor_scaled_mean:,.0f} MWh, max {noise_floor_scaled_max:,.0f} MWh PER "
-    f"scenario-year (i.e. {noise_floor_scaled_mean*135:,.0f}-{noise_floor_scaled_max*135:,.0f} MWh "
-    f"if this noise applied uniformly and in the SAME direction across all 135 scenario-years).")
+    f"mean {noise_floor_scaled_mean:,.0f} MWh, max {noise_floor_scaled_max:,.0f} MWh per "
+    f"scenario-year (that is, {noise_floor_scaled_mean*135:,.0f}-{noise_floor_scaled_max*135:,.0f} MWh "
+    f"if this noise applied uniformly and in the same direction across all 135 scenario-years).")
 
 per_sy_change_mean = df.continuous_mag_change.abs().mean()
 log(f"\n  Actual mean |change| per scenario-year: {per_sy_change_mean:,.0f} MWh")
-log(f"  Actual total change: {tot_change:+,.0f} MWh vs rescaled noise-floor range "
+log(f"  Actual total change: {tot_change:+,.0f} MWh against the rescaled noise-floor range "
     f"{noise_floor_scaled_mean*135:,.0f}-{noise_floor_scaled_max*135:,.0f} MWh")
 
 verdict_1 = "ROBUST" if (abs(tot_change) > noise_floor_scaled_max * 135 and n_pos > 2 * n_neg) else "NOT CLEARLY DISTINGUISHABLE FROM NOISE"
 log(f"\n  VERDICT (Step 1): {verdict_1}")
 
-# Mechanism test - correlate hour_divergence against continuous_mag_change
-log("\n=== Step 2: mechanism test (demand-peak vs residual-peak divergence) ===")
+# Mechanism test: correlate hour_divergence against continuous_mag_change
+log("\n=== Step 2: mechanism test (divergence between demand-peak and residual-peak hours) ===")
 log(f"  Hour divergence distribution: {df.hour_divergence.value_counts().sort_index().to_dict()}")
 same_hour = df[df.hour_divergence == 0]
 diff_hour = df[df.hour_divergence > 0]
@@ -275,7 +275,7 @@ log(f"  Same-hour scenario-years (n={len(same_hour)}): mean change {same_hour.co
 log(f"  Different-hour scenario-years (n={len(diff_hour)}): mean change {diff_hour.continuous_mag_change.mean():+,.0f} MWh")
 
 corr = np.corrcoef(df.hour_divergence, df.continuous_mag_change)[0, 1] if df.hour_divergence.std() > 0 else np.nan
-log(f"\n  Correlation (hour_divergence vs continuous_mag_change), all 135 scenario-years: {corr:.3f}")
+log(f"\n  Correlation between hour_divergence and continuous_mag_change, all 135 scenario-years: {corr:.3f}")
 
 if np.isfinite(corr) and corr > 0.3 and diff_hour.continuous_mag_change.mean() > same_hour.continuous_mag_change.mean():
     verdict_2 = "CONSISTENT WITH the proposed mechanism"

@@ -1,10 +1,10 @@
 """
-Phase 3: absolute (kgCO2e/m2) decomposition figures, using the EUI from
-phase3_eui_derivation_v2.py (pre-2004, Whole Building, NI,
-electricity-dominant NABERS cohort, n=132).
+Phase 3: absolute (kgCO2e/m2) decomposition figures, using the EUI of the
+pre-2004, Whole Building, NI, electricity-dominant NABERS cohort (n=132;
+phase3_eui_derived_v2.csv).
 
-Kept as a re-runnable script so the calculation is reproducible. Its output
-replaces the illustrative-EUI figures of phase3_contextualise.py.
+Kept as a re-runnable script so the calculation is reproducible. The
+figures use this derived EUI, not an illustrative one.
 """
 import pandas as pd
 from pathlib import Path

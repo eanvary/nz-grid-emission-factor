@@ -18,21 +18,20 @@ External source: AEMO, "Quarterly Energy Dynamics - Q1 2026"
     charging 2,742 MW, concentrated in daytime hours associated with solar surplus. AEMO's own
     Figure 56 tracks "change in average battery discharge/charge by time of day".
   - Household/CER section (p.11): evening peak window stated as "1600 hrs to 2100 hrs";
-    charging described as "daytime... mid-morning", tied to rooftop solar + grid supply.
+    charging described as "daytime... mid-morning", tied to rooftop solar and grid supply.
 
 Design (this script's own reading of the citation, disclosed as such):
   - Discharge window: 1600-2100 hrs (16,17,18,19,20), AEMO's own stated evening-peak
     window, verbatim from the source.
-  - Charge window: 0900-1500 hrs (9,10,11,12,13,14), this script's own interpretation of
-    AEMO's qualitative "daytime... mid-morning" charging description, since AEMO gives no
-    precise charge-window hours the way it does for the evening-peak discharge window. This is
-    a reasoned reading, not a direct citation (same standard as the 2032 HVDC capacity
-    cutover year in build_edgs_hvdc_capacity_correction.py).
-  - Energy, not shape, is held constant: each day's total discharge/charge energy is kept
-    identical to what the pipeline's residual-driven rule moves that day (so this is a pure
-    timing test, not a magnitude/capacity test), spread uniformly across the cited window
-    (the least-assumption choice within the window, since AEMO gives no finer sub-window shape
-    for either case).
+  - Charge window: 0900-1500 hrs (9,10,11,12,13,14), this script's interpretation of
+    AEMO's qualitative "daytime... mid-morning" charging description. AEMO gives no precise
+    charge-window hours, unlike the evening-peak discharge window. This is a reasoned reading,
+    not a direct citation (same standard as the 2032 HVDC capacity cutover year in
+    build_edgs_hvdc_capacity_correction.py).
+  - Energy, not shape, is held constant. Each day's total discharge/charge energy equals what
+    the pipeline's residual-driven rule moves that day, so this is a timing test, not a
+    magnitude/capacity test. The energy is spread uniformly across the cited window, the
+    least-assumption choice, since AEMO gives no finer sub-window shape for either case.
 
 Method: re-derives the load/residual/thermal-shape/EF chain of build_edgs_dispatch.py in
 parallel, central (2021) template, real-solar-shape baseline, changing only the DSR peak-shave
@@ -44,7 +43,7 @@ Outputs (output/edgs/):
                                        discharge hour already fall inside AEMO's cited
                                        1600-2100hrs window? (quantifies how close in shape
                                        the two rules already are)
-  edgs_dsr_realworld_sensitivity_summary.csv   per scenario-year: pipeline vs AEMO-window NI
+  edgs_dsr_realworld_sensitivity_summary.csv   per scenario-year: pipeline and AEMO-window NI
                                        generation EF (mean/p99/max) and HVDC-relevant residual
                                        peak timing
 """
@@ -257,14 +256,14 @@ dt_chk, ef_chk, *_ = run(check_scenario, check_year, "pipeline")
 ship_chk = (ship_ni[(ship_ni.scenario == check_scenario)]
             .set_index("datetime_hour").loc[dt_chk, "emission_factor_kg_co2e_per_kwh"].to_numpy())
 resid = np.abs(ef_chk - ship_chk).max()
-log(f"Step 0 sanity check ({check_scenario} {check_year}, pipeline mode vs pipeline baseline): "
+log(f"Step 0 sanity check ({check_scenario} {check_year}, pipeline mode against pipeline baseline): "
     f"max |diff| = {resid:.2e}")
 if resid > 1e-6:
-    log("WARNING: reconstruction does not match pipeline baseline - results below are unreliable")
+    log("WARNING: reconstruction does not match pipeline baseline; results below are unreliable")
 del ship_ef, ship_ni
 
-# Part 1: match rate - how often does the pipeline's own chosen discharge hour
-# already fall inside AEMO's cited 1600-2100hrs window?
+# Part 1: match rate, the share of days on which the pipeline's own chosen discharge hour
+# already falls inside AEMO's cited 1600-2100hrs window.
 match_rows = []
 for scenario in SCENARIOS:
     for year in YEARS:
@@ -289,7 +288,7 @@ log(f"\nOverall: pipeline model's own discharge hour falls inside AEMO's 1600-21
     f"on {overall_match:.1f}% of days ({match_df.n_days_in_aemo_window.sum():,} of "
     f"{match_df.n_days.sum():,} DSR-active scenario-year-days)")
 
-# Part 2: full sensitivity - pipeline rule vs AEMO-window rule, same energy, different timing
+# Part 2: full sensitivity, pipeline rule against AEMO-window rule (same energy, different timing)
 rows = []
 for scenario in SCENARIOS:
     for year in YEARS:
@@ -317,9 +316,9 @@ summ.to_csv(OUT_DIR / "edgs_dsr_realworld_sensitivity_summary.csv", index=False)
 log(f"\nWrote edgs_dsr_realworld_sensitivity_summary.csv ({len(summ):,} scenario-year rows)")
 
 log(f"\nAnnual energy-weighted EF: max |delta| = {summ.annual_ef_delta_pct.abs().max():.2e}% "
-    f"(EXPECTED ~0 - same daily energy shifted either way, only timing differs)")
+    f"(expected 0: the same daily energy is shifted either way and only timing differs)")
 
-log("\nDirty-hour ceiling (p99 NI generation EF), pipeline -> AEMO-window, selected years:")
+log("\nDirty-hour ceiling (p99 NI generation EF), selected years, shown as pipeline->AEMO-window:")
 for scenario in SCENARIOS:
     s = summ[summ.scenario == scenario].set_index("year")
     parts = []

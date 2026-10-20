@@ -1,35 +1,34 @@
 """
-Battery/BESS capacity sensitivity test (standalone, not a pipeline change). This script does
-not modify build_edgs_dispatch.py, edgs_common.py, or any pipeline output parquet. It reads
-only the pipeline's existing saved intermediates and reconstructs the dispatch
-residual/peak-shave chain in parallel, swapping the DSR capacity input for MBIE's
-report-narrative battery figures, for comparison only.
+Battery/BESS capacity sensitivity, run outside the pipeline. It does not modify
+build_edgs_dispatch.py, edgs_common.py or any pipeline output parquet. It reads the
+pipeline's saved intermediates and rebuilds the dispatch residual/peak-shave chain in
+parallel, with MBIE's report-narrative battery figures in place of the DSR capacity input.
 
 Background: neither MBIE workbook contains a battery/BESS capacity figure. The only
 storage-adjacent quantity in the Excel data is 'Demand side response' (DSR), which Assumption
-2 is anchored to (GEM build schedule, ~500 MW by 2050). The MBIE EDGS 2024 report PDF's
-narrative (Table 4, p.22; prose p.27-28) states larger explicit grid-battery targets:
+2 is anchored to (GEM build schedule, about 500 MW by 2050). The narrative of the MBIE EDGS
+2024 report PDF (Table 4, p.22; prose p.27-28) states larger grid-battery targets:
   - Reference / Growth / Constraint: 733 MW by 2029, no further stated growth (report gives
     no figure beyond 2029 for these three; Table 4 lists Growth/Constraint as "Reference").
   - Innovation / Environmental: "much greater BESS development over a longer time horizon,
     adding further generic BESS capacity to reach approximately 1,700 MW by 2049."
-Only these two anchor figures (733 MW/2029, 1700 MW/2049) are stated anywhere in the 52-page
-report (checked by full-text search, table extraction, and manual page review of the BESS
-section and Table 4; no finer year-by-year breakdown exists in the source). The trajectory
+These two anchor figures (733 MW/2029, 1700 MW/2049) are the only ones stated in the 52-page
+report. This was checked by full-text search, table extraction and manual review of the BESS
+section and Table 4; the source has no finer year-by-year breakdown. The trajectory
 between these anchors (and the 2024 starting point) is this script's own linear
 interpolation, not an MBIE-stated figure. Only 2029 and 2049 (2050 for I/E, since no further
 growth is stated after 1700 MW) should be read as MBIE-grounded; intermediate years carry
 interpolation uncertainty.
 
-Gap at the two MBIE-stated anchor points (vs the pipeline's Excel-sourced DSR capacity):
-  2029: DSR 185-262 MW vs report 733 MW -> ratio 2.8-4.0x (all 5 scenarios)
-  2049: DSR ~494-511 MW vs report 1700 MW (Innovation/Environmental only) -> ratio ~3.3-3.4x
+Gap at the two MBIE-stated anchor points, against the pipeline's Excel-sourced DSR capacity:
+  2029: DSR 185-262 MW, report 733 MW, ratio 2.8-4.0x (all 5 scenarios)
+  2049: DSR about 494-511 MW, report 1700 MW (Innovation/Environmental only), ratio about 3.3-3.4x
 
 The pipeline uses only the Excel-sourced DSR figure. This script sizes the effect of that
 choice; it does not change it.
 
 Outputs (output/edgs/, separate from the pipeline outputs):
-  edgs_battery_gap_comparison.csv       DSR vs report battery, by scenario-year
+  edgs_battery_gap_comparison.csv       DSR and report battery capacity, by scenario-year
   edgs_battery_sensitivity_peakshave.csv  peak-shave magnitude/timing, before/after
   edgs_battery_sensitivity_hvdc.csv     HVDC violation count/magnitude, before/after
   edgs_battery_sensitivity_ef.csv       EF hourly-shape change, before/after
@@ -43,15 +42,15 @@ from edgs_common import ASSUMPTIONS_XLSX, OUT_DIR, SCENARIOS, YEARS, COMMODITY, 
 log, lines = log_factory()
 HVDC_CAPACITY_MW = 1200.0
 # Template year: set EDGS_TEMPLATE_YEAR to re-derive the shape-dependent reconstruction
-# against a different Assumption-1 template. The DSR-vs-report capacity gap does not
+# against a different Assumption-1 template. The gap between DSR and report capacity does not
 # depend on the template.
 TEMPLATE_YEAR = int(os.environ.get("EDGS_TEMPLATE_YEAR", "2021"))
 SUFFIX = "" if TEMPLATE_YEAR == 2021 else f"_tmpl{TEMPLATE_YEAR}"
 log(f"Template year: {TEMPLATE_YEAR} (suffix '{SUFFIX}')")
 
-# Report-stated battery capacity (interpolated, labelled as such) vs pipeline DSR
+# Report-stated battery capacity (interpolated, labelled as such) against pipeline DSR
 def report_battery_mw(scenario, year):
-    """MBIE report Table 4 + prose (p.22, p.27-28). Only 733 MW/2029 and 1700 MW/2049 (I/E
+    """MBIE report Table 4 and prose (p.22, p.27-28). Only 733 MW/2029 and 1700 MW/2049 (I/E
     only) are MBIE-stated; all other years are this script's own linear interpolation."""
     if scenario in ("Innovation", "Environmental"):
         if year <= 2029:
@@ -90,8 +89,8 @@ for yr in (2029, 2049):
     log(gap_df[gap_df.year == yr][["scenario", "dsr_mw_pipeline", "report_battery_mw", "ratio"]]
         .round(2).to_string(index=False))
 
-# Prerequisites for the residual/dispatch reconstruction (read-only, same sources as
-# build_edgs_dispatch.py; not the same code path, but the same math, for comparison)
+# Inputs for the residual/dispatch reconstruction: read-only, same sources as
+# build_edgs_dispatch.py. The code path differs but the arithmetic is the same.
 dem_shape = pd.read_parquet(OUT_DIR / "edgs_shape_demand.parquet")
 dem_shape = dem_shape[dem_shape.template_year == TEMPLATE_YEAR]
 ren_shape_all = pd.read_parquet(OUT_DIR / "edgs_shape_renewables.parquet")
@@ -150,7 +149,7 @@ def peak_shave(residual_pre, dsr_mw, H):
     return residual, residual_pre - residual
 
 
-# Per scenario-year: reconstruct residual_pre, run peak-shave under pipeline vs report dsr_mw
+# Per scenario-year: reconstruct residual_pre, run peak-shave under the pipeline and report dsr_mw
 peakshave_rows = []
 hvdc_rows = []
 ef_rows = []
@@ -166,7 +165,7 @@ for scenario in SCENARIOS:
         demand_twh = float(t[t.metric == "annual_demand"]["value"].iloc[0])
         ni_share = float(ni_share_map.get((scenario, year), 0.61))
 
-        # renewables (island totals) - same as dispatch.py
+        # renewables (island totals), as in dispatch.py
         island_ren_total = {"NI": np.zeros(H), "SI": np.zeros(H)}
         for com in RENEWABLE_COMMODITIES:
             gwh = float(annual_gen.get(com, 0.0))
@@ -186,7 +185,7 @@ for scenario in SCENARIOS:
                 island_ren_total[isl] += gwh * 1000.0 * share * w
         nat_ren = island_ren_total["NI"] + island_ren_total["SI"]
 
-        # generation-level load - same as dispatch.py
+        # generation-level load, as in dispatch.py
         w_ni = map_weights(cal, dem_shape[dem_shape.island == "NI"][["month", "day", "hour", "weight"]])
         w_si = map_weights(cal, dem_shape[dem_shape.island == "SI"][["month", "day", "hour", "weight"]])
         demand_mwh = demand_twh * 1e6
@@ -214,7 +213,7 @@ for scenario in SCENARIOS:
             "same_worst_hour": peak_hr_ship == peak_hr_rep,
         })
 
-        # 2: HVDC transfer / capacity check, before vs after
+        # 2: HVDC transfer / capacity check, before and after
         # thermal shape from each residual (same merit-order-capacity-clip logic as dispatch.py)
         mplants = merit[(merit.scenario == scenario) & (merit.year == year)].sort_values("merit_rank")
         total_cap = mplants["capacity_mw"].sum()
@@ -225,7 +224,7 @@ for scenario in SCENARIOS:
             thermal_total_mwh = sum(float(annual_gen.get(c, 0.0)) for c in
                                     ("Coal", "Natural gas", "Diesel", "LPG", "Fuel oil")) * 1000.0
             # NI "generation" for the transfer/EF calc must include the DSR net series as its
-            # own explicit term (matching the pipeline's convention: DSR is a separate row in
+            # own term (matching the pipeline's convention: DSR is a separate row in
             # edgs_hourly_generation.parquet, summed into island NI generation). Letting DSR
             # only reshape thermal via the residual is not enough; DSR's discharge/charge is
             # itself extra effective NI supply/demand at that hour. Without this term the
@@ -254,7 +253,7 @@ for scenario in SCENARIOS:
             "n_hours_violate_report": int((np.abs(tr_rep) > HVDC_CAPACITY_MW).sum()),
         })
 
-        # 3: EF hourly shape, before vs after
+        # 3: EF hourly shape, before and after
         mfe_thermal_co2_ship = None  # placeholder; use ratio of thermal MWh reshaping as EF proxy
         # Since combustion CO2 per fuel = MBIE fuel-use x MfE, distributed by the same thermal
         # shape, the CO2 profile reshapes identically to the thermal generation profile. The
@@ -296,14 +295,14 @@ log(f"  Worst-shave hour changes in {(~pk.same_worst_hour).sum()}/135 scenario-y
 log("\n=== HVDC capacity violation, pipeline DSR against report battery ===")
 n_ship = (hv.max_transfer_mw_pipeline > HVDC_CAPACITY_MW).sum()
 n_rep = (hv.max_transfer_mw_report > HVDC_CAPACITY_MW).sum()
-log(f"  Scenario-years flagged: pipeline {n_ship}/135  ->  report-battery {n_rep}/135")
-log(f"  Max transfer overall: pipeline {hv.max_transfer_mw_pipeline.max():.0f} MW  ->  "
+log(f"  Scenario-years flagged: pipeline {n_ship}/135, report-battery {n_rep}/135")
+log(f"  Max transfer overall: pipeline {hv.max_transfer_mw_pipeline.max():.0f} MW, "
     f"report-battery {hv.max_transfer_mw_report.max():.0f} MW")
 
 log("\n=== Step 3.3: EF hourly shape change ===")
 log(f"  Mean abs hourly EF diff (national NI, all 135 scenario-years): "
     f"{efd.mean_abs_hourly_EF_diff_kg_per_kwh.mean():.5f} kg/kWh")
-log(f"  Peak-shave-hour EF: pipeline mean {efd.peak_hour_EF_pipeline.mean():.4f} kg/kWh -> "
+log(f"  Peak-shave-hour EF: pipeline mean {efd.peak_hour_EF_pipeline.mean():.4f} kg/kWh, "
     f"report-battery mean {efd.peak_hour_EF_report.mean():.4f} kg/kWh")
 
 log(f"\nWrote edgs_battery_gap_comparison.csv, edgs_battery_sensitivity_peakshave{SUFFIX}.csv, "

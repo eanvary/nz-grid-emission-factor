@@ -17,8 +17,9 @@ folder layout, not for this release layout. To rerun them, rebuild that layout f
 | `data/analysis_tables/` | `analysis_paper/tables/` |
 
 Raw inputs go in three places. `EA_EMI_raw/` takes the Electricity Authority generation files and the high-voltage direct current (HVDC) link flow files.
-`EA data/` takes the dispatched generation plant list and the Network Supply Points tables. The two MBIE
-EDGS 2024 workbooks go in `edgs_pipeline/`. Sources are listed in `data/README.md`.
+`EA data/` takes the dispatched generation plant list and the Network Supply Points tables. Sources are
+listed in `data/README.md`. The MBIE workbooks and the other small inputs are included next to the
+scripts that read them.
 
 ## Run order
 

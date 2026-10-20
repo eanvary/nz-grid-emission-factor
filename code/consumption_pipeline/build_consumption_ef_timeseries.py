@@ -1,42 +1,40 @@
 """
-NI/SI CONSUMPTION-based monthly and annual emission factor database, 2015-2025.
+NI/SI consumption-based monthly and annual emission factor database, 2015-2025.
 
-Design: this script reads the root pipeline's 2015-2025 outputs as its single
-source of truth rather than re-deriving generation and HVDC transfer from raw
-files a second time. A separate copy of the raw EA/EMI ingestion (local
-EA_EMI_raw/, EA data/ folders) would have to repeat every fix made in the root
-generation/HVDC pipelines (SCD2 9999-year timestamp overflow, DST fall-back
-TP49/TP50 drop, the 2021-2025-only curated HVDC report). Reading the root
-outputs means any root-pipeline fix or extension is inherited here, with no
-separate re-implementation to keep in sync. Any EA data/ or EA_EMI_raw/ copies
-in this folder are not read by this script.
+Design: the root pipeline's 2015-2025 outputs are the single source of truth;
+generation and HVDC transfer are not re-derived from raw files a second time.
+A separate copy of the raw EA/EMI ingestion (local EA_EMI_raw/, EA data/
+folders) would have to repeat every correction in the root generation and HVDC
+pipelines (SCD2 9999-year timestamp overflow, DST fall-back TP49/TP50 drop,
+the 2021-2025-only curated HVDC report). Reading the root outputs means any
+root-pipeline correction or extension carries over here, with no separate
+implementation to keep in sync. Any EA data/ or EA_EMI_raw/ copies in this
+folder are not read by this script.
 
-Inputs (root pipeline outputs, already validated -- see
-DATA_QUALITY_ASSESSMENT_FRAMEWORK.md):
-  output/monthly_emission_factor_NI_SI.csv   - generation-side EF by island/month
-  output/annual_emission_factor_NI_SI.csv    - generation-side EF by island/year
-  output/monthly_hvdc_transfer_NI_SI.csv (this folder) - inter-island transfer by month
-  output/annual_hvdc_transfer_NI_SI.csv (this folder)  - inter-island transfer by year
+Inputs (root pipeline outputs, already validated):
+  output/monthly_emission_factor_NI_SI.csv:   generation-side EF by island/month
+  output/annual_emission_factor_NI_SI.csv:    generation-side EF by island/year
+  output/monthly_hvdc_transfer_NI_SI.csv (this folder): inter-island transfer by month
+  output/annual_hvdc_transfer_NI_SI.csv (this folder):  inter-island transfer by year
 
-Method (see Consumption_EF_Worked_Example.docx
-and NI_SI_Consumption_Emission_Factor_Methodology.docx for the full written
-derivation):
+Method (the full written derivation is in the consumption methodology note and
+its worked example):
 
-1. Generation-side: taken directly from the root pipeline's own output.
+1. Generation side: taken directly from the root pipeline's output.
 
 2. Inter-island transfer: net_to_NI(t) = SI_to_NI(t) - NI_to_SI(t)
    [MWh, signed, positive = net flow to NI], taken directly from the root
    pipeline's raw-file-based HVDC output.
 
-3. Energy balance ("apparent consumption" -- no metered T&D-loss or embedded-
-   generation data is available; see Notes/Limitations in the written report):
+3. Energy balance ("apparent consumption"; no metered T&D-loss or embedded-
+   generation data is available, see Notes/Limitations in the written report):
      Consumption_NI(t) = Generation_NI(t) + net_to_NI(t)
      Consumption_SI(t) = Generation_SI(t) - net_to_NI(t)
 
 4. Emissions balance (average-mix convention: electricity leaving an island via
    the HVDC link is assumed to carry that island's own generation-weighted EF
-   for the period; this is the only assumption not directly observable in the
-   data, and is stated explicitly):
+   for the period. This is the only assumption not directly observable in the
+   data):
      CO2_consumed_NI(t) = CO2_generated_NI(t) - NI_to_SI(t)*EF_gen_NI(t) + SI_to_NI(t)*EF_gen_SI(t)
      CO2_consumed_SI(t) = CO2_generated_SI(t) - SI_to_NI(t)*EF_gen_SI(t) + NI_to_SI(t)*EF_gen_NI(t)
 
@@ -60,14 +58,14 @@ def log(msg):
     log_lines.append(str(msg))
 
 
-# Generation-side, straight from the root pipeline's own output
+# Generation side, read from the root pipeline's output
 gen_monthly = pd.read_csv(ROOT_OUT / "monthly_emission_factor_NI_SI.csv")
 gen_annual = pd.read_csv(ROOT_OUT / "annual_emission_factor_NI_SI.csv")
 log(f"Loaded generation-side EF: {len(gen_monthly)} monthly rows, {len(gen_annual)} annual rows "
     f"(years {gen_annual['year'].min()}-{gen_annual['year'].max()})")
 
-# HVDC inter-island transfer, straight from the root pipeline's own
-# raw-file-based output (GWh -> MWh for consistency with generation units)
+# HVDC inter-island transfer from the root pipeline's raw-file-based output,
+# converted from GWh to MWh to match the generation units
 hvdc_monthly_raw = pd.read_csv(OUT_DIR / "monthly_hvdc_transfer_NI_SI.csv")
 hvdc_monthly = hvdc_monthly_raw.rename(columns={
     "SI_to_NI_GWh": "SI_to_NI_MWh", "NI_to_SI_GWh": "NI_to_SI_MWh", "net_to_NI_GWh": "net_to_NI_MWh",
@@ -139,13 +137,13 @@ chk["gen_total"] = chk["NI_generation_MWh"] + chk["SI_generation_MWh"]
 chk["cons_total"] = chk["NI_consumption_MWh"] + chk["SI_consumption_MWh"]
 max_energy_diff = (chk["gen_total"] - chk["cons_total"]).abs().max()
 log(f"Energy conservation (sum of island generation == sum of island consumption, nationally): "
-    f"max |diff| = {max_energy_diff:.6f} MWh (expect ~0)")
+    f"max |diff| = {max_energy_diff:.6f} MWh (expected: about 0)")
 
 chk["co2_gen_total"] = chk["NI_CO2_generated_kg"] + chk["SI_CO2_generated_kg"]
 chk["co2_cons_total"] = chk["NI_CO2_consumed_kg"] + chk["SI_CO2_consumed_kg"]
 max_co2_diff = (chk["co2_gen_total"] - chk["co2_cons_total"]).abs().max()
 log(f"Emissions conservation (sum of generated CO2 == sum of consumed CO2, nationally): "
-    f"max |diff| = {max_co2_diff:.6f} kg (expect ~0)")
+    f"max |diff| = {max_co2_diff:.6f} kg (expected: about 0)")
 
 log(f"\nAnnual NI consumption-based EF: {annual_cons.set_index('year')['NI_EF_consumption'].round(1).to_dict()}")
 log(f"Annual NI generation-based EF:  {annual_cons.set_index('year')['NI_EF_generation'].round(1).to_dict()}")
@@ -156,25 +154,24 @@ for isl in ["NI", "SI"]:
     twh = annual_cons[f"{isl}_consumption_MWh"] / 1e6
     log(f"{isl} annual consumption (TWh): {dict(zip(annual_cons['year'], twh.round(2)))}")
 
-log("\n=== NOTES (systematic HVDC/consumption review, 2026-08-10) ===")
+log("\n=== NOTES ===")
 log("1. Energy (MWh) is exactly resolution-independent at island level: summing this "
     "script's daily output to a month, or its monthly output to a year, matches this "
     "script's own coarser-resolution figure to machine precision (pure additive sums, "
     "no EF multiplication involved).")
-log("2. Island-level CO2/EF is NOT exactly resolution-independent, BY DESIGN, not by "
-    "error: the emissions-balance formula (Section 3.4 of the methodology note) "
-    "multiplies transfer volume by THAT PERIOD'S OWN average EF_generation, so "
+log("2. Island-level CO2/EF is not exactly resolution-independent, by design. The "
+    "emissions-balance formula (Section 3.4 of the methodology note) multiplies "
+    "transfer volume by that period's own average EF_generation, so "
     "Sum_days(transfer_day x EF_day) != transfer_month x EF_month whenever transfer "
     "and EF co-vary within the period (they do, physically). Measured: NI CO2 "
-    "consumed, daily-summed-to-month vs this script's own monthly figure, differs by "
-    "mean 0.04%/max 0.39% of the monthly total across all 132 months (see "
-    "validate_ef_database_2015_2025.py, checks H7a-c, for the full quantification "
-    "and an algebraic proof that the NATIONAL total is unaffected -- only the NI/SI "
-    "SPLIT of it is resolution-dependent). This is an inherent property of applying "
-    "the average-mix assumption independently per resolution (as the methodology "
-    "note's Section 4 explicitly specifies), not a bug to fix -- forcing exact "
-    "cross-resolution CO2 reconciliation would require abandoning that "
-    "independently-computed-per-resolution design.")
+    "consumed, summed from days to months, differs from this script's monthly figure "
+    "by mean 0.04% and max 0.39% of the monthly total across all 132 months. "
+    "validate_ef_database_2015_2025.py (checks H7a-c) gives the full quantification "
+    "and an algebraic proof that the national total is unaffected; only its NI/SI "
+    "split depends on resolution. This follows from applying the average-mix "
+    "assumption independently per resolution, as Section 4 of the methodology note "
+    "specifies. Exact cross-resolution CO2 reconciliation would require giving up "
+    "that per-resolution design.")
 
 # Outputs
 monthly_out = monthly_cons[[

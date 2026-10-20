@@ -1,5 +1,5 @@
 """
-Paper 03, Figure 2 (validation) -- data-driven build from the primary database files.
+Paper 03, Figure 2 (validation): data-driven build from the primary database files.
 
 Every panel and every statistic quoted in the paper's Section 2.4 is computed here, in one
 pass, from the database itself (no intermediate figure tables):
@@ -8,18 +8,18 @@ pass, from the database itself (no intermediate figure tables):
         this study, full scope   : output/monthly_emission_factor_NI_SI.csv (sum CO2 / sum gen, both islands)
         this study, MBIE scope   : raw EA_EMI_raw/*_Generation_MD.csv plus the flagged fills, cogeneration
                                    removed by EMI's own Tech_Code ("Cogen"), factors from the pipeline's
-                                   shared attribution (generation_pipeline/fuel_attribution.py) -- same
+                                   shared attribution (generation_pipeline/fuel_attribution.py); same
                                    logic as validate_ef_database_2015_2025.py D2
         MBIE published           : generation_pipeline/MBIE_Quarterly_Electricity_Emissions_2026Q1.xlsx,
                                    sheet "Electricity EFs", CO2 + 28*CH4 + 265*N2O
-  (b) Daily national generation by fuel, this study vs em6, 2026
+  (b) Daily national generation by fuel, this study and em6, 2026
         this study : generation_by_fuel_daily_2026.csv (built from raw EMI by build_2026_extension_and_em6_crosscheck.py)
-        em6        : em6_free_generation_by_fuel_daily.csv (em6 free feed), trading_date shifted +1 day (UTC vs NZT;
-                     see fix_em6_dayshift_and_rebuild_crosscheck.py)
-  (c) North Island monthly EF, metered vs projected Reference, 2024-2025
+        em6        : em6_free_generation_by_fuel_daily.csv (em6 free feed), trading_date shifted +1 day (UTC and
+                     NZT day boundaries differ; see fix_em6_dayshift_and_rebuild_crosscheck.py)
+  (c) North Island monthly EF, metered and projected Reference, 2024-2025
         metered   : output/hourly_emission_factor_NI_SI.csv, generation-weighted (sum CO2 / sum gen)
         projected : output/edgs/edgs_hourly_emission_factor.parquet weighted by NI generation from
-                    edgs_hourly_generation.parquet -- like-for-like generation weighting on both sides.
+                    edgs_hourly_generation.parquet, so both sides use like-for-like generation weighting.
 
 Writes paper03_fig2_validation.json (series + statistics) next to this script.
 Run with the analysis_paper venv.

@@ -2,7 +2,7 @@
 Phase 1: distributional characterisation.
 Skewness, kurtosis, tail ratios, and intermittency (CV) of hourly EF, and a
 formal test of whether the annual mean becomes an increasingly poor summary
-statistic over the projection horizon (mean vs median divergence, CV trend).
+statistic over the projection horizon (mean-median divergence, CV trend).
 Generation-side, NI only (SI is degenerate/near-zero throughout, see Phase 0/1).
 """
 import numpy as np
@@ -47,7 +47,7 @@ log(dist[dist["scenario"] == "Reference"][
     ["year", "mean", "median", "cv", "skewness", "kurtosis_excess", "p99_over_median",
      "mean_minus_median_pct", "frac_hours_zero"]].to_string(index=False))
 
-log("\n=== Formal trend tests: does mean-vs-median divergence / CV grow over 2024-2050? ===")
+log("\n=== Formal trend tests: do the mean-median divergence and CV grow over 2024-2050? ===")
 for scen, g in dist.groupby("scenario"):
     g = g.sort_values("year")
     slope_cv, _, r_cv, p_cv, _ = stats.linregress(g["year"], g["cv"])

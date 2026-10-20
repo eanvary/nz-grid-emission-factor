@@ -1,13 +1,13 @@
 """
-Is the HVDC capacity violation found in Module 7 (103/135 scenario-years, up to 2,662 MW
-by 2050 vs the cited 1,200 MW Cook Strait capacity) a real finding or an artifact of this
-pipeline's own simplifications? Tests three candidate artifacts as actual re-runs (not
-qualitative reasoning), each producing a violation count/magnitude comparable to the
-baseline (Module 7's result), then a combined re-run with all three fixes together.
+Tests whether the HVDC capacity violation found in Module 7 (103/135 scenario-years, up to
+2,662 MW by 2050 against the cited 1,200 MW Cook Strait capacity) is a real finding or an
+artifact of this pipeline's simplifications. Three candidate artifacts are tested as re-runs
+(not qualitative reasoning). Each gives a violation count and magnitude comparable with the
+baseline (Module 7's result). A combined re-run then applies fixes A and B together.
 
   Sensitivity A: DSR/battery island split: by default 100% of DSR net effect is
     booked to NI (edgs_hourly_generation.parquet); GEM build schedule capacity is actually
-    ~48/52 NI/SI (Reference/Growth/Constraint/Environmental: 244.8 NI / 266.6 SI MW;
+    about 48/52 NI/SI (Reference/Growth/Constraint/Environmental: 244.8 NI / 266.6 SI MW;
     Innovation: 244.8 NI / 248.8 SI MW). Re-allocates the existing national DSR hourly
     series by each scenario-year's GEM capacity share (a documented approximation: the
     peak-shave timing pattern stays national/residual-driven, only the island split of that
@@ -19,11 +19,11 @@ baseline (Module 7's result), then a combined re-run with all three fixes togeth
   Sensitivity C: uniform loss-ratio bounding: Module 7's formula renormalises island
     generation-level load to real national generation, so the national loss/gross-up
     ratio cancels out of the island split and does not directly drive the transfer
-    magnitude. To test this simplification, a differential (not uniform) NI-vs-SI loss
-    adjustment is applied to the pre-renormalisation island shares (+/-10%, a bounding,
-    illustrative magnitude, not a cited or claimed-true value: no island-specific loss
-    data exists) in both directions (NI-heavier and SI-heavier), reasoning stated in the
-    README.
+    magnitude. To test this simplification, a differential (not uniform) NI/SI loss
+    adjustment is applied to the pre-renormalisation island shares in both directions
+    (NI-heavier and SI-heavier). The +/-10% size is a bounding, illustrative magnitude, not a
+    cited or claimed-true value, since no island-specific loss data exists. The reasoning is
+    stated in the README.
 
 Outputs: edgs_hvdc_sensitivity_summary.csv (baseline + 5 sensitivity variants x scenario)
 
@@ -70,7 +70,7 @@ for sc in SCENARIOS:
     dsr_share[sc] = {"NI": s.get("NI", 0) / tot if tot else 0.5, "SI": s.get("SI", 0) / tot if tot else 0.5}
 log("DSR GEM capacity share by scenario: " + str({k: {i: round(v, 3) for i, v in d.items()} for k, d in dsr_share.items()}))
 
-# 2024 solar shape (real, both islands available? check)
+# 2024 solar shape (real; the log shows which islands have data)
 sol_2024 = ren_shape[(ren_shape.template_year == 2024) & (ren_shape.fuel_std == "SOL")]
 log(f"2024 solar shape rows: {len(sol_2024)}, islands: {sorted(sol_2024.island.unique())}")
 w2024_solar = sol_2024[sol_2024.island == "NI"][["month", "day", "hour", "weight"]]  # only NI has 2024 data
@@ -91,9 +91,9 @@ def map_weights(cal, wtab):
 w_ni_base = dem_shape_2021[dem_shape_2021.island == "NI"][["month", "day", "hour", "weight"]]
 w_si_base = dem_shape_2021[dem_shape_2021.island == "SI"][["month", "day", "hour", "weight"]]
 
-# PERFORMANCE: pre-group the 16.5M-row generation table ONCE, by (scenario,year,island)
-# total generation and (scenario,year) DSR/Solar-by-island series, instead of re-filtering
-# the full table on every one of the ~1000+ calls the naive per-scenario-year loop makes.
+# Pre-group the 16.5M-row generation table once, by (scenario,year,island) total
+# generation and (scenario,year) DSR/Solar-by-island series. Re-filtering the full table on
+# each of the 1000-plus calls of a plain per-scenario-year loop would be slow.
 log("Pre-grouping generation table (one pass)...")
 totgen_by_sy_isl = (gen.groupby(["scenario", "year", "island", "datetime_hour"])["generation_mwh"]
                     .sum().unstack("datetime_hour"))
@@ -124,15 +124,15 @@ def compute_transfer(dt, ni_share, w_ni, w_si, g_NI, g_SI, gNI_adj=None, gSI_adj
         g_SI = g_SI + gSI_adj
     nat_gen = g_NI + g_SI
 
-    # The fallback mask is determined from the un-deltaed (base) shape only, matching
-    # Module 7's own `share_sum <= 0` check exactly, so every sensitivity variant uses the
-    # same fallback hour(s) and the baseline (ni_delta=si_delta=0) reproduces Module 7's
-    # result exactly. Applying delta scaling before determining the mask would let a single
-    # historical-data anomaly (one DST-transition hour with a negative raw component weight,
-    # a documented data artifact) cross from a safely-negative base sum to a tiny-positive
-    # delta-scaled sum, evade the mask and cause a near-zero division (max transfer 2.69
-    # million MW at Innovation/2027). That is a risk in this script's delta test only, not
-    # in Module 7's output, whose unscaled base sum is safely negative there.
+    # The fallback mask comes from the un-deltaed (base) shape only, matching Module 7's
+    # `share_sum <= 0` check. Every sensitivity variant then uses the same fallback hour(s),
+    # and the baseline (ni_delta=si_delta=0) reproduces Module 7's result exactly. If delta
+    # scaling came before the mask, one historical-data anomaly could slip through: a
+    # DST-transition hour with a negative raw component weight (a documented data artifact).
+    # Its base sum is safely negative, but the delta-scaled sum can turn tiny-positive, evade
+    # the mask and cause a near-zero division (max transfer 2.69 million MW at Innovation/2027).
+    # The risk exists only in this script's delta test, not in Module 7's output, whose
+    # unscaled base sum is safely negative there.
     base_ssum = ni_share * w_ni + (1 - ni_share) * w_si
     no_shape = base_ssum <= 0
 
@@ -196,7 +196,7 @@ for scenario in SCENARIOS:
         g_NI = lookup_gen(scenario, year, "NI", dt)
         g_SI = lookup_gen(scenario, year, "SI", dt)
 
-        # BASELINE
+        # Baseline
         tr_base = compute_transfer(dt, ni_share, w_ni, w_si, g_NI, g_SI)
         max_base, n_base = flag(tr_base)
 
@@ -222,7 +222,7 @@ for scenario in SCENARIOS:
         max_c1, n_c1 = flag(tr_c1)
         max_c2, n_c2 = flag(tr_c2)
 
-        # COMBINED: A + B together
+        # Combined: A and B together
         tr_comb = compute_transfer(dt, ni_share, w_ni, w_si, g_NI, g_SI,
                                    gNI_adj=gNI_adj + sNI, gSI_adj=gSI_adj + sSI)
         max_comb, n_comb = flag(tr_comb)

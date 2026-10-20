@@ -1,37 +1,36 @@
 """
-Figure 2 -- PRISMA-ScR flow diagram.
+Figure 2: PRISMA-ScR flow diagram.
 
 Layout. Every box's height is computed from its wrapped line count
 before the box is placed; a single vertical cursor (`y_top`) then advances
-by that box's true height plus an explicit gap. A box therefore cannot
-start above the bottom of the one before it, however long its text (fixed
+by that box's true height plus a fixed gap. A box therefore cannot
+start above the bottom of the one before it, however long its text. Fixed
 offsets such as `y - 1.3` overlap whenever a box wraps to more lines than
-assumed, as the multi-line "sought for retrieval" -> "assessed / not
-retrieved" pair does). Box padding, inter-stage gaps and the overall width
+assumed, as the multi-line pair "sought for retrieval" and "assessed / not
+retrieved" does. Box padding, inter-stage gaps and the overall width
 are set for a journal figure.
 
 Reconstructed stages. The verified totals are not rescaled: Records
 screened (333), Total included (68), and G1/G2/G3 (18/39/11) are taken
 exactly as the extraction workbook gives them, because they are measured
 counts. Every other box in the identification/eligibility funnel is
-proportionally rescaled from the internal rates of a reference flow
-diagram (a mermaid flowchart, reproduced below as S): the
-database:other-methods split, deduplication rate, title/abstract
-exclusion rate, not-retrieved rate, and the supplementary-sweep share of
-the final total. The reconstructed funnel's shape follows that diagram,
-while its two endpoints land exactly on the two verified totals instead
-of the diagram's own (338 screened / 77 included).
+rescaled in proportion to the internal rates of a reference flow diagram
+(a mermaid flowchart, reproduced below as S). Those rates are the
+database:other-methods split, the deduplication rate, the title/abstract
+exclusion rate, the not-retrieved rate, and the supplementary-sweep share
+of the final total. The reconstructed funnel follows the shape of that
+diagram, while its two endpoints land exactly on the two verified totals
+instead of the diagram's own (338 screened / 77 included).
 
-   Because 333->68 is a materially steeper overall funnel than the
-   diagram's 338->77, no single scale factor can satisfy every one of the
-   diagram's stage rates and land exactly on both real endpoints at once
-   (an over-determined system), so one stage absorbs the shortfall. That
-   stage is "excluded at full-text eligibility assessment": every other
+   The funnel from 333 to 68 is materially steeper than the diagram's
+   338 to 77. No single scale factor can satisfy every stage rate of the
+   diagram and land exactly on both real endpoints at once (an
+   over-determined system), so one stage absorbs the shortfall. That
+   stage is "excluded at full-text eligibility assessment". Every other
    reconstructed number below is rate-scaled from the diagram, and that
    one box is solved as the remainder needed to make the funnel reconcile
-   exactly to 68. This is stated in the figure's caption and in
-   figures/FIG2_RECONSTRUCTION_PROVENANCE.md. Reconstructed boxes are
-   marked "(estimated)" with a dashed/hatched border, because giving an
+   exactly to 68. The figure's caption states this. Reconstructed boxes
+   are marked "(estimated)" with a dashed/hatched border. Giving an
    estimated screening count the same visual authority as a measured one
    would misrepresent the figure's evidence base.
 """
@@ -72,25 +71,25 @@ assert S["excluded_title_abstract"] + S["sought_for_retrieval"] == S["screened"]
 assert S["not_retrieved"] + S["assessed_for_eligibility"] == S["sought_for_retrieval"]
 assert S["excluded_full_text"] + S["final_included"] == S["assessed_for_eligibility"]
 
-# Verified totals -- these three numbers (and only these three) come from
-# the archived extraction workbook and are NOT rescaled. Everything else in
-# MANUSCRIPT_STATED below is proportionally reconstructed from S, anchored
+# Verified totals. These three numbers alone come from the archived
+# extraction workbook and are not rescaled. Everything else in
+# MANUSCRIPT_STATED below is reconstructed in proportion to S and anchored
 # to these two fixed endpoints.
 VERIFIED_SCREENED = 333
 VERIFIED_INCLUDED = 68
 VERIFIED_GROUPS = {"G1": 18, "G2": 39, "G3": 11}
 assert sum(VERIFIED_GROUPS.values()) == VERIFIED_INCLUDED
 
-# Upstream funnel (databases/other -> dedup -> screened), scaled so the
-# bottom of this segment lands exactly on VERIFIED_SCREENED --
+# Upstream funnel (databases/other, then dedup, then screened), scaled so
+# the bottom of this segment lands exactly on VERIFIED_SCREENED.
 k_up = VERIFIED_SCREENED / S["screened"]
 id_databases = round(S["id_databases"] * k_up)
 id_other = round(S["id_other"] * k_up)
 pre_dedup_total = id_databases + id_other
 duplicates_removed = pre_dedup_total - VERIFIED_SCREENED
 
-# Downstream funnel (screened -> ... -> included), rate-scaled stage by
-# stage from the source diagram's rates, starting at VERIFIED_SCREENED --
+# Downstream funnel (screened through to included), rate-scaled stage by
+# stage from the source diagram's rates, starting at VERIFIED_SCREENED.
 ta_excl_rate = S["excluded_title_abstract"] / S["screened"]
 excluded_title_abstract = round(VERIFIED_SCREENED * ta_excl_rate)
 sought_for_retrieval = VERIFIED_SCREENED - excluded_title_abstract
@@ -103,9 +102,9 @@ supp_share_of_final = S["supplementary_sweep"] / S["final_included"]
 supplementary_sweep = round(VERIFIED_INCLUDED * supp_share_of_final)
 main_flow_included = VERIFIED_INCLUDED - supplementary_sweep
 
-# excluded_full_text is the ONE reconciling term (see module docstring):
-# every other box above is directly rate-scaled from the source diagram;
-# this one is solved so the funnel lands exactly on VERIFIED_INCLUDED.
+# excluded_full_text is the one reconciling term (see module docstring).
+# Every other box above is rate-scaled from the source diagram; this one
+# is solved so the funnel lands exactly on VERIFIED_INCLUDED.
 excluded_full_text = assessed_for_eligibility - main_flow_included
 
 MANUSCRIPT_STATED = {
@@ -116,7 +115,7 @@ MANUSCRIPT_STATED = {
     "excluded_full_text": excluded_full_text, "supplementary_sweep": supplementary_sweep,
     "main_flow_included": main_flow_included,
     # Verified exclusion-reason breakdown (all 265 excluded records;
-    # measured, not scaled) --
+    # measured, not scaled).
     "excl_residential": 74, "excl_new_construction": 57, "excl_non_nz": 51,
     "excl_no_lca": 44, "excl_duplicate": 2, "excl_other": 37,
 }
@@ -124,20 +123,20 @@ M = MANUSCRIPT_STATED
 
 print("=== Proportional reconstruction: rates taken from the supplied diagram ===")
 print(f"id split (databases fraction): {S['id_databases']}/{S['screened'] + S['duplicates_removed'] - S['id_other']}"
-      f" -> databases={id_databases}, other={id_other} (k_up={k_up:.4f})")
-print(f"deduplication: pre_dedup_total={pre_dedup_total}, duplicates_removed={duplicates_removed} "
-      f"-> screened={pre_dedup_total - duplicates_removed} (target {VERIFIED_SCREENED})")
-print(f"title/abstract exclusion rate {ta_excl_rate:.4f} applied to {VERIFIED_SCREENED} "
-      f"-> excluded={excluded_title_abstract}, sought={sought_for_retrieval}")
-print(f"not-retrieved rate {not_retrieved_rate:.4f} applied to {sought_for_retrieval} "
-      f"-> not_retrieved={not_retrieved}, assessed={assessed_for_eligibility}")
-print(f"supplementary-sweep share of final total {supp_share_of_final:.4f} applied to {VERIFIED_INCLUDED} "
-      f"-> supplementary={supplementary_sweep}, main_flow_included={main_flow_included}")
-print(f"excluded_full_text (reconciling term, NOT rate-scaled) = assessed({assessed_for_eligibility}) "
+      f", giving databases={id_databases}, other={id_other} (k_up={k_up:.4f})")
+print(f"deduplication: pre_dedup_total={pre_dedup_total}, duplicates_removed={duplicates_removed}, "
+      f"giving screened={pre_dedup_total - duplicates_removed} (target {VERIFIED_SCREENED})")
+print(f"title/abstract exclusion rate {ta_excl_rate:.4f} applied to {VERIFIED_SCREENED}, "
+      f"giving excluded={excluded_title_abstract}, sought={sought_for_retrieval}")
+print(f"not-retrieved rate {not_retrieved_rate:.4f} applied to {sought_for_retrieval}, "
+      f"giving not_retrieved={not_retrieved}, assessed={assessed_for_eligibility}")
+print(f"supplementary-sweep share of final total {supp_share_of_final:.4f} applied to {VERIFIED_INCLUDED}, "
+      f"giving supplementary={supplementary_sweep}, main_flow_included={main_flow_included}")
+print(f"excluded_full_text (reconciling term, not rate-scaled) = assessed({assessed_for_eligibility}) "
       f"- main_flow_included({main_flow_included}) = {excluded_full_text} "
       f"[supplied diagram's own rate would give "
-      f"{round(assessed_for_eligibility * S['excluded_full_text'] / S['assessed_for_eligibility'])} -- "
-      f"differs because 333->68 is a steeper overall funnel than the supplied diagram's 338->77]")
+      f"{round(assessed_for_eligibility * S['excluded_full_text'] / S['assessed_for_eligibility'])}; it "
+      f"differs because 333 to 68 is a steeper overall funnel than the supplied diagram's 338 to 77]")
 
 print("\n=== Internal-consistency checks on the reconstructed set ===")
 checks = [
@@ -156,9 +155,9 @@ all_ok = True
 for label, lhs, rhs in checks:
     ok = lhs == rhs
     all_ok = all_ok and ok
-    print(f"  {label}: {lhs} == {rhs} -> {ok}")
+    print(f"  {label}: {lhs} == {rhs}: {ok}")
 if not all_ok:
-    print("*** STOP: reconstructed-set arithmetic does NOT check out -- see printed values above. ***")
+    print("*** STOP: reconstructed-set arithmetic does not check out; see printed values above. ***")
     sys.exit(1)
 excl_cat_sum = (M["excl_residential"] + M["excl_new_construction"] + M["excl_non_nz"] +
                 M["excl_no_lca"] + M["excl_duplicate"] + M["excl_other"])
@@ -202,7 +201,7 @@ def classify(reason):
 excluded["category"] = excluded["Exclusion_Reason"].apply(classify)
 cat_counts = excluded["category"].value_counts().sort_values(ascending=False)
 
-print("\n=== Self-audit: independent re-derivation vs. verified totals ===")
+print("\n=== Self-audit: independent re-derivation against verified totals ===")
 print(f"Screened: independent={total_rows}, verified={VERIFIED_SCREENED}, match={total_rows == VERIFIED_SCREENED}")
 print(f"Excluded: independent={n_exclude}, verified=265, match={n_exclude == 265}")
 print(f"Included: independent={n_include}, verified={VERIFIED_INCLUDED}, match={n_include == VERIFIED_INCLUDED}")
@@ -216,36 +215,36 @@ cat_stated = {"duplicate": M["excl_duplicate"], "residential only": M["excl_resi
               "new construction only": M["excl_new_construction"],
               "no LCA or carbon quantification": M["excl_no_lca"],
               "non-NZ": M["excl_non_nz"], "other": M["excl_other"]}
-print("Exclusion-reason category breakdown -- independent regex classifier vs. manuscript-stated:")
+print("Exclusion-reason category breakdown, independent regex classifier against manuscript-stated:")
 category_mismatch = False
 for k in cat_ind:
     ok = cat_ind[k] == cat_stated[k]
     category_mismatch = category_mismatch or not ok
     print(f"  {k}: independent={cat_ind[k]}, stated={cat_stated[k]}, match={ok}")
 if category_mismatch:
-    print("*** DISAGREEMENT (unchanged from the prior pass): the exclusion-reason breakdown does not "
-          "reproduce from this project's independent workbook-classification code path, even though the "
-          "grand totals match. See figures/FIG2_RECONSTRUCTION_PROVENANCE.md. ***")
+    print("*** DISAGREEMENT: the exclusion-reason breakdown does not reproduce from this "
+          "project's independent workbook-classification code path, although the grand "
+          "totals match. ***")
 
 ESTIMATED_NOTE = " (estimated)"
 
-# Draw -- height-first layout engine. Every box's height is computed from
-# its wrapped line count BEFORE it is placed; the vertical cursor only ever
-# advances by a box's true height plus GAP, so a box can never start above
+# Draw: height-first layout engine. Every box's height is computed from
+# its wrapped line count before it is placed. The vertical cursor only
+# advances by a box's true height plus GAP, so a box cannot start above
 # the true bottom of the one before it.
 DARK_FILLS = {OI["blue"], OI["bluish_green"], OI["vermillion"]}
 LINE_H = 0.70   # line height, set for a less cramped layout
 PAD = 0.60      # box padding
-GAP = 1.05      # explicit, generous gap between stacked box groups
+GAP = 1.05      # gap between stacked box groups
 
 def box_height(n_lines):
     return n_lines * LINE_H + PAD
 
 def draw_box(x, y_bottom, w, text_lines, fc="white", ec=BASE["steel_blue"], fontsize=8.2,
              fontweight="normal", lw=1.3, estimated=False, height=None):
-    """Draw a box with bottom-left corner at (x, y_bottom); height is derived
-    from text_lines unless an explicit `height` is given (used to make a
-    side-by-side pair share one height so their edges align cleanly)."""
+    """Draw a box with bottom-left corner at (x, y_bottom). The height is
+    derived from text_lines unless a `height` is given, which lets a
+    side-by-side pair share one height so that their edges align."""
     h = height if height is not None else box_height(len(text_lines))
     if estimated:
         p = FancyBboxPatch((x, y_bottom), w, h, boxstyle="round,pad=0.07,rounding_size=0.12",
@@ -276,15 +275,15 @@ def arrow(b1, b2, side1="bottom", side2="top"):
     ax.add_patch(a)
 
 def place(y_top, x, w, text_lines, **kwargs):
-    """Place one box with its TOP at y_top; returns (box_tuple, new_y_top)."""
+    """Place one box with its top at y_top; returns (box_tuple, new_y_top)."""
     h = box_height(len(text_lines))
     b = draw_box(x, y_top - h, w, text_lines, **kwargs)
     return b, y_top - h - GAP
 
 def place_pair(y_top, xL, wL, linesL, xR, wR, linesR, gapL_kwargs=None, gapR_kwargs=None):
     """Place two boxes side by side, sharing one height (the taller of the
-    two) so their top and bottom edges both align -- avoids the staggered,
-    seam-like look a mismatched pair produces."""
+    two) so that their top and bottom edges align. A mismatched pair looks
+    staggered, with a visible seam."""
     gapL_kwargs = gapL_kwargs or {}
     gapR_kwargs = gapR_kwargs or {}
     h = max(box_height(len(linesL)), box_height(len(linesR)))
@@ -292,7 +291,7 @@ def place_pair(y_top, xL, wL, linesL, xR, wR, linesR, gapL_kwargs=None, gapR_kwa
     bR = draw_box(xR, y_top - h, wR, linesR, height=h, **gapR_kwargs)
     return bL, bR, y_top - h - GAP
 
-# Canvas: sized generously; trimmed to content at the end via ylim
+# Canvas: sized large, then trimmed to content at the end via ylim
 fig, ax = plt.subplots(figsize=(8.6, 17.5))
 ax.set_xlim(0, 10)
 ax.axis("off")
@@ -406,9 +405,9 @@ for g, x, lines in zip(group_order, gx, group_lines):
     arrow(b_incl, b_g, "bottom", "top")
 y = y - h_g - GAP
 
-# Verified exclusion-reason breakdown (measured; independent of
-# screening stage -- spans both the title/abstract and full-text exclusion
-# boxes above). Drawn full weight.
+# Verified exclusion-reason breakdown (measured). It is independent of the
+# screening stage and spans both the title/abstract and the full-text
+# exclusion boxes above. Drawn at full weight.
 excl_lines = [f"All records excluded, by reason  n = {n_exclude}  (verified; spans both screening stages above)", ""] + [
     f"Residential-only population: n = {M['excl_residential']}",
     f"New construction without existing-building assessment: n = {M['excl_new_construction']}",

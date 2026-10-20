@@ -53,8 +53,8 @@ file exceeds GitHub's size limit.
   sharing agreement. Building-level data are confidential. Only the aggregated cohort statistics used in the
   paper are released (`data/analysis_tables/phase3_eui_derived_v2.csv`). Requests for the source data
   should go to NZGBC.
-- Raw Electricity Authority files and MBIE source workbooks are not redistributed. Their sources are listed
-  in `data/README.md`.
+- Raw Electricity Authority files are not redistributed because of their size. Their sources are listed
+  in `data/README.md`. The MBIE workbooks the pipelines read are included, under MBIE's CC BY 4.0 terms.
 - The Building Data Genome 2 meter data used in the real-building sensitivity test are available from their
   authors (Miller et al., 2020). The script `code/analysis/bdg2_sensitivity/01_extract_sample_buildings.py`
   extracts the sample.

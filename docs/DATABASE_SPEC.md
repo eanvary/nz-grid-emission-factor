@@ -425,13 +425,10 @@ is the reported method.
   steps 3-4 geothermal term (93.97%). It still agrees with Approach 2: 12.9% against 12.8% for the
   NI mean hourly band, with no negative lower bound in any hour (`geothermal_sigma_sensitivity.csv`).
   Monte Carlo (Approach 2) is therefore the reported method.
-- Data files over 100 MB, such as `output/edgs/edgs_hourly_generation*.parquet`,
-  `output/edgs/edgs_hourly_emission_factor_primary.parquet` and
-  `output/zone_historical/zone_ef_TP_2015_2025.parquet`, cannot be pushed to GitHub, which has a
-  100 MB per-file limit. The last is 242 MB and comes from the
-  separate zone-database commit 07c595e. Sizes of the database files are in `DATA_MANIFEST.csv`.
-  Publication will need a data deposit, for example a repository that mints a digital object
-  identifier (DOI), with `DATA_MANIFEST.csv` (path, size, SHA-256) as the integrity check.
+- Files over GitHub's size limit, such as `output/edgs/edgs_hourly_generation*.parquet` and
+  `output/edgs/edgs_hourly_emission_factor_primary.parquet`, are in the archived data deposit.
+  They are listed with size and SHA-256 in `zenodo_manifest.csv`. `MANIFEST.csv` gives the same
+  for every file in this repository.
 - The EDGS hourly shape templates (2017, 2021, 2023, 2024) are built from raw Generation_MD
   without the fills. The fills are 2.7% of NI geothermal in 2017 (norskeskog). They are 1.1%,
   4.8% and 3.9% of NI hydro in 2021, 2023 and 2024 (Matahina), and at most 6.0% of NI hydro in

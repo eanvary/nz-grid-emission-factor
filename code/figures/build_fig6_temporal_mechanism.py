@@ -1,13 +1,13 @@
 """
-Figure 6 -- temporal mechanism with the null result. Two claims kept
+Figure 6: temporal mechanism with the null result. Two claims are kept
 visually separate: (1) main panel, the seasonal/diurnal variance-share
 shift 2024-2050 (NI, Reference); (2) inset, the null result that diurnal
 shape barely moves across the whole horizon, for all five trajectories.
 
 The seasonal-collapse claim must not mix the 2024 month share with the
-2050 season share (mixing them gives the misleading "73%->14%").
-Both panel series here use eta2_season and eta2_hour consistently across
-both endpoints -- eta2_month is not plotted. All four endpoint values are
+2050 season share (mixing them gives the misleading "73% to 14%").
+Both panel series use eta2_season and eta2_hour consistently at both
+endpoints; eta2_month is not plotted. All four endpoint values are
 printed for the record.
 """
 import sys
@@ -28,15 +28,16 @@ from journal_palette import set_journal_style, CATEGORICAL, LINE_STYLES, BASE  #
 
 set_journal_style()
 # Main panel: seasonal = CATEGORICAL[1] (amber print), diurnal = CATEGORICAL[0]
-# (deep navy). Inset: 5 scenarios use the full CATEGORICAL sequence, each
-# paired with its matching LINE_STYLES entry (linestyle+marker) so the 5
-# series stay distinguishable in greyscale print, per the >2-series rule.
+# (deep navy). Inset: 5 scenarios use the full CATEGORICAL sequence. Each is
+# paired with its matching LINE_STYLES entry (linestyle+marker) so that the
+# 5 series stay distinguishable in greyscale print, per the rule for more
+# than two series.
 SEASONAL_C, DIURNAL_C = CATEGORICAL[1], CATEGORICAL[0]
 SCENARIO_ORDER = ["Constraint", "Environmental", "Growth", "Innovation", "Reference"]
 SCEN_COLORS = {s: CATEGORICAL[i] for i, s in enumerate(SCENARIO_ORDER)}
 SCEN_STYLES = {s: LINE_STYLES[i] for i, s in enumerate(SCENARIO_ORDER)}
 
-# Check the endpoint values directly and print all four
+# Endpoint values from the table, all four printed
 vd = pd.read_csv(TABLES / "phase1_variance_decomp_by_island.csv")
 vd_ni_ref = vd[(vd["scenario"] == "Reference") & (vd["island"] == "NI")].sort_values("year")
 endpoints = vd_ni_ref[vd_ni_ref["year"].isin([2024, 2050])]
@@ -46,9 +47,9 @@ month_2024 = endpoints[endpoints.year == 2024]["eta2_month"].iloc[0]
 month_2050 = endpoints[endpoints.year == 2050]["eta2_month"].iloc[0]
 season_2024 = endpoints[endpoints.year == 2024]["eta2_season"].iloc[0]
 season_2050 = endpoints[endpoints.year == 2050]["eta2_season"].iloc[0]
-print(f"eta2_month:  {month_2024*100:.1f}% (2024) -> {month_2050*100:.1f}% (2050)")
-print(f"eta2_season: {season_2024*100:.1f}% (2024) -> {season_2050*100:.1f}% (2050)")
-print("The '73%->14%' claim mixes eta2_month(2024) with eta2_season(2050) -- NOT reproduced here.")
+print(f"eta2_month:  {month_2024*100:.1f}% (2024) to {month_2050*100:.1f}% (2050)")
+print(f"eta2_season: {season_2024*100:.1f}% (2024) to {season_2050*100:.1f}% (2050)")
+print("The '73% to 14%' claim mixes eta2_month(2024) with eta2_season(2050); it is not reproduced here.")
 print("This figure plots eta2_season and eta2_hour consistently at both endpoints.\n")
 
 # Main panel data
@@ -56,10 +57,10 @@ main_years = vd_ni_ref["year"]
 main_season = vd_ni_ref["eta2_season"] * 100
 main_hour = vd_ni_ref["eta2_hour"] * 100
 
-# Inset panel data -- diurnal persistence, all 5 trajectories, NI only.
+# Inset panel data: diurnal persistence, all 5 trajectories, NI only.
 # SI is excluded: its corr_vs_2024 is undefined (NaN) throughout, because
-# SI's near-zero generation-side EF makes the correlation degenerate --
-# confirmed directly from the table, not assumed.
+# SI's near-zero generation-side EF makes the correlation degenerate.
+# The check below confirms this from the table.
 dsp = pd.read_csv(TABLES / "phase1_diurnal_shape_persistence.csv")
 dsp_ni = dsp[dsp["island"] == "NI"].copy()
 si_all_nan = dsp[dsp["island"] == "SI"]["corr_vs_2024"].isna().all()
@@ -67,10 +68,10 @@ print(f"SI corr_vs_2024 all-NaN (confirms NI-only restriction): {si_all_nan}")
 min_corr = dsp_ni["corr_vs_2024"].min()
 print(f"Minimum diurnal correlation across all NI scenario-years: {min_corr:.4f}")
 
-# Peak-hour check, NI only (SI's peak hour is a different,
-# structurally distinct value -- 0 vs 9 -- because SI's EF profile is
-# near-flat/noise-dominated; annotating a "peak hour" for SI would not be
-# meaningful, and the main panel above is itself NI-scoped).
+# Peak-hour check, NI only. SI's peak hour is a structurally distinct
+# value (0 against 9 for NI) because SI's EF profile is near-flat and
+# noise-dominated. A "peak hour" annotation for SI would therefore not be
+# meaningful. The main panel above is also NI-scoped.
 dp = pd.read_csv(TABLES / "phase1_diurnal_profiles.csv")
 dp_ni = dp[dp["island"] == "NI"]
 peak = dp_ni.loc[dp_ni.groupby(["scenario", "year"])["emission_factor_kg_co2e_per_kwh"].idxmax()]
@@ -93,10 +94,10 @@ ax.set_xlim(2023, 2054)
 ax.yaxis.set_major_formatter(mticker.PercentFormatter())
 ax.set_title("Marginal variance shares of the hourly emission factor, North Island, Reference trajectory, 2024–2050", fontsize=10.5, loc="left")
 
-# Inset: the null result. Placed in the upper-right corner of the main
-# panel, which is blank in the data (seasonal has already dropped below 25%
-# by ~2032 and diurnal never rises above ~8%), so the inset cannot obscure
-# either main-panel series or its direct labels.
+# Inset: the null result. It sits in the upper-right corner of the main
+# panel, which the data leave blank: seasonal has dropped below 25% by
+# about 2032 and diurnal never rises above about 8%. The inset therefore
+# cannot obscure either main-panel series or its direct labels.
 ax_ins = fig.add_axes([0.56, 0.46, 0.36, 0.26])
 for scen in SCENARIO_ORDER:
     sub = dsp_ni[dsp_ni["scenario"] == scen].sort_values("year")
@@ -119,11 +120,11 @@ else:
 for spine in ax_ins.spines.values():
     spine.set_linewidth(0.6)
 
-# 5-series inset: colour alone is not enough per the styling rules (>2
-# series), and the marker/linestyle redundancy is already applied above --
-# a compact legend outside the axes (per the >3-entries convention used
-# throughout this figure set) makes the mapping explicit rather than
-# leaving it to the reader to infer from the marker legend.
+# 5-series inset: the styling rules say colour alone is not enough for more
+# than two series, and the marker/linestyle redundancy is applied above. A
+# compact legend outside the axes states the mapping, following the
+# convention for more than three entries used across this figure set. The
+# reader then does not have to infer it from the marker legend.
 from matplotlib.lines import Line2D
 scen_legend = [Line2D([0], [0], color=SCEN_COLORS[s], lw=1.1, linestyle=SCEN_STYLES[s]["linestyle"],
                        marker=SCEN_STYLES[s]["marker"], ms=4, label=s) for s in SCENARIO_ORDER]

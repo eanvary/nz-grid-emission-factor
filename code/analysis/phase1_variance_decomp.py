@@ -2,16 +2,15 @@
 Phase 1: variance decomposition.
 For each scenario-year, decompose total hourly-EF variance into shares
 "explained" (eta-squared, marginal/between-group variance over total variance)
-by: hour-of-day, day-of-year (proxy: month, to keep groups populated), season,
-and island. This is a sequential, marginal (not orthogonalised) decomposition:
-components are not guaranteed to sum to 100% and are order-independent by
-construction (each factor's share is computed against the same total variance,
-not residualised against the others). The alternative would be an ordered
-decomposition with its order sensitivity reported; marginal shares avoid the
-order-sensitivity problem entirely, at the cost of
-not summing to a clean 100%; any overlap between factors shows up as
-double-counted variance, which is itself informative (it shows how confounded
-the factors are), and is reported alongside.
+by hour-of-day, day-of-year (proxy: month, to keep groups populated), season,
+and island. The decomposition is sequential and marginal, not orthogonalised.
+Components are not guaranteed to sum to 100%, and they are order-independent by
+construction: each factor's share is computed against the same total
+variance, not residualised against the others. An ordered decomposition
+would need its order sensitivity reported. Marginal shares avoid that
+problem, at the cost of not summing to 100%. Any overlap between factors
+shows up as double-counted variance. That overlap shows how confounded the
+factors are, and it is reported alongside.
 """
 import numpy as np
 import pandas as pd
@@ -73,9 +72,9 @@ isl_df.to_csv(TABLES / "phase1_variance_decomp_island_factor.csv", index=False)
 log(isl_df[isl_df["scenario"] == "Reference"].to_string(index=False))
 
 # Trend over horizon: does hour-of-day's share of variance grow or shrink as
-# solar/batteries reshape the day? Linear trend (OLS slope) of eta2_hour vs
-# year, per scenario, NI only (SI's eta2 values are largely undefined/degenerate
-# since SI variance itself is ~0).
+# solar/batteries reshape the day? Linear trend (OLS slope) of eta2_hour
+# against year, per scenario, NI only (SI's eta2 values are largely
+# undefined or degenerate, since SI variance itself is about 0).
 log("\n=== Trend in eta2_hour over 2024-2050, NI, per scenario (simple OLS slope) ===")
 from scipy import stats
 for scen, g in decomp[decomp["island"] == "NI"].groupby("scenario"):

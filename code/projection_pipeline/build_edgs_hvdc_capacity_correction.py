@@ -13,7 +13,7 @@ exactly from the saved table, so this reproduces Module 7's internal transfer se
 The sensitivity scripts that regenerate generation can only approximate it.
 
 Capacity cutover (stated interpretation, not a citation): every source found states only
-"the early 2030s" for the 1200->1400 MW upgrade's completion; none gives a specific year.
+"the early 2030s" for the 1200 to 1400 MW upgrade's completion; none gives a specific year.
 This script uses 2032 as a reasoned midpoint of "the early 2030s" (commonly read as
 2030-2033). It is not an MBIE/Transpower figure. A different year within "early 2030s"
 would shift which scenario-years fall just either side of the cutover, but not the
@@ -21,16 +21,16 @@ qualitative finding.
 
 Method: for each flagged hour (transfer_to_NI(t) > capacity(year)), shortfall(t) =
 transfer_to_NI(t) - capacity(year). Spare NI thermal headroom is estimated as
-total_NI_thermal_capacity(year) - already_dispatched_NI_thermal_generation(t) (both aggregate
-quantities: the pipeline reconciles thermal at fuel level, not plant level, so there is no
-per-plant hourly dispatch to re-derive exactly). If spare exists, the shortfall is assigned
-to the cheapest available merit-order plant(s) with estimated headroom
-(headroom_i(t) = capacity_i x (1 - utilisation_fraction(t)),
-utilisation_fraction(t) = already-dispatched thermal / total NI thermal capacity, i.e. plants
-are assumed proportionally loaded to the aggregate utilisation, a documented simplification of
-"use the existing merit order to decide which plant absorbs it"), and CO2 uses that plant's own
-heat-rate x MfE fuel factor (its marginal emission intensity, not the pipeline's reconciled
-average, since this MW is by construction not part of MBIE's reconciled annual total).
+total_NI_thermal_capacity(year) - already_dispatched_NI_thermal_generation(t). Both are
+aggregate quantities: the pipeline reconciles thermal at fuel level, not plant level, so there
+is no per-plant hourly dispatch to re-derive exactly. If spare exists, the shortfall goes to
+the cheapest available merit-order plant(s) with estimated headroom
+headroom_i(t) = capacity_i x (1 - utilisation_fraction(t)), where
+utilisation_fraction(t) = already-dispatched thermal / total NI thermal capacity. Plants are
+thus assumed loaded in proportion to the aggregate utilisation, a documented simplification of
+"use the existing merit order to decide which plant absorbs it". CO2 uses that plant's own
+heat-rate x MfE fuel factor (its marginal emission intensity). The pipeline's reconciled
+average is not used, since this MW is by construction outside MBIE's reconciled annual total.
 If spare is insufficient, the hour is flagged as an unserved-demand / reliability finding and
 not folded into the emissions correction.
 
@@ -39,7 +39,7 @@ build_edgs_dispatch.py, build_edgs_island_consumption.py, edgs_common.py, or any
 output parquet.
 
 Outputs: edgs_hvdc_capacity_correction_hours.csv   (every affected hour, served or unserved)
-         edgs_hvdc_capacity_correction_summary.csv (per scenario-year: original vs corrected NI consumption EF)
+         edgs_hvdc_capacity_correction_summary.csv (per scenario-year: original and corrected NI consumption EF)
          edgs_hvdc_unserved_demand.csv              (reliability finding, if any hours are unservable)
 """
 import numpy as np
@@ -49,7 +49,7 @@ from edgs_common import (ASSUMPTIONS_XLSX, OUT_DIR, SCENARIOS, YEARS, THERMAL_CO
                          fuel_ef_kg_per_gj, log_factory)
 
 log, lines = log_factory()
-CUTOVER_YEAR = 2032  # stated interpretation of "the early 2030s" - see docstring
+CUTOVER_YEAR = 2032  # stated interpretation of "the early 2030s"; see docstring
 CAP_BEFORE, CAP_AFTER = 1200.0, 1400.0
 
 targets = pd.read_parquet(OUT_DIR / "edgs_annual_targets.parquet")
@@ -114,7 +114,7 @@ for scenario in SCENARIOS:
             raw_si = np.where(no_shape, 1 - ni_share, raw_si)
             ssum = raw_ni + raw_si
         gl_NI = nat_gen * raw_ni / ssum
-        transfer_to_NI = gl_NI - g_NI  # EXACT match to Module 7's own internal series
+        transfer_to_NI = gl_NI - g_NI  # matches Module 7's internal series exactly
 
         cap = capacity_for_year(year)
         flagged_import = transfer_to_NI > cap       # NI wanted more import than the cable carries
@@ -122,7 +122,7 @@ for scenario in SCENARIOS:
         if not (flagged_import.any() or flagged_export.any()):
             continue  # scenario-year unaffected; leave untouched
 
-        # Already-dispatched NI thermal generation + total NI thermal capacity, this hour/year
+        # Already-dispatched NI thermal generation and total NI thermal capacity, this hour/year
         gth = g[(g.island == "NI") & (g.fuel_commodity.isin(THERMAL_COMMODITIES))]
         thermal_dispatched = gth.groupby("datetime_hour")["generation_mwh"].sum().reindex(dt, fill_value=0.0).to_numpy()
         mplants = merit_s[merit_s.year == year].sort_values("merit_rank")
@@ -176,7 +176,7 @@ for scenario in SCENARIOS:
                                   "capacity_mw": cap, "shortfall_mw": shortfall, "spare_thermal_mw": spare,
                                   "orig_co2_kg": orig_co2_h, "corrected_co2_kg": corr_co2_h})
             else:
-                corr_co2_sy += orig_co2_h  # not folded into emissions correction - leave as-is, flag separately
+                corr_co2_sy += orig_co2_h  # not folded into the emissions correction; flagged separately
                 unserved_mwh_sy += (shortfall - spare)
                 unserved_rows.append({"scenario": scenario, "year": year, "datetime_hour": dt[h],
                                       "required_transfer_mw": transfer_to_NI[h], "capacity_mw": cap,
@@ -188,9 +188,9 @@ for scenario in SCENARIOS:
                                   "orig_co2_kg": orig_co2_h, "corrected_co2_kg": orig_co2_h})
 
         for h in np.where(flagged_export)[0]:
-            # NI wants to export more than the cable carries - does not affect NI's own
-            # consumption CO2/EF (NI's own generation & consumption unchanged); flagged for
-            # completeness as a distinct SI-side curtailment signal, not folded into NI's EF.
+            # NI wants to export more than the cable carries. This does not affect NI's own
+            # consumption CO2/EF (NI's generation and consumption are unchanged). It is flagged
+            # as a distinct SI-side curtailment signal, not folded into NI's EF.
             hour_rows.append({"scenario": scenario, "year": year, "datetime_hour": dt[h],
                               "type": "export_constrained_SI_curtailment", "required_transfer_mw": transfer_to_NI[h],
                               "capacity_mw": cap, "shortfall_mw": abs(transfer_to_NI[h]) - cap,
@@ -234,7 +234,7 @@ if len(unserved_df):
 log(f"\n=== Summary: {len(summary_df)} affected scenario-years (cap {CAP_BEFORE}/{CAP_AFTER} MW, cutover {CUTOVER_YEAR}) ===")
 log(f"  Total import-flagged hours: {summary_df.n_hours_import_flagged.sum()}")
 log(f"  Total export-flagged hours: {summary_df.n_hours_export_flagged.sum()}")
-log(f"  Total UNSERVED hours (reliability finding): {summary_df.n_hours_unserved.sum()}")
+log(f"  Total unserved hours (reliability finding): {summary_df.n_hours_unserved.sum()}")
 log(f"  Mean diff_pct across affected scenario-years: {summary_df.diff_pct.mean():.2f}%")
 log(f"  Max diff_pct: {summary_df.diff_pct.max():.2f}% (scenario-year: "
     f"{summary_df.loc[summary_df.diff_pct.idxmax(), ['scenario','year']].to_dict()})")
@@ -244,7 +244,7 @@ log(summary_df.sort_values("diff_pct", ascending=False).head(10)[
 ].round(4).to_string(index=False))
 
 if len(unserved_df):
-    log(f"\n=== RELIABILITY FINDING: {len(unserved_df)} hours where NI's thermal fleet cannot "
+    log(f"\n=== Reliability finding: {len(unserved_df)} hours where NI's thermal fleet cannot "
         f"cover the shortfall even at full output ===")
     log(unserved_df.groupby(["scenario", "year"]).size().rename("n_unserved_hours").reset_index()
         .sort_values("n_unserved_hours", ascending=False).head(15).to_string(index=False))

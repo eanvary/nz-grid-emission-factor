@@ -1,10 +1,11 @@
 """
-Approach 2 (Monte Carlo) uncertainty propagation. Approach 1 (linear/first-order
+Approach 2 (Monte Carlo) uncertainty propagation. Approach 1 (linear, first-order
 error propagation, run_ipcc_uncertainty_full_coverage.py) implicitly assumes a symmetric,
-unbounded Gaussian and produces a negative lower 95% bound, physically impossible for an
-emission factor, in 3,795 of 96,421 NI+SI hours (3.9%) once geothermal's very wide relative uncertainty
-(93.97%, McLean & Richardson 2019) is included alongside GAS (adopted per-unit sigma, build_fleet_uncertainty.py) and IPCC
-Table 2.2 defaults (CLG, DSL, WOOD).
+unbounded Gaussian. Geothermal's very wide relative uncertainty (93.97%, McLean &
+Richardson 2019) is included alongside GAS (adopted per-unit sigma,
+build_fleet_uncertainty.py) and IPCC Table 2.2 defaults (CLG, DSL, WOOD). With these
+inputs Approach 1 gives a negative lower 95% bound in 3,795 of 96,421 NI+SI hours
+(3.9%), which is physically impossible for an emission factor.
 
 Geothermal is split by proxy-rule step into independent terms
 (build_geo_uncertainty_inputs.py): GEO, step 1, at the NIR 2026 measurement uncertainty
@@ -12,19 +13,19 @@ Geothermal is split by proxy-rule step into independent terms
 year-to-year variation^2); GEO_PROXY, steps 3-4, at the between-station spread (93.97%).
 
 Method (IPCC Good Practice Guidance Ch.6, Approach 2): each quantified fuel's emission
-factor is treated as ONE uncertain, but fixed-for-the-study, parameter (not a fresh random
-draw every hour) -- its point estimate is the mean of a lognormal distribution whose
-coefficient of variation equals that fuel's rel_sigma from Approach 1 (same inputs, only the
-propagation method differs). Lognormal is used because it is strictly positive (support
-(0, inf)), which is exactly what fixes Approach 1's negative-bound failure, and is IPCC's own
-suggested distribution for emission factors that cannot be negative.
+factor is treated as one uncertain parameter, fixed for the study (not a fresh random
+draw every hour). Its point estimate is the mean of a lognormal distribution whose
+coefficient of variation equals that fuel's rel_sigma from Approach 1 (same inputs; only the
+propagation method differs). The lognormal is strictly positive (support (0, inf)), which
+removes Approach 1's negative-bound failure, and IPCC suggests it for emission factors that
+cannot be negative.
 
 For each of N Monte Carlo trials, one multiplier is drawn per fuel (E[mult]=1, CV=rel_sigma)
 and applied identically to every hour of the whole 2015-2025 record before re-aggregating to
-hourly / monthly / annual generation-weighted EF. This keeps the three resolutions internally
-consistent (same underlying trials) and is the correct treatment of a systematic parameter
-uncertainty, as opposed to sampling independently every hour (which would understate
-uncertainty at monthly/annual resolution by averaging it away).
+hourly, monthly and annual generation-weighted EF. The three resolutions thus share the same
+trials and stay internally consistent. This is the correct treatment of a systematic parameter
+uncertainty. Sampling independently every hour would average the uncertainty away and
+understate it at monthly and annual resolution.
 
 Zero-EF fuels (HYD, WIN, SOL) and the near-zero ELE column are held deterministic at their
 point contribution (0), matching Approach 1's treatment.
@@ -32,11 +33,11 @@ point contribution (0), matching Approach 1's treatment.
 Trial count (50,000)
 Because one multiplier per fuel is held across the whole record, every hour shares the same
 N draws. Monte Carlo error in the 2.5/97.5 percentiles is therefore common to all hours and
-does NOT average away over the 96,421-hour record, which is the usual reason a modest N is
-safe. Geothermal's 93.97% sigma also makes the lognormal tail heavy exactly where those
+does not average away over the 96,421-hour record, which is the usual reason a modest N is
+safe. Geothermal's 93.97% sigma also makes the lognormal tail heavy where those
 percentiles sit. test_montecarlo_trial_convergence.py measures the effect: at N=10,000 the
 mean band moves about 6 percentage points with the seed alone, at N=50,000 under 1.5, and at
-N=200,000 under 0.5. 50,000 buys stability at the reported precision without the memory cost
+N=200,000 under 0.5. 50,000 gives stability at the reported precision without the memory cost
 of 200,000. CHUNK is 500 rows so the (chunk x N_TRIALS) working array stays near 200 MB.
 """
 import math
@@ -79,7 +80,7 @@ for f, v in REL_SIGMA.items():
     print(f"  {f}: {v*100:.2f}%")
 
 # Load data, pivot to wide contribution (co2_kg) and generation matrices
-print("\nLoading hourly_fuel_mix_NI_SI.csv...")
+print("\nLoading hourly_fuel_mix_uncertainty.csv...")
 df = pd.read_csv(HERE / "hourly_fuel_mix_uncertainty.csv")  # GEO split into GEO / GEO_PROXY
 df["year"] = df["date"].str[:4].astype(int)
 df["month"] = df["date"].str[5:7].astype(int)
@@ -161,17 +162,17 @@ if a1_path.exists():
         a1[["island", "date", "hour", "point_ef_kg_per_mwh", "ci95_pct_of_point", "ci95_lower_kg_per_mwh"]],
         on=["island", "date", "hour"], suffixes=("", "_approach1"),
     )
-    print(f"\n=== Approach 1 vs Approach 2 (Monte Carlo), NI+SI hourly ===")
+    print(f"\n=== Approach 1 and Approach 2 (Monte Carlo), NI+SI hourly ===")
     a1_ni = a1[a1.island == "NI"]
     a1_ni_neg = a1_ni[a1_ni["ci95_lower_kg_per_mwh"] < 0]
     print(f"Approach 1, NI only: {len(a1_ni_neg):,} of {len(a1_ni):,} hours "
           f"({len(a1_ni_neg)/len(a1_ni)*100:.1f}%) have a negative lower bound")
     print(f"Approach 1, NI+SI combined denominator (for reference): {len(a1_neg):,} of {len(a1):,} "
-          f"({len(a1_neg)/len(a1)*100:.1f}%) -- all {len(a1_neg):,} are NI hours, since geothermal is NI-only")
+          f"({len(a1_neg)/len(a1)*100:.1f}%); all {len(a1_neg):,} are NI hours, since geothermal is NI-only")
     print(f"Approach 2: {n_neg_mc} of {len(hourly_out):,} hours have a negative lower bound (fixed by construction)")
     ni = merged[merged.island == "NI"]
-    print(f"\nNI mean CI width -- Approach 1 (full coverage): {ni['ci95_pct_of_point'].mean():.2f}% of point")
-    print(f"NI mean CI width -- Approach 2 (Monte Carlo):    {ni['mc_ci95_pct_of_point'].mean():.2f}% of point")
+    print(f"\nNI mean CI width, Approach 1 (full coverage): {ni['ci95_pct_of_point'].mean():.2f}% of point")
+    print(f"NI mean CI width, Approach 2 (Monte Carlo):    {ni['mc_ci95_pct_of_point'].mean():.2f}% of point")
     prev_bad = ni[ni["ci95_lower_kg_per_mwh"] < 0]
     if len(prev_bad):
         print(f"\nOf the {len(prev_bad):,} NI hours Approach 1 flagged as physically invalid:")
@@ -180,10 +181,10 @@ if a1_path.exists():
     merged.to_csv(HERE / "ipcc_uncertainty_approach1_vs_approach2_hourly.csv", index=False)
     print("Wrote ipcc_uncertainty_approach1_vs_approach2_hourly.csv")
 else:
-    print(f"\n{a1_path.name} not found -- skipping Approach 1 vs 2 comparison.")
+    print(f"\n{a1_path.name} not found; skipping the Approach 1 and 2 comparison.")
 
-# Monthly and annual roll-ups using the SAME trials (correct treatment of a
-# systematic, fixed-for-the-study parameter uncertainty -- see module docstring).
+# Monthly and annual roll-ups use the same trials (the correct treatment of a
+# systematic, fixed-for-the-study parameter uncertainty; see module docstring).
 def rollup(group_cols, label):
     g_contrib_q = pd.DataFrame(Cq, columns=quant_cols)
     g_contrib_q[group_cols] = meta[group_cols].values

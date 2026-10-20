@@ -1,0 +1,17 @@
+station,n_published_years,n_changes,s_station_own,s_station_used,basis,rel_sigma_step2
+GDL,6,5,0.2006,0.2006,own series,0.2127
+Kawerau KGL,10,9,0.1447,0.1447,own series,0.1611
+Mokai,10,9,0.1690,0.1690,own series,0.1832
+Nga Awa Purua,10,9,0.0981,0.0981,own series,0.1209
+Nga Tamariki,10,9,0.1363,0.1363,own series,0.1535
+Ngawha OEC1-3,10,8,0.3936,0.3936,own series,0.3999
+Ngawha OEC4,2,1,1.0000,0.2191,pooled (fewer than 3 published years),0.2302
+Ohaaki,10,9,0.1253,0.1253,own series,0.1438
+Poihipi,10,9,0.3894,0.3894,own series,0.3958
+Rotokawa,10,9,0.1605,0.1605,own series,0.1754
+TAOM,6,5,0.1770,0.1770,own series,0.1906
+TOPP1,8,7,0.1512,0.1512,own series,0.1669
+Tauhara,1,0,,0.2191,pooled (fewer than 3 published years),0.2302
+Te Huka,10,9,0.3589,0.3589,own series,0.3658
+Te Mihi,10,9,0.0693,0.0693,own series,0.0990
+Wairakei A&B & binary,10,9,0.1172,0.1172,own series,0.1369

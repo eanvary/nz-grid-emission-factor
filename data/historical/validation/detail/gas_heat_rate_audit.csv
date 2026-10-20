@@ -1,0 +1,10 @@
+plant,register_hr,mbie_hr,gap_pct,source
+Huntly Rankine (gas),10900.000,10900,0.000,"MBIE 2020 Table 3-3, Huntly gas units 1, 2 & 4, ST"
+Huntly 5 (e3p),7300.000,7400,-1.351,"MBIE 2020 Table 3-3, CCGT"
+Huntly 6 (P40),10525.000,10525,0.000,"MBIE 2020 Table 3-3, OCGT"
+Taranaki CC,7700.000,7400,4.054,"MBIE 2020 Table 3-3, CCGT"
+Stratford peakers,8907.000,8907,0.000,"MBIE 2020 Table 3-3, OCGT (register corrected)"
+Te Rapa,11700.000,11700,0.000,"MBIE 2020 Table 3-13, cogenerator (register corrected)"
+Otahuhu B,7400.000,7400,0.000,"MBIE 2011 Table 3-1, CCGT (register corrected)"
+Southdown,7400.000,7400,0.000,"MBIE 2011 Table 3-1, CCGT (register corrected)"
+Southdown E105,10600.000,10600,0.000,"MBIE 2011 Table 3-1, OCGT (register corrected)"

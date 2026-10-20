@@ -31,7 +31,7 @@ STEEL = "#3A4A5C"         # secondary/muted fills (e.g. "excluded" bars)
 TEAL = "#0D7377"          # key accent: primary fills/CI bands
 TEAL_LT = "#14919B"       # teal variant: lines, primary bars
 AMBER = "#E8A838"         # warm accent: single callout/highlight per chart, fills
-AMBER_TEXT = "#A9720C"    # darker amber for TEXT on the bright ground (contrast)
+AMBER_TEXT = "#A9720C"    # darker amber for text on the bright ground (contrast)
 SLATE = "#8896A7"         # unused directly as text here; kept for reference
 MUTED = "#5B6B80"         # captions/ticks/reference lines on bright ground
 CLOUD = "#E8ECF1"         # light bg: axes panel fill
@@ -73,7 +73,7 @@ def style_axes(ax, title=None):
         ax.set_title(title, color=INK, pad=12)
 
 
-# Load real data
+# Load data
 month_df = pd.read_csv(HERE / "ipcc_uncertainty_by_island_month.csv")
 year_df = pd.read_csv(HERE / "ipcc_uncertainty_by_island_year.csv")
 fuel_mix = pd.read_csv(ROOT / "output" / "monthly_fuel_mix_NI_SI.csv")
@@ -118,7 +118,7 @@ fig.tight_layout()
 fig.savefig(OUT_DIR / "py_fig_A_ni_ci_band.png", dpi=180)
 plt.close(fig)
 
-# Figure B. Generation coverage: quantified (combustion) vs excluded (geothermal+)
+# Figure B. Generation coverage: quantified (combustion) and excluded (geothermal and other)
 # Checks the "52.2%-75.6%" covered / "24-48% left outside" coverage gap.
 fig, ax = plt.subplots(figsize=(10, 5.4))
 cov = ni_year["quantified_coverage_pct"].to_numpy()
@@ -189,7 +189,7 @@ fig.savefig(OUT_DIR / "py_fig_C_monthly_ci_and_dominant_fuel.png", dpi=180)
 plt.close(fig)
 
 # Figure D. NI monthly fuel-mix composition (stacked share), showing why
-# geothermal cannot be dismissed as immaterial. Checks the ~20-38%
+# geothermal cannot be dismissed as immaterial. Checks the roughly 20-38%
 # geothermal share behind Figure B.
 ni_fuel = fuel_mix[fuel_mix["island"] == "NI"].copy()
 ni_fuel["period"] = pd.to_datetime(dict(year=ni_fuel["year"], month=ni_fuel["month"], day=1))
@@ -222,7 +222,7 @@ fig.tight_layout(rect=(0, 0.10, 1, 1))
 fig.savefig(OUT_DIR / "py_fig_D_ni_fuel_mix_composition.png", dpi=180)
 plt.close(fig)
 
-# Figure E. External cross-check: this project's quarterly EF vs MBIE's
+# Figure E. External cross-check: this project's quarterly EF against MBIE's
 # published quarterly national EF. Re-derives the Category D1 check
 # (generation_pipeline/validate_ef_database_2015_2025.py, id "D1") from the
 # same two source files that script uses, independently, so the r and
@@ -281,7 +281,7 @@ fig.tight_layout()
 fig.savefig(OUT_DIR / "py_fig_E_mbie_crossvalidation_live.png", dpi=180)
 plt.close(fig)
 
-# Figure F. Hourly-native uncertainty vs. naive rollup.
+# Figure F. Hourly-native uncertainty compared with a naive roll-up.
 # Needs the outputs of build_hourly_fuel_mix.py and run_ipcc_uncertainty_hourly.py
 # (the three CSVs read below); if they are missing the figure is skipped with a
 # message rather than failing.

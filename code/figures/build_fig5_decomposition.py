@@ -1,32 +1,32 @@
 """
-Figure 5 -- decomposition (rebuild of fig1_decomposition_spatial_dominance
-from phase4_figures.py). Kept: horizontal bars from zero, bar length = mean
-of the two decomposition orders, a bracket for the order range, colour by
-sign, value labels on every bar, a plain-language title.
+Figure 5: decomposition. Horizontal bars start from zero, and bar length is
+the mean of the two decomposition orders. A bracket shows the order range
+and colour shows sign. Every bar carries a value label, and the title is in
+plain language.
 
-Changed from that figure:
+Further design points:
   1. Bars are in kgCO2e/m2 at the median intensity, read from
-     phase3_decomposition_contextualised_v3_finalEUI.csv (not a hardcoded
-     EUI constant -- the per-row EUI scale factor is recovered from the
-     table itself: kgco2_m2_a_mid / E_a_hourly_island).
-  2. A fourth bar shows the total error, so spatial visibly exceeds it.
+     phase3_decomposition_contextualised_v3_finalEUI.csv. No EUI constant is
+     hardcoded: the per-row EUI scale factor is recovered from the table
+     itself as kgco2_m2_a_mid / E_a_hourly_island.
+  2. A fourth bar shows the total error, so the spatial bar can be seen to
+     exceed it.
   3. The title is composed at run time from the computed values.
 
-Case: daytime_office, Reference. HEADLINE = start=2025, 25-year period
+Case: daytime_office, Reference. Headline: start=2025, 25-year period
 (fit_status 'full'). There is no literal 27-year row in the data (start
 years are only 2025, 2027, 2030); 2025+25yr is the longest non-truncated
 option covering close to the full modelled horizon.
 
 The manuscript caveats the 2025 headline start year because it falls
-inside the 2024-2025 window that Methods documents as carrying a ~30%
-validation gap against metered data, and states three options without
-picking one. This figure carries the same conditionality visually rather
-than showing only 2025: a second,
-visually subordinate bar set for the 2027-start/10-year case (drawn from
-the same source table) sits beside each headline bar. The figure only
-draws if the two start years agree in sign and ranking -- if they didn't,
-that would be a finding requiring a stop, not a styling choice
-(checked below, and printed either way).
+inside the 2024-2025 window that Methods documents as carrying a validation
+gap of about 30% against metered data. The manuscript states three options
+without picking one. The figure carries the same conditionality rather
+than showing only 2025. A second, visually subordinate bar set for the
+2027-start/10-year case (drawn from the same source table) sits beside each
+headline bar. The figure is drawn only if the two start years agree in sign
+and ranking. A disagreement would be a finding requiring a stop, not a
+styling choice (checked below, and printed either way).
 """
 import sys
 import numpy as np
@@ -46,9 +46,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from journal_palette import set_journal_style, CATEGORICAL, BASE  # noqa: E402
 
 set_journal_style()
-# Understate = CATEGORICAL[0] (deep navy). Overstate is a FILLED bar, so per
-# the palette rules it uses amber_fill (never the raw print-amber) with a
-# dark edgecolor -- amber_print is reserved for lines/markers/text.
+# Understate = CATEGORICAL[0] (deep navy). Overstate is a filled bar, so the
+# palette rules give it amber_fill (never the raw print-amber) with a dark
+# edgecolor; amber_print is reserved for lines, markers and text.
 UNDERSTATE, OVERSTATE = CATEGORICAL[0], BASE["amber_fill"]
 TOTAL_C = BASE["steel_blue"]
 
@@ -93,7 +93,7 @@ h_rank = sorted(component_cats, key=lambda c: -abs(headline["mid"][c]))
 c_rank = sorted(component_cats, key=lambda c: -abs(compare["mid"][c]))
 ranking_agrees = h_rank == c_rank
 
-print("=== Flag 1 gate: 2025 vs 2027 headline comparison ===")
+print("=== Flag 1 gate: 2025 and 2027 headline comparison ===")
 print(f"2025/25yr total error: {h_total:.2f} kgCO2e/m2 ({headline['row']['total_error_pct_of_Ea']:.1f}% of Ea), "
       f"sign={'negative (understates)' if h_total < 0 else 'positive (overstates)'}")
 print(f"2027/10yr total error: {c_total:.2f} kgCO2e/m2 ({compare['row']['total_error_pct_of_Ea']:.1f}% of Ea), "
@@ -105,13 +105,13 @@ print(f"Ranking agrees: {ranking_agrees}")
 
 if not (sign_agrees and ranking_agrees):
     print("\n*** STOP: 2025 and 2027 headline cases disagree in sign and/or ranking. ***")
-    print("*** This is a genuine finding, not a presentation issue -- figure NOT drawn. ***")
+    print("*** This is a finding, not a presentation issue; figure not drawn. ***")
     sys.exit(1)
 
-print("\nBoth starting points give the same sign and the same component ranking -- proceeding to draw.")
+print("\nBoth starting points give the same sign and the same component ranking; proceeding to draw.")
 
-# Draw -- paired bars per category: headline (2025/25yr, full weight) above,
-# comparison (2027/10yr, subordinate: reduced alpha + hatch) below.
+# Draw paired bars per category: headline (2025/25yr, full weight) above,
+# comparison (2027/10yr, subordinate: reduced alpha and hatch) below.
 fig, ax = plt.subplots(figsize=(7.6, 5.2))
 n_cat = len(CATS)
 y_group = np.arange(n_cat)[::-1] * 1.3  # extra vertical room per category for the paired bars

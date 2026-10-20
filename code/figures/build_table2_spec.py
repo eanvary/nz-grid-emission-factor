@@ -1,8 +1,8 @@
 """
-Table 2 -- analysis specification table. One row per specification
-dimension, every level list / count / cohort figure read from the tables at
-run time. No quantitative literal below is a result -- only word-count and
-column-order constants.
+Table 2: analysis specification table. One row per specification
+dimension; every level list, count and cohort figure is read from the
+tables at run time. No quantitative literal below is a result; the only
+literals are word-count and column-order constants.
 """
 import pandas as pd
 from pathlib import Path
@@ -18,10 +18,10 @@ isl = pd.read_csv(TABLES / "phase3_annual_island_ef.csv")
 
 rows = []
 
-# 1. EF accounting basis -- generation is the headline ef_basis used to build
-# E_a/E_b/E_c (matches phase3_annual_island_ef, which has no basis column and
-# is the generation-side series); consumption is the one-row sensitivity
-# check basis, per scripts/phase3_consumption_sensitivity.py.
+# 1. EF accounting basis. Generation is the headline ef_basis used to build
+# E_a/E_b/E_c (matching phase3_annual_island_ef, which has no basis column
+# and is the generation-side series). Consumption is the basis of the
+# one-row sensitivity check.
 ef_basis_levels = ["generation (headline)", "consumption (sensitivity)"]
 rows.append(dict(
     Dimension="EF accounting basis", Levels=", ".join(ef_basis_levels),

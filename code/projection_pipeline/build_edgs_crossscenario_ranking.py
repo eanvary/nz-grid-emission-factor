@@ -44,7 +44,7 @@ for sc in SCENARIOS:
     h = hvdc[hvdc.scenario == sc].sort_values("year")
     violated = h[h.max_mw_baseline > HVDC_CAPACITY_MW]
     if len(violated) == 0:
-        log(f"  {sc}: NEVER violates under this template, excluded from ranking table")
+        log(f"  {sc}: never violates under this template, excluded from ranking table")
         continue
     first_row = violated.iloc[0]
     first_year = int(first_row.year)
@@ -69,8 +69,8 @@ gr_order = list(df.sort_values("growth_rate_mw_per_yr", ascending=False).scenari
 log(f"\nDemand ranking: {' > '.join(demand_order)}")
 log(f"First-violation-year ranking (earliest first): {' < '.join(fy_order)}")
 log(f"Growth-rate ranking (steepest first): {' > '.join(gr_order)}")
-log(f"Demand-ranking vs growth-rate-ranking match: {sum(a == b for a, b in zip(demand_order, gr_order))}/{len(demand_order)}")
-log(f"Demand-ranking vs first-violation-ranking match: {sum(a == b for a, b in zip(demand_order, fy_order))}/{len(demand_order)}")
+log(f"Positions where demand ranking and growth-rate ranking match: {sum(a == b for a, b in zip(demand_order, gr_order))}/{len(demand_order)}")
+log(f"Positions where demand ranking and first-violation ranking match: {sum(a == b for a, b in zip(demand_order, fy_order))}/{len(demand_order)}")
 
 log(f"\nWrote edgs_hvdc_crossscenario_ranking{SUFFIX}.csv")
 (OUT_DIR / f"processing_log_crossscenario_ranking{SUFFIX}.txt").write_text("\n".join(lines), encoding="utf-8")

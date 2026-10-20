@@ -7,8 +7,8 @@ difference of 39%. That pairing was read as noise: solar's daily totals are smal
 so small absolute differences become large percentages.
 
 High correlation beside a large percentage gap is also the signature of a scale
-mismatch, so it is worth separating the two before believing either. The test is
-the ratio em6 / ours, day by day:
+mismatch, so the two readings need separating before either is accepted. The test
+is the ratio em6 / ours, day by day:
 
   noise on small numbers   ratio scatters about 1.0, with a large spread
   scale or coverage offset ratio sits away from 1.0, with a small spread
@@ -16,7 +16,7 @@ the ratio em6 / ours, day by day:
 The same diagnostic doubles as a unit check. A units error would move every fuel
 by the same factor, so fuels landing at a ratio near 1.0 rule that out.
 
-It also re-derives this project's own side straight from the raw EMI files, so a
+It also re-derives this project's own side directly from the raw EMI files, so a
 bug in the cross-check aggregation would show up as a ratio away from 1.0 in the
 ours_rebuilt_over_released column (ours rebuilt / ours as published).
 

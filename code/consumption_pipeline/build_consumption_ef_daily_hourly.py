@@ -1,18 +1,18 @@
 """
-NI/SI CONSUMPTION-based DAILY and HOURLY emission factor database, 2015-2025.
-Same method as build_consumption_ef_timeseries.py (see that file's docstring
-for the full methodology and for why it reads the root pipeline's outputs).
+NI/SI consumption-based daily and hourly emission factor database, 2015-2025.
+Same method as build_consumption_ef_timeseries.py (its docstring gives the
+method and the reason for reading the root pipeline's outputs).
 
-Reads the root pipeline's 2015-2025 daily/hourly outputs directly rather than
-keeping a second copy of the raw-file ingestion logic, so fixes made there
-(for example the SCD2 9999-year timestamp overflow and the DST fall-back
-TP49/TP50 handling) apply here too.
+The root pipeline's 2015-2025 daily and hourly outputs are read directly, with
+no second copy of the raw-file ingestion logic. The root handling of the SCD2
+9999-year timestamp overflow and of the DST fall-back TP49/TP50 therefore
+applies here too.
 
 Inputs (root pipeline outputs, already validated):
-  output/daily_emission_factor_NI_SI.csv    - generation-side EF, daily
-  output/hourly_emission_factor_NI_SI.csv   - generation-side EF, hourly
-  output/daily_hvdc_transfer_NI_SI.csv (this folder)  - inter-island transfer, daily
-  output/hourly_hvdc_transfer_NI_SI.csv (this folder) - inter-island transfer, hourly
+  output/daily_emission_factor_NI_SI.csv:    generation-side EF, daily
+  output/hourly_emission_factor_NI_SI.csv:   generation-side EF, hourly
+  output/daily_hvdc_transfer_NI_SI.csv (this folder):  inter-island transfer, daily
+  output/hourly_hvdc_transfer_NI_SI.csv (this folder): inter-island transfer, hourly
 """
 from pathlib import Path
 
@@ -32,13 +32,13 @@ def log(msg):
     log_lines.append(str(msg))
 
 
-# Generation-side, straight from the root pipeline's own output
+# Generation side, read from the root pipeline's output
 gen_daily = pd.read_csv(ROOT_OUT / "daily_emission_factor_NI_SI.csv", parse_dates=["date"])
 gen_hourly = pd.read_csv(ROOT_OUT / "hourly_emission_factor_NI_SI.csv", parse_dates=["date", "datetime"])
 log(f"Loaded generation-side EF: {len(gen_daily)} daily island-rows, {len(gen_hourly)} hourly island-rows")
 
-# HVDC transfer, straight from the root pipeline's own raw-file-based output
-# (MWh already; no unit conversion needed, unlike the monthly/annual GWh files)
+# HVDC transfer from the root pipeline's raw-file-based output. These files are
+# in MWh, so no unit conversion is needed (the monthly and annual files are in GWh).
 hvdc_daily = pd.read_csv(OUT_DIR / "daily_hvdc_transfer_NI_SI.csv", parse_dates=["date"])
 hvdc_daily = hvdc_daily.rename(columns={
     "SI_to_NI_GWh": "SI_to_NI_MWh", "NI_to_SI_GWh": "NI_to_SI_MWh", "net_to_NI_GWh": "net_to_NI_MWh",
@@ -50,7 +50,7 @@ hvdc_hourly = pd.read_csv(OUT_DIR / "hourly_hvdc_transfer_NI_SI.csv", parse_date
 log(f"Loaded HVDC transfer: {len(hvdc_daily)} daily rows, {len(hvdc_hourly)} hourly rows")
 
 
-# Consumption balance (identical formulas to the monthly/annual script)
+# Consumption balance (same formulas as the monthly/annual script)
 def build_consumption(gen_df, hvdc_df, group_keys):
     ni = gen_df[gen_df.island == "NI"].set_index(group_keys)
     si = gen_df[gen_df.island == "SI"].set_index(group_keys)
@@ -104,7 +104,7 @@ for name, d in [("daily", daily_cons), ("hourly", hourly_cons)]:
     co2_gen_total = d["NI_CO2_generated_kg"] + d["SI_CO2_generated_kg"]
     co2_cons_total = d["NI_CO2_consumed_kg"] + d["SI_CO2_consumed_kg"]
     log(f"{name}: max |energy diff| = {(gen_total - cons_total).abs().max():.6f} MWh, "
-        f"max |CO2 diff| = {(co2_gen_total - co2_cons_total).abs().max():.6f} kg (both expect ~0)")
+        f"max |CO2 diff| = {(co2_gen_total - co2_cons_total).abs().max():.6f} kg (both expected: about 0)")
 
 daily_to_hourly = (
     hourly_cons.groupby(hourly_cons["date"])[["NI_consumption_MWh", "SI_consumption_MWh"]].sum()
@@ -112,7 +112,7 @@ daily_to_hourly = (
 chk = daily_to_hourly.join(daily_cons.set_index("date")[["NI_consumption_MWh", "SI_consumption_MWh"]],
                             lsuffix="_h", rsuffix="_d")
 max_h2d = (chk["NI_consumption_MWh_h"] - chk["NI_consumption_MWh_d"]).abs().max()
-log(f"Hourly consumption sums to daily exactly: max |NI diff| = {max_h2d:.6f} MWh (expect ~0)")
+log(f"Hourly consumption sums to daily exactly: max |NI diff| = {max_h2d:.6f} MWh (expected: about 0)")
 
 # Outputs
 daily_out = daily_cons[[

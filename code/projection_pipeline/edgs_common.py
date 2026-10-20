@@ -31,8 +31,8 @@ CONSUMPTION_OUT = ROOT / "Consumption_Island" / "output"
 SCENARIOS = ["Reference", "Growth", "Constraint", "Innovation", "Environmental"]
 YEARS = list(range(2024, 2051))
 
-# Region -> Island (Generation Stack `Region` field, 14 NZ regional councils).
-# The only island tag for EXISTING plants. New-build plants use the GEM build
+# Region to island (Generation Stack `Region` field, 14 NZ regional councils).
+# The only island tag for existing plants. New-build plants use the GEM build
 # schedule `Island` field directly (see Module 2).
 REGION_TO_ISLAND = {
     # North Island
@@ -44,14 +44,14 @@ REGION_TO_ISLAND = {
     "Otago": "SI", "Southland": "SI",
 }
 
-# Fuel crosswalk: MBIE Commodity (Results `Electricity generation`.Commodity)
-#   <-> historical FUEL_STD (build_ef_timeseries.py) <-> dispatch class.
+# Fuel crosswalk linking MBIE Commodity (Results `Electricity generation`.Commodity),
+#   historical FUEL_STD (build_ef_timeseries.py) and dispatch class.
 # dispatch_class:
-#   "renewable" -> must-run, shaped to hourly by Assumption 1 (Module 4),
-#                  ranked ahead of thermal, not merit-order competed.
-#   "thermal"   -> merit-order dispatched against residual load (Module 5),
-#                  carries a fuel CO2-e factor.
-#   "storage"   -> Demand side response / batteries: Assumption 2 only.
+#   "renewable": must-run, shaped to hourly by Assumption 1 (Module 4),
+#                ranked ahead of thermal, not merit-order competed.
+#   "thermal":   merit-order dispatched against residual load (Module 5),
+#                carries a fuel CO2-e factor.
+#   "storage":   Demand side response / batteries, Assumption 2 only.
 COMMODITY = {
     # commodity            : (fuel_std, dispatch_class)
     "Hydro":                ("HYD",  "renewable"),
@@ -71,7 +71,7 @@ COMMODITY = {
 RENEWABLE_COMMODITIES = [c for c, (_, k) in COMMODITY.items() if k == "renewable"]
 THERMAL_COMMODITIES = [c for c, (_, k) in COMMODITY.items() if k == "thermal"]
 
-# Generation Stack `Tech` code -> MBIE Commodity (for the plant register).
+# Generation Stack `Tech` code to MBIE Commodity (for the plant register).
 TECH_TO_COMMODITY = {
     "HydRR": "Hydro", "HydPK": "Hydro", "HydSC": "Hydro",
     "Wind": "Wind", "Solar": "Solar", "Geo": "Geothermal",
@@ -134,8 +134,8 @@ def fuel_ef_kg_per_gj(commodity: str) -> float:
 #   Wood-Pellets: 0.0288618 kg CO2-e/kg / 18.988 MJ/kg = 1.5200 kg CO2-e/GJ
 #   Wood-Green:   0.0135098 kg CO2-e/kg /  8.888 MJ/kg = 1.5200 kg CO2-e/GJ
 # Tested against the actual incremental Wood PJ at the Huntly Rankine
-# biomass-conversion event: it closes ~15% of the post-2032 Environmental/Innovation
-# Check-2a gap on average (max ~32%, 2032), a real but partial contributor. Applied as
+# biomass-conversion event: it closes about 15% of the post-2032 Environmental/Innovation
+# Check-2a gap on average (max about 32%, in 2032), a real but partial contributor. Applied as
 # wood_nonco2_kg, the companion to combustion_co2_kg.
 WOOD_NONBIOGENIC_KG_PER_GJ = 1.5200
 WOOD_NONBIOGENIC_SOURCE = ("MfE 2024 Measuring Emissions Detailed Guide (ME1829), Table 3.4 "
@@ -160,7 +160,7 @@ WOOD_NONBIOGENIC_SOURCE = ("MfE 2024 Measuring Emissions Detailed Guide (ME1829)
 GEOTHERMAL_FIELD_EF_G_PER_KWH = {
     "Wairakei": 21, "Te Mihi": 43, "Poihipi": 38, "Ohaaki": 341, "Te Huka": 45,
     "Rotokawa": 84, "Nga Awa Purua": 63, "Mokai": 52, "Ngatamariki": 64,
-    "Kawerau_KGL": 123, "Kawerau_TOPP1": 60, "Ngawha": 304,  # Ngawha: PRE-reinjection value
+    "Kawerau_KGL": 123, "Kawerau_TOPP1": 60, "Ngawha": 304,  # Ngawha: pre-reinjection value
 }
 GEOTHERMAL_FLEET_AVG_G_PER_KWH = 76.0  # 2018 MW-weighted average; fallback for unnamed/new fields
 
@@ -169,11 +169,11 @@ GEOTHERMAL_FLEET_AVG_G_PER_KWH = 76.0  # 2018 MW-weighted average; fallback for 
 # (source: Ngawha Generation Ltd, "Our path to net carbon zero by 2025" / ThinkGeoEnergy,
 # "Ngawha becomes New Zealand's first zero-carbon geothermal power station"). Since all EDGS
 # scenario years are 2024-2050 (post-2023), Ngawha plants use 0 g/kWh throughout, not the
-# pre-reinjection 304 g/kWh: this is a dated, cited real-world operational change, not an
+# pre-reinjection 304 g/kWh. This is a dated, cited real-world operational change, not an
 # invented adjustment.
 NGAWHA_ZERO_FROM_YEAR = 2024
 
-# Generation Stack plant name -> field key (existing/consented plants only; generic future
+# Generation Stack plant name to field key (existing/consented plants only; generic future
 # plants not tied to a named field fall back to GEOTHERMAL_FLEET_AVG_G_PER_KWH).
 GEOTHERMAL_PLANT_TO_FIELD = {
     "Wairākei A & B": "Wairakei", "Wairākei Binary": "Wairakei", "Wairākei C & D": "Wairakei",
@@ -190,9 +190,9 @@ GEOTHERMAL_PLANT_TO_FIELD = {
     "Ngāwhā Stage 1 & 2": "Ngawha", "Ngāwhā Stage 3 (OEC4)": "Ngawha",
     "Ngāwhā Stage 4 (OEC5)": "Ngawha", "Ngāwhā Expansion: Stage 5": "Ngawha",
     "Ngāwhā Expansion: Stage 6": "Ngawha",
-    # No 2018 field data (newer or undeveloped fields): Te Ahi O Maui (~2020), Tauhara
+    # No 2018 field data (newer or undeveloped fields): Te Ahi O Maui (about 2020), Tauhara
     # (commissioned 2024+), Taheke/Reporoa/Tikitere/Mangakino/Tokaanu/Atiamuri (undeveloped
-    # generic future fields) -> fleet-average fallback, flagged in source_detail.
+    # generic future fields) use the fleet-average fallback, flagged in source_detail.
 }
 
 

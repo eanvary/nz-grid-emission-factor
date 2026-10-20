@@ -3,11 +3,11 @@ Module 1: extract MBIE annual national targets (direct transcription;
 no assumption). Every value here is source_tag = MBIE_annual_disaggregated.
 
 For each scenario x year (2024-2050):
-  - annual total demand (TWh)              <- Results 'Total electricity demand'
-  - annual peak demand (GW)                <- Results 'Peak demand'
-  - annual net generation by fuel (GWh)    <- Results 'Electricity generation',
-                                              Variable = Net electricity generation
-  - annual national avg EF (kg CO2-e/kWh)  <- Results 'Emission factors' (cross-check)
+  - annual total demand (TWh)              from Results 'Total electricity demand'
+  - annual peak demand (GW)                from Results 'Peak demand'
+  - annual net generation by fuel (GWh)    from Results 'Electricity generation',
+                                             Variable = Net electricity generation
+  - annual national avg EF (kg CO2-e/kWh)  from Results 'Emission factors' (cross-check)
 
 Outputs (output/edgs/):
   edgs_annual_targets.parquet   long: scenario, year, metric, commodity, value, unit, source_detail
@@ -60,7 +60,7 @@ gen_rows = pd.DataFrame({
     "unit": gen["Unit"], "source_detail": "Results!Electricity generation.Value[Net electricity generation]",
 })
 log(f"Net generation by fuel: {len(gen_rows)} rows, unit(s)={sorted(gen['Unit'].unique())}")
-# National annual total generation (all fuels) for sanity
+# National annual generation (all fuels), as a sanity check
 nat = gen_rows.groupby(["scenario", "year"])["value"].sum().reset_index()
 log(f"  National annual generation range: {nat['value'].min()/1000:.1f}-{nat['value'].max()/1000:.1f} TWh")
 
@@ -75,7 +75,7 @@ ef_rows = pd.DataFrame({
 log(f"Emission factors: {len(ef_rows)} rows "
     f"({ef_rows['value'].min():.4f}-{ef_rows['value'].max():.4f} kg CO2-e/kWh)")
 
-# Combine + write
+# Combine and write
 out = pd.concat([dem_rows, pk_rows, gen_rows, ef_rows], ignore_index=True)
 out["source_tag"] = "MBIE_annual_disaggregated"
 out = out[["scenario", "year", "metric", "commodity", "value", "unit",

@@ -1,5 +1,5 @@
 """
-How many Monte Carlo trials does the reported uncertainty band actually need?
+How many Monte Carlo trials does the reported uncertainty band need?
 
 Why this test
 10,000 trials is the common round default: a convention rather than a measured choice.
@@ -24,7 +24,7 @@ reports how far the mean 95% band width moves with the seed alone. Seed spread i
 quantity of interest: a fixed SEED makes a run reproducible, which is not the same as
 converged.
 
-A 3,000-hour random sample stands in for the full record. That is sound here precisely
+A 3,000-hour random sample stands in for the full record. That is sound here
 because of point 1: the error is common across hours, so sampling hours does not bias
 the measurement of it.
 

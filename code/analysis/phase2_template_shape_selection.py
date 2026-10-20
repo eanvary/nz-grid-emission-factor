@@ -5,7 +5,7 @@ Assumption-1 hourly shape template?
 Why this check. The 2021 shape template was labelled "central" on annual
 hydro volume within the 2021-2025 window. Against the full 2015-2025 metered
 record, 2021 is the 3rd-driest of 11 years (18th percentile) and 2017 is the
-exact median, which raises the question of whether the template year should
+exact median. That raises the question of whether the template year should
 be 2017.
 
 Annual hydro volume is, however, not the quantity a template supplies. Annual
@@ -14,26 +14,26 @@ identical across them. What the template supplies is the
 hourly shape: the within-year timing of renewables, demand, and therefore of
 the emission factor. The selection criterion should be measured on shape.
 
-This script measures it. For every year of the metered record it computes the
-normalised shape of the NI generation-basis hourly emission factor on three
-axes -- hour of day, hour of week, and month of year -- and correlates each
-against the most recent grid (the 2024-2025 mean shape). It reports those
-alongside annual hydro volume and wind share, so the trade-off between shape
-fidelity and hydro neutrality is visible in one table.
+For every year of the metered record, the normalised shape of the NI
+generation-basis hourly emission factor is computed on three axes: hour of
+day, hour of week, and month of year. Each is correlated against the most
+recent grid (the 2024-2025 mean shape). The correlations are reported alongside
+annual hydro volume and wind share, so the trade-off between shape fidelity
+and hydro neutrality is visible in one table.
 
 Result. No year dominates. The adopted template, 2021,
 gives the best diurnal (hour-of-day) and seasonal (month-of-year) match of any
-pre-2024 year but the worst day-of-week match of the whole record: its
+pre-2024 year but the worst day-of-week match of the whole record. Its
 weekday/weekend contrast is the flattest measured, consistent with the 2021
 activity restrictions. 2019 is the best weekly match and sits near the hydro
 median, but its seasonal match is weak. 2017, the hydro-median year, leads on
-no shape axis and has the lowest wind share in the record. So the choice is a
-trade-off between axes, not a ranking with a single winner, and this script
-reports the trade-off rather than declaring one.
+no shape axis and has the lowest wind share in the record. The choice is
+therefore a trade-off between axes, not a ranking with a single winner, and
+the output reports the trade-off rather than declaring a winner.
 
 The relevant point for the paper: switching the template to 2017 on the basis
-of annual hydro volume would not improve shape fidelity on any axis, and would
-select the year least like the projected (increasingly wind-heavy) grid.
+of annual hydro volume would not improve shape fidelity on any axis. It would
+also select the year least like the projected (increasingly wind-heavy) grid.
 
 Inputs   output/hourly_emission_factor_NI_SI.csv   (metered hourly EF, 2015-)
          docs/validation/hourly_fuel_mix_NI_SI.csv (metered generation by fuel)

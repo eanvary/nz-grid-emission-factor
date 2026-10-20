@@ -1,28 +1,27 @@
 """
-Instead of assuming plants combine as an unweighted population spread
-(build_fleet_uncertainty.py's cross-sectional proxy) or an IPCC-default range, what is the
-REAL combination of the gas fleet's plants, and how much does the REAL blended EF actually
-move because of it?
+Rather than assuming plants combine as an unweighted population spread
+(build_fleet_uncertainty.py's cross-sectional proxy) or an IPCC-default range, this
+script measures how the gas fleet's plants combine and how much the blended EF moves
+because of it.
 
-Two things computed here, both directly from data, neither assumed:
+Two quantities, both computed from data:
 
-1. Real per-POC generation SHARE within the gas fleet, 2015-2025 -- shows whether a few
+1. Per-POC generation share within the gas fleet, 2015-2025. This shows whether a few
    plants dominate (concentration) or generation spreads evenly across all 11.
-2. The REAL, already-observed month-to-month and hour-to-hour blended gas EF (this is not
-   a model -- it's the actual generation-weighted average of whichever real plants actually
-   ran, exactly as build_ef_timeseries*.py computes it, with the pipeline's own shared
-   generation reader and attribution, generation_pipeline/fuel_attribution.py: flagged
-   fills included, generator- and unit-level factors, and the gas portion of Huntly 1-4
-   counted as gas) -- its empirical standard deviation measures how much the true
-   combination has actually varied historically.
+2. The observed month-to-month and hour-to-hour blended gas EF. This is not a model: it
+   is the generation-weighted average of whichever plants ran, as build_ef_timeseries*.py
+   computes it, with the pipeline's shared generation reader and attribution
+   (generation_pipeline/fuel_attribution.py: flagged fills included, generator- and
+   unit-level factors, and the gas portion of Huntly 1-4 counted as gas). Its empirical
+   standard deviation measures how much the combination has varied historically.
 
-Conceptual distinction (read before reusing #2 as an "uncertainty"): the point EF
-for any historical period is not itself uncertain -- it is a deterministic function of which
-real plants ran (known) and their registered EF (taken as ground truth). So the empirical
-std of the real series in #2 measures REAL DISPATCH VOLATILITY, a different quantity from
-"how wrong might the register's EF values be" (the epistemic quantity IPCC Table 2.2's
-default range, and build_fleet_uncertainty.py's cross-sectional spread, both approximate).
-Reported side by side below, not conflated.
+Conceptual distinction (read before reusing #2 as an "uncertainty"): the point EF for
+any historical period is not itself uncertain. It is a deterministic function of which
+plants ran (known) and their registered EF (taken as ground truth). The empirical std of
+the series in #2 therefore measures dispatch volatility. That is a different quantity
+from "how wrong might the register's EF values be", the epistemic quantity that IPCC
+Table 2.2's default range and build_fleet_uncertainty.py's cross-sectional spread both
+approximate. The two are reported side by side below.
 """
 import sys
 from pathlib import Path
@@ -46,21 +45,21 @@ monthly = fa.attribute(gen)
 monthly = monthly[monthly["fuel_std"] == "GAS"]
 monthly = monthly.rename(columns={"poc": "POC_Code", "ef_kg_per_mwh": "ef"})
 
-# 1. Real generation share per POC, whole period -- concentration check
+# 1. Generation share per POC, whole period (concentration check)
 share = monthly.groupby("POC_Code")["gen_mwh"].sum().sort_values(ascending=False)
 share_pct = (share / share.sum() * 100).round(2)
-print("\n=== Real generation share by gas POC, 2015-2025 (concentration, not assumed) ===")
+print("\n=== Generation share by gas POC, 2015-2025 (concentration) ===")
 print(share_pct.to_string())
 top2_share = share_pct.iloc[:2].sum()
 print(f"\nTop 2 plants' combined share: {top2_share:.1f}% of all gas generation")
 share_pct.to_csv(OUT, header=["share_pct"])
 
-# 2. Real blended monthly EF, generation-weighted -- reproduces monthly_fuel_mix_NI_SI.csv's
-#    own GAS row exactly, as a cross-check that this script's numbers agree with the published table.
+# 2. Blended monthly EF, generation-weighted. It should reproduce the GAS row of
+#    monthly_fuel_mix_NI_SI.csv, as a cross-check against the published table.
 monthly_blend = monthly.groupby(["year", "month"]).apply(
     lambda g: (g["gen_mwh"] * g["ef"]).sum() / g["gen_mwh"].sum(), include_groups=False
 )
-print(f"\n=== Real blended monthly GAS EF (recomputed here, independent of monthly_fuel_mix_NI_SI.csv) ===")
+print(f"\n=== Blended monthly GAS EF (recomputed here, independent of monthly_fuel_mix_NI_SI.csv) ===")
 print(f"n={len(monthly_blend)}, mean={monthly_blend.mean():.2f}, std={monthly_blend.std():.2f}, "
       f"rel_std={monthly_blend.std()/monthly_blend.mean()*100:.2f}%")
 
@@ -68,4 +67,4 @@ mm_released = pd.read_csv(ROOT / "output" / "monthly_fuel_mix_NI_SI.csv")
 released_gas = mm_released[(mm_released.island == "NI") & (mm_released.fuel_code == "GAS")]["weighted_ef_kg_per_MWh"].dropna()
 print(f"Released monthly_fuel_mix_NI_SI.csv GAS row: mean={released_gas.mean():.2f}, "
       f"std={released_gas.std():.2f}, rel_std={released_gas.std()/released_gas.mean()*100:.2f}% "
-      f"(cross-check -- should closely match the line above)")
+      f"(cross-check: should closely match the line above)")

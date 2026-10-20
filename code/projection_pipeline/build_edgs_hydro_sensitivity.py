@@ -5,7 +5,7 @@ all 5 scenarios.
 
 "median" (2017, the true median of the full 11-year 2015-2025 record; 2021 is the
 3rd-driest, 18th percentile) is a 4th template, generated the same way as wet/dry below
-(EDGS_TEMPLATE_YEAR=2017, all 5 scenarios -> edgs_hourly_generation_tmpl2017.parquet). It
+(EDGS_TEMPLATE_YEAR=2017, all 5 scenarios, written to edgs_hourly_generation_tmpl2017.parquet). It
 shows whether choosing 2021 as "central" matters for the HVDC-violation figures, without
 changing any result built on the 2021 template.
 
@@ -115,7 +115,7 @@ for tmpl_name, (tmpl_year, suffix) in TEMPLATES.items():
             demand_twh = float(t[t.metric == "annual_demand"]["value"].iloc[0])
             ni_share = float(ni_share_map.get((scenario, year), 0.61))
 
-            # renewables, island totals, THIS template's shape
+            # renewables, island totals, this template's shape
             island_ren_total = {"NI": np.zeros(H), "SI": np.zeros(H)}
             for com in RENEWABLE_COMMODITIES:
                 gwh = float(annual_gen.get(com, 0.0))
@@ -195,7 +195,7 @@ mech_df = pd.DataFrame(mechanism_rows)
 mech_df.to_csv(OUT_DIR / "edgs_hydro_sensitivity_mechanism.csv", index=False)
 
 # Summary table, scenario x template
-log("\n=== Step 2: violation count & continuous magnitude, scenario x template ===")
+log("\n=== Step 2: violation count and continuous magnitude, scenario x template ===")
 summ = res_df.groupby(["scenario", "template"]).apply(
     lambda x: pd.Series({"n_flagged_sy": int((x.max_transfer_mw > HVDC_CAPACITY_MW).sum()),
                          "total_continuous_MWh": x.continuous_mag_MWh.sum()}),
@@ -209,12 +209,12 @@ tot = res_df.groupby("template").apply(
 log("\n=== Total (all 5 scenarios, 27 years = 135 scenario-years, per template) ===")
 log(tot.to_string())
 
-# Mechanism - SI surplus decomposition, central vs wet vs dry
+# Mechanism: SI surplus decomposition for the central, wet and dry templates
 log("\n=== Step 3: SI hydro / generation / genload-target / surplus, by template (all scenarios, annual sums TWh) ===")
 mech_summ = mech_df.groupby("template")[["si_hydro_annual_gwh", "si_generation_total_mwh",
                                          "si_genload_target_mwh", "si_net_surplus_mwh"]].sum()
 mech_summ["si_hydro_annual_gwh"] = mech_summ["si_hydro_annual_gwh"]
-mech_summ[["si_generation_total_mwh", "si_genload_target_mwh", "si_net_surplus_mwh"]] /= 1e6  # -> TWh
+mech_summ[["si_generation_total_mwh", "si_genload_target_mwh", "si_net_surplus_mwh"]] /= 1e6  # MWh to TWh
 mech_summ.columns = ["si_hydro_GWh_sum", "si_generation_TWh", "si_genload_target_TWh", "si_net_surplus_TWh"]
 log(mech_summ.round(2).to_string())
 

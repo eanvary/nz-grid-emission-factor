@@ -1,42 +1,42 @@
 """
-Replaces IPCC's borrowed Tier-1 default uncertainty range with a measured, NZ-fleet-
-specific one wherever the data actually supports it, per IPCC's own guidance (2006 GL
-Vol 2 Ch 2, Section 2.3.2.2): "it is expected that the uncertainty range associated with
+Replaces IPCC's Tier-1 default uncertainty range with a measured, NZ-fleet-specific
+one where the data support it, following IPCC guidance (2006 GL Vol 2 Ch 2,
+Section 2.3.2.2): "it is expected that the uncertainty range associated with
 a country-specific value will be smaller than the uncertainty range of the default
 emission factor."
 
 The plant register (EA data/Dispatched generation
 plant.csv, as corrected and loaded by generation_pipeline/fuel_attribution.py: MfE 2025
-combustion factors, heat-rate and decommissioning fixes) gives this project's own EF per
-(POC, fuel). The census printed below counts, per fuel, the distinct POCs and distinct
-register EF values. With the raw register EFs the census gives:
-  - Coal (CLG): 1 distinct POC (Huntly Rankine) -- a single value, zero spread.
-  - Diesel (DSL): 1 distinct POC -- likewise zero spread.
-  - Gas (GAS): 13 distinct POCs, 8 distinct EF values, 385-560 kg/MWh -- a real fleet.
-  - Wood (WOOD): not in the thermal SCD2 register at all.
-So only GAS gets a fleet-specific replacement here. Forcing a "fleet spread" for a
-single-plant fuel would produce a false zero-uncertainty band, not a tighter one
-(worse than IPCC's default, not better), so CLG/DSL/WOOD keep the IPCC Table 2.2
+combustion factors, heat-rate and decommissioning corrections) gives this project's own
+EF per (POC, fuel). The census printed below counts, per fuel, the distinct POCs and
+distinct register EF values. With the raw register EFs the census gives:
+  - Coal (CLG): 1 distinct POC (Huntly Rankine), a single value with zero spread.
+  - Diesel (DSL): 1 distinct POC, likewise zero spread.
+  - Gas (GAS): 13 distinct POCs, 8 distinct EF values, 385-560 kg/MWh: a real fleet.
+  - Wood (WOOD): not in the thermal SCD2 register.
+So only GAS gets a fleet-specific replacement here. A "fleet spread" for a
+single-plant fuel would give a false zero-uncertainty band, not a tighter one
+(worse than IPCC's default), so CLG/DSL/WOOD keep the IPCC Table 2.2
 range used by the other propagation scripts.
 
 Method: generation-weighted mean and standard deviation of each thermal fuel's per-plant
 per-month EF, as the pipeline assigns it (fuel_attribution.FuelAttribution.attribute:
 generator- and unit-level factors, Huntly 1-4 coal/gas split with the gas portion counted
-under GAS, flagged fills included), weighted by each (POC, generator, year, month) cell's
-own generation -- so a large, heavily-used plant counts more than a rarely-dispatched
-peaker, and a degenerate/undersampled result would show up as a small n or a
-suspiciously tight range, not be hidden. Cells with a zero factor (e.g. Glenbrook, zero
-by the pipeline's own rule) carry no register EF and are left out.
+under GAS, flagged fills included). Each (POC, generator, year, month) cell is weighted
+by its own generation, so a large, heavily used plant counts more than a rarely
+dispatched peaker. A degenerate or undersampled result would show as a small n or an
+unusually tight range. Cells with a zero factor (e.g. Glenbrook, zero by the
+pipeline's own rule) carry no register EF and are left out.
 
 Adopted gas sigma: per-unit factor uncertainty, not fleet dispersion. Since the
 pipeline gives each unit its own factor, the spread between units is known heterogeneity, not
-uncertainty in any unit's factor; using it as the gas sigma double-counts. The adopted value is
+uncertainty in any unit's factor; using it as the gas sigma would double-count. The adopted value is
   rel_sigma_adopted(GAS) = sqrt(carbon^2 + heatrate^2)
   carbon   = IPCC (2006) Vol 2 Ch 2 Table 2.2 natural gas, default 56,100 kg/TJ (54,300-58,300),
              as the relative half-width used by the existing propagation scripts (0.0357)
-  heatrate = RMS of the D3 gas-fuel annual residuals, 2015-2025 (pipeline-implied gas PJ vs MBIE
+  heatrate = RMS of the D3 gas-fuel annual residuals, 2015-2025 (pipeline-implied gas PJ against MBIE
              gas data tables, output/D3_fuel_level_validation.csv, check GAS-PJ)
-Cross-check, printed: register vs MBIE generation stack heat rates for gas plants of the same
+Cross-check, printed: register against MBIE generation stack heat rates for gas plants of the same
 type after the HEATRATE_* corrections (MBIE 2011 Table 3-1; MBIE 2020 Tables 3-3 and 3-13).
 rel_sigma_fleet (the dispersion) is kept in the output as a diagnostic; consumers read
 rel_sigma_adopted.
@@ -59,7 +59,7 @@ THERMAL_FUELS = {"CLG", "GAS", "DSL"}
 fa = FuelAttribution()
 thermal = fa.reg[fa.reg["EF_kg_per_MWh"].notna()]
 
-print("Census (confirms the doc-string claim, not assumed):")
+print("Census (checks the docstring figures against the register):")
 for fuel in ["CLG", "GAS", "DSL"]:
     t = thermal[thermal["FuelCode"] == fuel]
     vals = sorted(t["EF_kg_per_MWh"].unique())
@@ -110,7 +110,7 @@ print(f"\nAdopted GAS rel_sigma = sqrt({carbon:.4f}^2 + {heatrate:.4f}^2) = {ado
       f"{d3['period'].min()}-{d3['period'].max()}); fleet dispersion (diagnostic) = "
       f"{result.set_index('fuel_std')['rel_sigma_fleet'].get('GAS', np.nan):.4f}")
 
-# cross-check: register vs MBIE heat rates, gas plants of the same type, after corrections
+# cross-check: register against MBIE heat rates, gas plants of the same type, after corrections
 MBIE_HR = {  # unit(s): (MBIE heat rate GJ/GWh, source)
     "Huntly Rankine (gas)": (["HLY1"], 10900, "MBIE 2020 Table 3-3, Huntly gas units 1, 2 & 4, ST"),
     "Huntly 5 (e3p)": (["HLY5"], 7400, "MBIE 2020 Table 3-3, CCGT"),
@@ -130,26 +130,26 @@ audit = pd.DataFrame(audit)
 rms_all = float(np.sqrt((audit["gap_pct"] ** 2).mean()))
 unc = audit[~audit["source"].str.contains("corrected")]
 rms_unc = float(np.sqrt((unc["gap_pct"] ** 2).mean()))
-print("\nCross-check, register vs MBIE heat rate after corrections (gas, same type):")
+print("\nCross-check, register against MBIE heat rate after corrections (gas, same type):")
 print(audit.round(2).to_string(index=False))
 print(f"  RMS gap: {rms_all:.2f}% over {len(audit)} plants; {rms_unc:.2f}% over the {len(unc)} uncorrected plants "
       f"(D3 heat-rate term: {heatrate * 100:.2f}%)")
 audit.to_csv(HERE / "gas_heat_rate_audit.csv", index=False, float_format="%.3f")
 
 result.to_csv(OUT, index=False)
-print(f"\nWrote fleet uncertainty by fuel -> {OUT}")
+print(f"\nWrote fleet uncertainty by fuel to {OUT}")
 print(result.to_string(index=False))
 
-print("\n=== Comparison: fleet-specific relative sigma vs. IPCC Table 2.2 default ===")
+print("\n=== Comparison: fleet-specific relative sigma and IPCC Table 2.2 default ===")
 IPCC_REL_SIGMA = {"CLG": 0.0371, "GAS": 0.0356, "DSL": 0.0148}  # from run_ipcc_uncertainty_quantification.py
 for _, row in result.iterrows():
     fuel = row["fuel_std"]
     ipcc = IPCC_REL_SIGMA.get(fuel)
     fleet = row["rel_sigma_fleet"]
     if fuel in ("CLG", "DSL") and row["n_distinct_poc"] <= 1:
-        print(f"  {fuel}: single-plant fleet (n_poc={row['n_distinct_poc']}) -> fleet estimate is "
-              f"DEGENERATE (rel_sigma={fleet:.4f}), NOT adopted; IPCC default ({ipcc:.4f}) retained.")
+        print(f"  {fuel}: single-plant fleet (n_poc={row['n_distinct_poc']}), so the fleet estimate is "
+              f"degenerate (rel_sigma={fleet:.4f}) and not adopted; IPCC default ({ipcc:.4f}) retained.")
     else:
         verdict = "TIGHTER (adopt)" if fleet < ipcc else "WIDER than IPCC default (adopt anyway -- it's the real measured value)"
-        print(f"  {fuel}: n_poc={row['n_distinct_poc']}, fleet rel_sigma={fleet:.4f} vs "
-              f"IPCC default {ipcc:.4f} -> {verdict}")
+        print(f"  {fuel}: n_poc={row['n_distinct_poc']}, fleet rel_sigma={fleet:.4f}, "
+              f"IPCC default {ipcc:.4f}: {verdict}")

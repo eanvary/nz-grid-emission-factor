@@ -1,6 +1,6 @@
 """
 Paper 03, database v1.0.1: build the projection inputs the analysis_paper chain reads, on the
-PRIMARY variant (consistent scope, grid-injection basis; DATABASE_SPEC.md section 3).
+primary variant (consistent scope, grid-injection basis; DATABASE_SPEC.md section 3).
 
 Run in a working copy of the database (git archive of ef-database-v1.0.1), never in the live
 repository:  python p03_build_primary_inputs.py <copy_root>
@@ -20,9 +20,9 @@ consistent-scope component (coal less Glenbrook-class coal, gas, diesel, wood, g
 over hours in proportion to that fuel's hourly generation; denominator = generation x grid share.
 
 Consumption basis (primary): the island split of projection_pipeline/build_edgs_island_consumption.py,
-Steps 1-3 and 6 (island generation-level load from MBIE's island demand share and each island's
+Steps 1-3 and 6. Island generation-level load comes from MBIE's island demand share and each island's
 template demand shape, renormalised to national generation; transfer = load - generation; emissions
-follow the exporting island's generation-side intensity). The denominator is the island's
+follow the exporting island's generation-side intensity. The denominator is the island's
 generation-level load x grid share, so the consumption and generation bases share one national
 total. This removes the 7.6-7.9% demand/generation mismatch of the released combustion-only
 consumption rows (analysis_paper phase2_wedge_basis_effect_check.csv), which is why no gross-up
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     ref = pd.read_parquet(EDGS / "edgs_hourly_emission_factor_primary.parquet", columns=["scenario", "island", "datetime_hour", "ef_grid_kg_co2e_per_kwh"])
     m = ef[ef.ef_basis == "generation"].merge(ref, on=["scenario", "island", "datetime_hour"])
     d = (m.emission_factor_kg_co2e_per_kwh - m.ef_grid_kg_co2e_per_kwh.fillna(0.0)).abs().max()
-    print(f"central: {len(out):,} rows; max |diff| vs edgs_hourly_emission_factor_primary.parquet = {d:.2e} kg/kWh")
+    print(f"central: {len(out):,} rows; max |diff| against edgs_hourly_emission_factor_primary.parquet = {d:.2e} kg/kWh")
     print(out.groupby(["island", "ef_basis"]).emission_factor_kg_co2e_per_kwh.agg(["size", "mean", "max"]).to_string())
     for ty in (2017, 2023, 2024):
         ht = primary_hourly(f"edgs_hourly_generation_tmpl{ty}.parquet")

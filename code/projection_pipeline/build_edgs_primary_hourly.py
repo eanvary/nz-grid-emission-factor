@@ -1,5 +1,5 @@
 """
-EDGS projection, PRIMARY variant at hourly resolution: consistent scope, grid-injection basis.
+EDGS projection, primary variant at hourly resolution: consistent scope, grid-injection basis.
 
 Built alongside the combustion-only (MBIE-reproducing) hourly parquet from build_edgs_dispatch.py,
 which is not changed. Inputs:
@@ -19,7 +19,7 @@ Method, per scenario and year:
     so this equals hourly geothermal generation x the year's generation-weighted plant intensity,
     i.e. the annual Geothermal_kt spread in proportion to hourly geothermal generation.
   - Denominator: hourly generation x the year's grid share (grid GWh / total GWh; the same share on
-    each island, an ESTIMATE, as in annual_ef_by_variant.csv).
+    each island, an estimate, as in annual_ef_by_variant.csv).
 All thermal and geothermal plant is North Island, so South Island emissions are zero.
 Annual sums reproduce annual_ef_by_variant.csv (variant consistent_scope, EF_*_grid); checked below.
 Output: output/edgs/edgs_hourly_emission_factor_primary.parquet

@@ -1,9 +1,9 @@
 """
 Fig. 1 (evidence map) and Table 1 (magnitude register) for the "Where, when,
-and which future" manuscript. Both are built entirely from
-analysis/LITERATURE_AXIS_REGISTER.csv: no quantitative literal in this file
-is a substantive result; the only numeric literals below are layout
-constants (sizes, coordinates, dpi, marker geometry).
+and which future" manuscript. Both are built from
+analysis/LITERATURE_AXIS_REGISTER.csv alone. No numeric literal in this file
+is a substantive result; the numeric literals below are layout constants
+(sizes, coordinates, dpi, marker geometry).
 """
 import re
 import sys
@@ -25,9 +25,10 @@ TABLES.mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from journal_palette import set_journal_style, CATEGORICAL  # noqa: E402
 
-# Journal styling (per journal_palette.py): literature rows = CATEGORICAL[0]
-# (deep navy); this-study rows = CATEGORICAL[1] (amber, print-safe, not the
-# raw fill amber). White/transparent background, no dark panels.
+# Journal styling follows journal_palette.py. Literature rows use
+# CATEGORICAL[0] (deep navy); this-study rows use CATEGORICAL[1] (the
+# print-safe amber, not the raw fill amber). The background is white or
+# transparent, with no dark panels.
 set_journal_style()
 LIT_C, STUDY_C = CATEGORICAL[0], CATEGORICAL[1]
 plt.rcParams.update({
@@ -38,14 +39,14 @@ reg = pd.read_csv(REG, keep_default_na=False)
 AXES = ["axis_spatial", "axis_temporal", "axis_trajectory"]
 AXIS_LABELS = ["Where\n(spatial)", "When\n(temporal)", "Which future\n(trajectory)"]
 
-# Merge to one row per STUDY for the evidence-map matrix (Fig. 1): some
-# studies contribute two register rows because they report two distinct
-# magnitudes for two DIFFERENT axes (e.g. Li et al. 2023's DA7 row codes
-# temporal=quantified/trajectory=absent, its M7 row codes the reverse: the
-# study as a whole is quantified on BOTH axes). A naive "keep first" would
-# silently drop the second axis's coding, so instead take the most-informative
-# state per axis (quantified > discussed > absent) across a study's rows.
-# The full, non-deduped register is used for Table 1 and the column counts.
+# Merge to one row per study for the evidence-map matrix (Fig. 1). Some
+# studies contribute two register rows because they report two magnitudes
+# for two different axes. For example, the DA7 row of Li et al. 2023 codes
+# temporal=quantified/trajectory=absent and its M7 row codes the reverse, so
+# the study as a whole is quantified on both axes. Keeping only the first row
+# would drop the coding of the second axis. Each axis therefore takes the
+# most informative state across a study's rows (quantified > discussed > absent).
+# The full register, without merging, is used for Table 1 and the column counts.
 STATE_RANK = {"quantified": 2, "discussed": 1, "absent": 0, "": 0}
 
 def merge_group(g):
@@ -53,7 +54,7 @@ def merge_group(g):
     for a in AXES:
         best = max(g[a], key=lambda s: STATE_RANK.get(s, 0))
         out[a] = best
-    # keep the factor_basis of whichever row is non-blank (prefer explicit)
+    # keep the factor_basis of whichever row is non-blank
     nonblank_basis = g.loc[g["factor_basis"].astype(str).str.strip() != "", "factor_basis"]
     out["factor_basis"] = nonblank_basis.iloc[0] if len(nonblank_basis) else g["factor_basis"].iloc[0]
     return out
@@ -74,15 +75,15 @@ this_row = studies[studies["ref_key"] == "this_study"]
 plot_rows = pd.concat([lit, this_row], ignore_index=True)
 n_building_lca_last = (lit["domain"] == "building_lca").sum()  # rule position for the annotation
 
-# Column quantified counts: computed from the full register (all rows,
-# including the two-row studies) at run time, not written into the code.
+# Column quantified counts come from the full register (all rows, including
+# the two-row studies) and are computed at run time.
 col_counts_all = {a: int((reg[a] == "quantified").sum()) for a in AXES}
-# unique-study counts (what the matrix actually shows) for the annotation line
+# unique-study counts (what the matrix shows) for the annotation line
 col_counts_studies = {a: int((plot_rows[a] == "quantified").sum()) for a in AXES}
 
-# Domain-restricted check (prior literature only, building_lca domain, this_study excluded)
-# Used only to compose the title text, not written into the figure as a
-# separate hardcoded number; every value below is read from `plot_rows`.
+# Domain-restricted check: prior literature only, building_lca domain,
+# this_study excluded. These counts feed the title text only and are not
+# hardcoded in the figure; every value below is read from `plot_rows`.
 prior_bldg = lit[lit["domain"] == "building_lca"]
 bldg_quant = {a: int((prior_bldg[a] == "quantified").sum()) for a in AXES}
 bldg_n = len(prior_bldg)
@@ -90,10 +91,10 @@ bldg_n = len(prior_bldg)
 # Figure 1: evidence map
 n = len(plot_rows)
 
-# Build explicit y-slots top-down, inserting a one-unit gap after the
-# building_lca block (where the annotation line sits) and another before
-# this_study (in addition to the separator rule above that row) so
-# neither the annotation nor the rule collides with a row.
+# Build the y-slots top-down. A one-unit gap follows the building_lca block
+# and holds the annotation line. A second gap precedes this_study and holds
+# the separator rule above that row, so neither the annotation nor the rule
+# collides with a row.
 GAP_AFTER_BLDG = 1.0
 GAP_BEFORE_THIS_STUDY = 1.0
 y_lit = []
@@ -107,7 +108,7 @@ annot_y_raw = y_lit[n_building_lca_last - 1] + (GAP_AFTER_BLDG + 1.0) / 2.0  # m
 cursor += GAP_BEFORE_THIS_STUDY
 y_this = cursor
 y_raw = np.array(y_lit + [y_this])
-y_positions = y_raw.max() - y_raw  # flip so building_lca (earliest) is at the TOP
+y_positions = y_raw.max() - y_raw  # flip so building_lca (earliest) is at the top
 annot_y = y_raw.max() - annot_y_raw
 
 fig_h = max(3.2, 0.34 * (y_positions.max() + 1) + 1.6)
@@ -119,13 +120,13 @@ MARKER_FOR_BASIS = {"average": "o", "marginal": "^", "both": "s", "": "o"}
 MARKER_SIZE = {"o": 9, "^": 10, "s": 8}
 FILL_MAP = {"quantified": True, "discussed": False, "absent": None}
 
-# Verification weight: a "quantified" cell means this study's magnitude for that axis was
-# extracted into the register. Whether that specific number was itself
-# checked against the primary source (vs. only the compass-scan secondary
-# summary) is a separate fact -- magnitude_verified, from the FULL
-# (non-merged) register, keyed per (study, axis) via magnitude_axis. Cells
-# with no tracked magnitude_value for that axis carry no verification claim
-# and are drawn at full weight (nothing in Table 1 to be unverified about).
+# Verification weight. A "quantified" cell means this study's magnitude for
+# that axis was extracted into the register. Whether that number was checked
+# against the primary source, or only against the literature-scan secondary
+# summary, is a separate fact. That fact is magnitude_verified, taken from the
+# full (non-merged) register and keyed per (study, axis) via magnitude_axis.
+# Cells with no tracked magnitude_value for that axis carry no verification
+# claim and are drawn at full weight, since Table 1 holds nothing for them.
 AXIS_SUFFIX = {"axis_spatial": "spatial", "axis_temporal": "temporal", "axis_trajectory": "trajectory"}
 mag_rows = reg[reg["magnitude_value"].astype(str).str.strip() != ""]
 verified_lookup = {
@@ -149,9 +150,9 @@ for i, (_, row) in enumerate(plot_rows.iterrows()):
         state = row[a]
         filled = FILL_MAP.get(state, None)
         if filled is None:
-            continue  # absent -> empty cell
+            continue  # absent: empty cell
         mag_verified = verified_lookup.get((row["authors_short"], row["year"], AXIS_SUFFIX[a]))
-        verified = mag_verified != "no"  # None (no tracked magnitude) or "yes" -> full weight
+        verified = mag_verified != "no"  # None (no tracked magnitude) or "yes" gives full weight
         draw_marker(ax, xc, y, shape, filled, marker_color, verified=verified)
     # left margin: authors + year
     ax.text(-0.55, y, f"{row['authors_short']} ({row['year']})", ha="right", va="center",
@@ -171,7 +172,7 @@ ax.set_xticklabels(AXIS_LABELS, fontsize=9.5, fontweight="bold")
 ax.xaxis.tick_top()
 ax.set_yticks([])
 
-# legend: fill = coding, shape = factor basis -- outside axes, right-anchored
+# legend (fill = coding, shape = factor basis), outside the axes, right-anchored
 legend_elems = [
     Line2D([0], [0], marker="o", color="none", markerfacecolor=LIT_C, markeredgecolor=LIT_C,
            markersize=9, label="quantified"),
@@ -203,7 +204,7 @@ annot = (f"Quantified cells in this map: Where = {col_counts_studies['axis_spati
 ax.text(0.15, annot_y, annot,
         fontsize=7.2, color="#333333", style="italic", ha="left", va="center")
 
-# title: compose the pattern from the counts actually computed above
+# title: compose the pattern from the counts computed above
 if bldg_quant["axis_spatial"] == 0 and col_counts_studies["axis_spatial"] > col_counts_studies["axis_trajectory"]:
     title = (f"Spatial evidence exists ({col_counts_studies['axis_spatial']} studies) — but "
              f"almost none of it is building-LCA:\n"
@@ -225,9 +226,9 @@ print(f"Column quantified counts (unique studies plotted): {col_counts_studies}"
 print(f"Column quantified counts (all register rows):      {col_counts_all}")
 print(f"Building-LCA-only prior-literature quantified counts (n={bldg_n}): {bldg_quant}")
 
-# Self-audit: magnitude_verified counts (rows that assert a magnitude
-# only -- rows with no magnitude_value have nothing to verify and are excluded
-# from this count, same convention as the CSV's own "n/a" value).
+# Self-audit: magnitude_verified counts. Only rows that assert a magnitude
+# are counted. Rows with no magnitude_value have nothing to verify, which
+# matches the CSV's own "n/a" convention.
 n_yes = int((mag_rows["magnitude_verified"] == "yes").sum())
 n_no = int((mag_rows["magnitude_verified"] == "no").sum())
 pct_verified = 100 * n_yes / (n_yes + n_no) if (n_yes + n_no) else 0
@@ -236,7 +237,7 @@ print(f"Magnitude rows: {n_yes + n_no} (of {len(reg)} register rows, "
       f"{len(reg) - len(mag_rows)} carry no magnitude_value)")
 print(f"magnitude_verified: yes={n_yes}, no={n_no} ({pct_verified:.1f}% verified)")
 if pct_verified < 50:
-    print(f"*** FEWER THAN HALF THE MAGNITUDE ROWS ARE VERIFIED ({pct_verified:.1f}%) ***")
+    print(f"*** WARNING: fewer than half the magnitude rows are verified ({pct_verified:.1f}%) ***")
 print("'no' rows:")
 for _, r in mag_rows[mag_rows["magnitude_verified"] == "no"].iterrows():
     print(f"  {r['ref_key']} ({r['authors_short']} {r['year']}, {r['magnitude_axis']}): \"{r['magnitude_value']}\"")

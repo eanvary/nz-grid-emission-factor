@@ -1,20 +1,20 @@
 """
-Figure 4 -- treatment schematic (Methods figure, no result magnitudes).
+Figure 4: treatment schematic (Methods figure, no result magnitudes).
 Every illustrative series is real data read from tables/ or the underlying
 hourly EDGS output; no series is synthesised.
 
 Headline case: daytime_office, Reference, start=2025, 25-year period
 (fit_status=='full'), checked to exist before drawing. This is the
-2025/25yr case of Fig. 5 and Table 3; there is no literal 27-year row
+2025/25yr case of Fig. 5 and Table 3. There is no literal 27-year row
 (start years in the data are only 2025, 2027, 2030), and 2025+25yr is the
 longest non-truncated option.
 
-For legibility, each panel (b)/(c)/(d) is
-drawn in the colour of the collapse that produces it (temporal=blue,
-spatial=vermillion, trajectory=green), matching the arrows and the
-equation below. Each panel also carries a faint "ghost" of the PRIOR
-panel's series in the prior panel's own colour, so the collapse is visible
-within the panel itself, not just inferred from the arrow above it.
+For legibility, each panel (b)/(c)/(d) is drawn in the colour of the
+collapse that produces it (temporal=navy, spatial=amber,
+trajectory=teal), matching the arrows and the equation below. Each panel
+also carries a faint "ghost" of the prior panel's series in the prior
+panel's own colour. The collapse is therefore visible within the panel
+itself, not only inferred from the arrow above it.
 """
 import sys
 import numpy as np
@@ -54,10 +54,10 @@ END_YEAR = START_YEAR + PERIOD_YRS - 1
 print(f"Headline row confirmed: start={START_YEAR}, period={PERIOD_YRS}yr, "
       f"fit_status={hl['fit_status']}, order_check_total_matches={hl['order_check_total_matches']}")
 
-# Panel data -- all real, all read from tables/ or the hourly EDGS parquet
-# (a) one representative week of hourly NI generation-basis EF, start year --
-# the first full Mon-Sun week of the start year, so the choice is a fixed,
-# reproducible rule rather than a cherry-picked window.
+# Panel data: all real, all read from tables/ or the hourly EDGS parquet.
+# (a) one representative week of hourly NI generation-basis EF in the start
+# year: the first full Mon-Sun week. A fixed, reproducible rule picks it
+# rather than a cherry-picked window.
 hourly = pd.read_parquet(HOURLY_EF_PARQUET)
 hourly["datetime_hour"] = pd.to_datetime(hourly["datetime_hour"])
 ni_gen = hourly[(hourly["island"] == "NI") & (hourly["ef_basis"] == "generation")].copy()
@@ -81,8 +81,8 @@ nat = pd.read_csv(TABLES / "phase3_annual_national_ef.csv")
 c_series = nat[(nat["scenario"] == "Reference") & (nat["year"].between(START_YEAR, END_YEAR))].sort_values("year")
 assert len(c_series) == PERIOD_YRS
 
-# (d) static base-year national value -- E_d is defined as base_national_ef * n_years
-# (a cumulative quantity, per scripts/phase3_decomposition.py); the per-year rate is
+# (d) static base-year national value. E_d is defined as base_national_ef * n_years
+# (a cumulative quantity, per phase3_decomposition.py); the per-year rate is
 # E_d / n_years, which equals the start-year national annual EF.
 d_value = hl["E_d_static_base"] / hl["n_years_used"]
 d_value_from_series = c_series[c_series["year"] == START_YEAR]["annual_national_ef"].iloc[0]
@@ -96,7 +96,7 @@ fig, axes = plt.subplots(1, 4, figsize=(10.2, 4.8), sharey=True)
 
 def tag(ax, text, color):
     """Small colour-matched corner tag naming the collapse this panel embodies,
-    so the story reads locally within the panel, not just from the arrow above."""
+    so the panel can be read on its own and not only from the arrow above."""
     ax.text(0.97, 0.95, text, transform=ax.transAxes, ha="right", va="top",
              fontsize=7.4, fontweight="bold", color=color,
              bbox=dict(boxstyle="round,pad=0.25", facecolor="white", edgecolor=color, linewidth=1.0, alpha=0.9))
@@ -167,9 +167,9 @@ for i, (label, color) in enumerate(labels):
 
 # Telescoping identity, colour-matched terms.
 # matplotlib's mathtext has no \underbrace/\color, so the equation is built
-# as a sequence of separately-coloured text runs placed left to right, each
-# positioned from the rendered width of the run before it (measured via the
-# actual renderer, not an assumed character width).
+# as a sequence of separately-coloured text runs placed left to right. Each
+# run is positioned from the rendered width of the run before it, measured
+# via the renderer rather than from an assumed character width.
 eq_y = 0.05
 lead = r"$E_d - E_a \;=\;$ "
 terms = [
@@ -214,13 +214,12 @@ legend_elems = [
 fig.legend(handles=legend_elems, loc="upper left", bbox_to_anchor=(1.0, 0.98),
            frameon=False, fontsize=8.0, borderaxespad=0)
 
-# Marginal note naming the two start years used
-# elsewhere in the paper, in the same rounded-box "tag" style as the
-# per-panel annotations above, so a reader moving between this Methods
-# figure and the Results figures (which show both 2025 and 2027) is
-# not confused by an apparent mismatch. This is a Methods illustration
-# with no result magnitude of its own -- the note names the two years,
-# not a value.
+# Marginal note naming the two start years used elsewhere in the paper, in
+# the same rounded-box "tag" style as the per-panel annotations above. The
+# Results figures show both 2025 and 2027, so the note keeps a reader moving
+# between them and this Methods figure from seeing an apparent mismatch.
+# This Methods illustration has no result magnitude of its own, so the note
+# names the two years, not a value.
 COMPARISON_START_YEAR = 2027  # named alongside START_YEAR (2025 headline), matches Fig. 5's comparison case
 fig.text(1.0, 0.60,
           f"Two start years appear across this paper's figures:\n"

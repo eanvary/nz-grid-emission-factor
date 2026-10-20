@@ -1,6 +1,6 @@
 """
 Module 4 (Assumption 1): build normalised hourly shape templates, by
-island, from the user's historical EA/EMI data. These are the only non-MBIE,
+island, from the historical EA/EMI data. These are the only non-MBIE,
 non-battery inputs the pipeline uses, and they are Assumption 1.
 
 Produces, for four template years chosen by national hydro (central / median / wet / dry):
@@ -12,9 +12,9 @@ Template years (ranked on national hydro TWh from monthly_fuel_mix_NI_SI.csv):
   median of the full 11-year 2015-2025 record) ; wet = 2023 (25.37) ; dry = 2024 (22.73)
 The wet/dry pair is the Assumption-1 sensitivity case.
 
-"central" (2021) remains the reference template, and the results built on it are kept.
+"central" (2021) is the reference template.
 "median" (2017) is a 4th, representative template, ranked against the full 11-year
-2015-2025 record: 2021 was chosen on the 2021-2025 window only and is the 3rd-driest of 11
+2015-2025 record. 2021 was chosen on the 2021-2025 window only and is the 3rd-driest of 11
 years (18th percentile), not the median. 2023/2024 are the wettest/driest of all 11 years,
 not just of 2021-2025. Selecting a template changes only the hourly timing shape; annual
 volume is always MBIE's template-invariant figure, so adding "median" changes no result
@@ -22,7 +22,7 @@ built on "central".
 
 Renewable profiles are rebuilt per-fuel from raw Generation_MD (the existing
 hourly output collapses fuel); demand profiles come from the Consumption
-pipeline's hourly island output. Both reuse the historical POC->Island lookup.
+pipeline's hourly island output. Both reuse the historical POC-to-island lookup.
 
 source_tag = assumption_1
 
@@ -49,14 +49,14 @@ FUEL_STD = {  # identical mapping to build_ef_timeseries.py
     "Wind": "WIN", "WIN": "WIN", "Wood": "WOOD", "ELE": "ELE",
 }
 
-# POC -> Island (same logic as the historical pipeline)
+# POC to island (same logic as the historical pipeline)
 nsp = pd.concat([pd.read_csv(f, low_memory=False) for f in NSP_DIR.glob("*_NetworkSupplyPointsTable.csv")],
                 ignore_index=True)
 poc_island = (nsp.dropna(subset=["Island"])
               .sort_values("Start date", ascending=False)
               .drop_duplicates(subset=["POC code"])
               .set_index("POC code")["Island"].to_dict())
-log(f"POC->Island lookup: {len(poc_island)} POCs")
+log(f"POC-to-island lookup: {len(poc_island)} POCs")
 
 # Renewable per-fuel per-island hourly, template years only
 want_years = set(TEMPLATE_YEARS.values())
@@ -67,19 +67,19 @@ parts = []
 for f in gen_files:
     df = pd.read_csv(f, low_memory=False)
     tp = df[[f"TP{i}" for i in range(1, 49)]].fillna(0).to_numpy(float)
-    hour_mwh = tp.reshape(len(df), 24, 2).sum(axis=2) / 1000.0  # (n,24) pair TPs -> hours
+    hour_mwh = tp.reshape(len(df), 24, 2).sum(axis=2) / 1000.0  # (n,24): trading-period pairs summed to hours
     # NZ's DST fall-back day (first Sunday of April) has 50 trading periods. Dropping
-    # TP49/TP50 would miss ~3,500-3,900 MWh nationally on that one day in each of
+    # TP49/TP50 would miss about 3,500-3,900 MWh nationally on that one day in each of
     # 2021/2023/2024. They are folded into hour 23 for the same reason as
     # build_ef_timeseries_daily_hourly.py (a 25th hour bucket would break the fixed
     # 24-hour/day shape every downstream consumer of edgs_shape_*.parquet assumes).
-    # The effect is negligible (<0.02% of one fuel's one year's total), so
-    # edgs_shape_*.parquet outputs built without this fold were not regenerated for it
-    # alone; it takes effect whenever Modules 4-7 are next re-run.
+    # The effect is under 0.02% of one fuel's annual total. edgs_shape_*.parquet files
+    # built without this fold differ by no more than that; the fold applies whenever
+    # Modules 4-7 are re-run.
     if "TP49" in df.columns:
         tp_extra = df[["TP49", "TP50"]].fillna(0).to_numpy(float)
         hour_mwh[:, 23] += tp_extra.sum(axis=1) / 1000.0
-    # Column casing differs before 2020 (Trading_date vs Trading_Date), which matters
+    # Column casing differs before 2020 (Trading_date or Trading_Date), which matters
     # for the "median" (2017) template; same case-insensitive lookup as
     # build_ef_timeseries.py's lower_map.
     lower_map = {c.lower(): c for c in df.columns}
@@ -132,15 +132,15 @@ dem_out = dem[["template_year", "island", "month", "day", "hour", "weight"]].cop
 dchk = dem.groupby(["template_year", "island"])["weight"].sum()
 log(f"\nDemand profiles: {len(dem_out):,} rows; weight-sum range {dchk.min():.4f}-{dchk.max():.4f} (expect 1.0)")
 
-# peak-hour fraction sanity (a single hour's share of annual, x8760 -> peak/avg ratio)
+# peak-hour fraction sanity check (a single hour's share of the annual total, x8760, gives the peak/avg ratio)
 for ty in sorted(want_years):
     for isl in ("NI", "SI"):
         w = dem_out[(dem_out.template_year == ty) & (dem_out.island == isl)]["weight"]
         if len(w):
-            log(f"  {ty} {isl}: peak/avg demand ratio ~ {w.max()*len(w):.2f}")
+            log(f"  {ty} {isl}: peak/avg demand ratio about {w.max()*len(w):.2f}")
 
 ren_out.to_parquet(OUT_DIR / "edgs_shape_renewables.parquet", index=False)
 dem_out.to_parquet(OUT_DIR / "edgs_shape_demand.parquet", index=False)
 log(f"\nTemplate years: {TEMPLATE_YEARS}")
-log("Wrote edgs_shape_renewables.parquet + edgs_shape_demand.parquet")
+log("Wrote edgs_shape_renewables.parquet and edgs_shape_demand.parquet")
 (OUT_DIR / "processing_log_hourly_shape.txt").write_text("\n".join(lines), encoding="utf-8")

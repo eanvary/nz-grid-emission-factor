@@ -33,7 +33,7 @@ log(f"Matched rows: {len(merged)}")
 merged["diff"] = merged["proj_ef"] - merged["hist_ef"]
 merged["abs_pct_diff"] = 100 * merged["diff"].abs() / merged["hist_ef"].replace(0, np.nan)
 
-log("\n--- Annual mean EF: historical (metered) vs projected (Reference, generation-side) ---")
+log("\n--- Annual mean EF: historical (metered) and projected (Reference, generation-side) ---")
 for isl in ["NI", "SI"]:
     for yr in [2024, 2025]:
         sub = merged[(merged["island"] == isl) & (merged["datetime_hour"].dt.year == yr)]
@@ -43,7 +43,7 @@ for isl in ["NI", "SI"]:
         log(f"  {isl} {yr}: hist gen-weighted mean EF = {h_mean:.5f} kg/kWh | "
             f"proj simple mean EF = {p_mean:.5f} kg/kWh | diff = {100*(p_mean-h_mean)/h_mean:.2f}%")
 
-log("\n--- Shape fidelity: correlation of hourly EF (projected vs historical), by island-year ---")
+log("\n--- Shape fidelity: correlation of hourly EF (projected against historical), by island-year ---")
 for isl in ["NI", "SI"]:
     for yr in [2024, 2025]:
         sub = merged[(merged["island"] == isl) & (merged["datetime_hour"].dt.year == yr)]

@@ -24,10 +24,10 @@ def log(m):
     print(m); log_lines.append(str(m))
 
 # Annual generation-weighted mean EF, projected series, all scenario x island x
-# ef_basis x year. Weight = hourly generation (island's own for generation-side;
-# for consumption-side, weight by the island's implied consumption volume -- but
-# since exact consumption MWh isn't in the EF table, use generation as the
-# weight for both bases as a working approximation and flag this explicitly).
+# ef_basis x year. Weight = hourly generation (the island's own for the
+# generation side). The consumption side would be weighted by the island's
+# implied consumption volume. Consumption MWh is not in the EF table, so
+# generation is the weight for both bases as a working approximation.
 ef = pd.read_parquet(EDGS / "edgs_hourly_emission_factor.parquet")
 ef["year"] = ef["datetime_hour"].dt.year
 
@@ -69,8 +69,8 @@ log(f"\nWrote phase1_annual_trajectory_historical.csv ({len(hist_annual)} rows)"
 log(hist_annual.pivot(index="year", columns="island", values="gen_weighted_mean_ef").to_string())
 
 # Rate of decline: annualised % change, generation-side, by scenario x island,
-# 2024-2050 (projected series only -- comparable basis across all 5 scenarios).
-log("\n=== Rate of decline (CAGR), generation-side EF, 2024->2050, projected ===")
+# 2024-2050 (projected series only, a comparable basis across all 5 scenarios).
+log("\n=== Rate of decline (CAGR), generation-side EF, 2024 to 2050, projected ===")
 gen_side = annual[annual["ef_basis"] == "generation"].copy()
 rates = []
 for (scen, isl), g in gen_side.groupby(["scenario", "island"]):
@@ -101,10 +101,10 @@ for scen in sorted(nat["scenario"].unique()):
     infl_years = g["year"].iloc[1:][changes.values].tolist()
     log(f"  {scen}: inflection (slope sign change) years = {infl_years}")
 
-# Data-driven percentile thresholds: pooled distribution of all projected
+# Data-driven percentile thresholds: the pooled distribution of all projected
 # generation-side annual EF values (5 scenarios x 2 islands x 27 years = 270
-# values) defines percentile bands; report, for each scenario x island, the
-# first year the trajectory drops below the pooled 25th/10th/5th percentile.
+# values) defines percentile bands. For each scenario x island, the output is
+# the first year the trajectory drops below the pooled 25th/10th/5th percentile.
 log("\n=== Data-driven percentile thresholds (pooled across all scenario x island x year, generation-side) ===")
 pooled = gen_side["gen_weighted_mean_ef"].dropna()
 pcts = {p: pooled.quantile(p / 100) for p in [75, 50, 25, 10, 5]}
@@ -122,8 +122,9 @@ log(crossing_df.to_string(index=False))
 crossing_df.to_csv(TABLES / "phase1_percentile_crossing_years.csv", index=False)
 
 # Scenario divergence: cross-scenario spread by year (generation-side, NI and
-# SI separately), and the year spread becomes "material" (data-driven: exceeds
-# its own 2024-2030 baseline spread by >2x, a simple, stated, reproducible rule).
+# SI separately), and the year the spread becomes "material". The rule is
+# data-driven, simple and reproducible: the spread exceeds twice its own
+# 2024-2030 baseline spread.
 log("\n=== Scenario divergence over time (generation-side), spread = max-min across 5 scenarios ===")
 for isl in ["NI", "SI"]:
     sub = gen_side[gen_side["island"] == isl]

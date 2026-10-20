@@ -78,14 +78,14 @@ for yr in (2024, 2035, 2050):
             f"| dearest {hi['plant'][:28]:28s} ${hi['marginal_cost_nzd_per_mwh']:7.1f}/MWh "
             f"(carbon ${lo['carbon_price_nzd_per_t']:.0f}/t)")
 
-# Coal vs gas ordering flips as carbon price changes: report where coal leaves the money
+# The coal-gas ordering flips as the carbon price changes: report where coal leaves the money
 ref = thermal[thermal["scenario"] == "Reference"]
 for yr in (2024, 2050):
     s = ref[ref["year"] == yr]
     coal = s[s["commodity"] == "Coal"]["marginal_cost_nzd_per_mwh"]
     gas = s[s["commodity"] == "Natural gas"]["marginal_cost_nzd_per_mwh"]
     if len(coal) and len(gas):
-        log(f"  {yr}: coal ${coal.mean():.1f}/MWh vs gas ${gas.mean():.1f}/MWh (mean)")
+        log(f"  {yr}: coal ${coal.mean():.1f}/MWh, gas ${gas.mean():.1f}/MWh (mean)")
 
 out = thermal[["scenario", "year", "plant", "commodity", "island", "capacity_mw",
                "marginal_cost_nzd_per_mwh", "fuel_cost", "var_om", "carbon_cost",

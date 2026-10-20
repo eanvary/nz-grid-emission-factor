@@ -1,13 +1,13 @@
 """
 Hourly version of the thermal-efficiency sensitivity: apply the efficiency lever of
 build_edgs_efficiency_sensitivity.py to the hourly dispatch, not just the annual national
-total. Standalone: reads only existing pipeline parquets + that script's CSV output, writes
+total. Standalone: reads only existing pipeline parquets and that script's CSV output, writes
 only new CSVs. Does not modify build_edgs_dispatch.py, edgs_common.py,
 build_edgs_efficiency_sensitivity.py, or any pipeline output parquet.
 
 Why: build_edgs_efficiency_sensitivity.py rescales only the annual `combustion_co2_kt` total
 per scenario-year-fuel. That alone cannot move the hourly "dirty hour" ceiling (worst-case NI
-generation EF staying ~flat 2024->2050 in Reference/Growth/Constraint), because the ceiling is
+generation EF staying nearly flat from 2024 to 2050 in Reference/Growth/Constraint), because the ceiling is
 set by the hourly emission factor shape, which the annual rescale does not touch. This script
 derives the implicit hourly `thermal_shape(t)` directly from the pipeline's generation parquet
 (exact, no re-simulation needed; see fidelity note below), then re-distributes the annual CO2
@@ -24,7 +24,7 @@ generation data alone:
     thermal_shape(t) = total_thermal_generation_mwh(t) / total_thermal_annual_generation_mwh
 (summed across Coal+Natural gas+Diesel; the ratio is identical whichever thermal fuel or their
 sum is used, since they all share the one array). No re-run of the dispatch script is needed,
-and no new approximation error is introduced (unlike the ~20 MW reconstruction discrepancy of
+and no new approximation error is introduced (unlike the roughly 20 MW reconstruction discrepancy of
 the battery sensitivity scripts).
 
 Baseline hourly CO2(t) is likewise reconstructed exactly from the pipeline's
@@ -39,7 +39,7 @@ Method:
   new_ef(t)     = new_co2_kg(t) / (island_generation_mwh(t) x 1000)      [generation unaffected]
 
 Outputs (output/edgs/):
-  edgs_efficiency_hourly_dispatch_summary.csv   per scenario-year: baseline vs efficiency-
+  edgs_efficiency_hourly_dispatch_summary.csv   per scenario-year: baseline and efficiency-
                                                  adjusted mean/p99/max NI generation-side EF
 """
 import numpy as np
@@ -53,7 +53,7 @@ log, lines = log_factory()
 nat = pd.read_csv(OUT_DIR / "edgs_efficiency_sensitivity_summary.csv")
 delta_kt_map = nat.set_index(["scenario", "year"])["co2_delta_kt"].to_dict()  # kt, <=0
 
-# Pipeline hourly generation (NI only - all thermal capacity is NI, per Module 2/5)
+# Pipeline hourly generation (NI only: all thermal capacity is NI, per Module 2/5)
 gen = pd.read_parquet(OUT_DIR / "edgs_hourly_generation.parquet",
                        columns=["scenario", "island", "datetime_hour", "fuel_commodity",
                                 "generation_mwh"])
@@ -61,7 +61,7 @@ gen_ni = gen[gen["island"] == "NI"].copy()
 gen_ni["year"] = gen_ni["datetime_hour"].dt.year
 del gen
 
-# Total NI generation per hour (all fuels incl. renewables/DSR) - the EF denominator
+# Total NI generation per hour (all fuels incl. renewables/DSR): the EF denominator
 ni_total_gen = (gen_ni.groupby(["scenario", "datetime_hour"])["generation_mwh"]
                 .sum().rename("ni_gen_mwh").reset_index())
 
@@ -71,7 +71,7 @@ ni_thermal = (gen_ni[thermal_mask].groupby(["scenario", "datetime_hour", "year"]
               .sum().rename("ni_thermal_mwh").reset_index())
 
 # thermal_shape(t) = hourly thermal MWh / annual thermal MWh, per scenario-year (exact
-# recovery of build_edgs_dispatch.py's internal array - see fidelity note above)
+# recovery of build_edgs_dispatch.py's internal array; see the fidelity note above)
 annual_thermal = (ni_thermal.groupby(["scenario", "year"])["ni_thermal_mwh"]
                   .sum().rename("annual_thermal_mwh").reset_index())
 ni_thermal = ni_thermal.merge(annual_thermal, on=["scenario", "year"], how="left")
@@ -80,7 +80,7 @@ ni_thermal["thermal_shape"] = np.where(ni_thermal["annual_thermal_mwh"] > 0,
                                         0.0)
 del gen_ni
 
-# Pipeline hourly EF (NI, generation basis) -> reconstruct baseline CO2(t) exactly
+# Pipeline hourly EF (NI, generation basis), used to reconstruct baseline CO2(t) exactly
 ef = pd.read_parquet(OUT_DIR / "edgs_hourly_emission_factor.parquet",
                       columns=["scenario", "island", "datetime_hour", "ef_basis",
                                "emission_factor_kg_co2e_per_kwh"])
@@ -93,7 +93,7 @@ df = df.merge(ni_thermal[["scenario", "datetime_hour", "year", "thermal_shape"]]
 df["thermal_shape"] = df["thermal_shape"].fillna(0.0)
 df["baseline_co2_kg"] = df["emission_factor_kg_co2e_per_kwh"] * df["ni_gen_mwh"] * 1000.0
 df["delta_kt"] = [delta_kt_map.get((s, y), 0.0) for s, y in zip(df["scenario"], df["year"])]
-df["co2_delta_kg"] = df["thermal_shape"] * df["delta_kt"] * 1e6  # kt -> kg
+df["co2_delta_kg"] = df["thermal_shape"] * df["delta_kt"] * 1e6  # kt to kg
 df["new_co2_kg"] = df["baseline_co2_kg"] + df["co2_delta_kg"]
 with np.errstate(divide="ignore", invalid="ignore"):
     df["new_ef_kg_per_kwh"] = np.where(df["ni_gen_mwh"] > 0,
@@ -106,9 +106,9 @@ log(f"Reconstructed {len(df):,} NI generation-side hourly rows "
 sanity = df[df["delta_kt"] == 0]
 if len(sanity):
     resid = (sanity["new_ef_kg_per_kwh"] - sanity["emission_factor_kg_co2e_per_kwh"]).abs().max()
-    log(f"Sanity check (delta_kt==0 rows, should be ~0): max |new_ef - pipeline_ef| = {resid:.2e}")
+    log(f"Sanity check (delta_kt==0 rows, should be near 0): max |new_ef - pipeline_ef| = {resid:.2e}")
 
-# Summary: mean / p99 / max, baseline vs efficiency-adjusted, per scenario-year
+# Summary: mean / p99 / max, baseline and efficiency-adjusted, per scenario-year
 rows = []
 for (scenario, year), g in df.groupby(["scenario", "year"]):
     base = g["emission_factor_kg_co2e_per_kwh"]
@@ -127,7 +127,7 @@ summ["max_delta_pct"] = np.where(summ["baseline_max"] > 0,
 summ.to_csv(OUT_DIR / "edgs_efficiency_hourly_dispatch_summary.csv", index=False)
 log(f"Wrote edgs_efficiency_hourly_dispatch_summary.csv ({len(summ):,} scenario-year rows)")
 
-log("\nDirty-hour ceiling (p99 NI generation EF), baseline -> efficiency-adjusted, "
+log("\nDirty-hour ceiling (p99 NI generation EF), shown as baseline->efficiency-adjusted, "
     "selected years:")
 for scenario in SCENARIOS:
     s = summ[summ.scenario == scenario].set_index("year")

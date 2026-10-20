@@ -2,24 +2,24 @@
 Per-fuel hourly generation table, needed for an hourly (not only monthly) uncertainty band.
 
 The pipeline (generation_pipeline/build_ef_timeseries_daily_hourly.py) computes
-a per-POC, per-fuel hourly generation table internally (its own `hourly_raw` DataFrame)
+a per-POC, per-fuel hourly generation table internally (its `hourly_raw` DataFrame)
 but publishes only the blended total (`hourly_emission_factor_NI_SI.csv`,
-island/date/hour/EF/gen/CO2 -- no fuel_std column). This script rebuilds that same
-per-fuel hourly table from the same raw inputs, using the IDENTICAL logic (TP-pairing into
-24 hours, TP49/TP50 DST handling, flagged fills folded into hours) copied from that script,
-and the pipeline's own shared modules for everything else: POC->island map and fuel/factor
+island/date/hour/EF/gen/CO2, with no fuel_std column). This script rebuilds the same
+per-fuel hourly table from the same raw inputs, with logic copied from that script
+(TP-pairing into 24 hours, TP49/TP50 DST handling, flagged fills folded into hours).
+Everything else comes from the pipeline's shared modules: POC-to-island map and fuel/factor
 attribution from generation_pipeline/fuel_attribution.py (poc_island_map, FuelAttribution:
 generator- and unit-level factors, Huntly 1-4 coal/gas split, Kinleith wood, flagged
 fills). fuel_std in the output is the attributed fuel, so Huntly 1-4 output appears under
 CLG and GAS by the quarterly coal share. The two can disagree only through a bug, not
 through a difference in method.
 
-Read-only: touches no pipeline input or output. Writes one new file,
+Read-only: no pipeline input or output is modified. One file is written,
 hourly_fuel_mix_NI_SI.csv, into this validation folder (not into output/).
 
-Verification built in: the per-fuel hourly table, summed back to (island, date, hour),
-must reproduce the released hourly_emission_factor_NI_SI.csv exactly (energy and EF),
-checked below, not assumed.
+Built-in verification: the per-fuel hourly table, summed back to (island, date, hour),
+must reproduce the released hourly_emission_factor_NI_SI.csv exactly (energy and EF).
+The check runs below.
 """
 import sys
 from pathlib import Path
@@ -36,7 +36,7 @@ GEN_DIR = ROOT / "EA_EMI_raw"
 RELEASED_HOURLY = ROOT / "output" / "hourly_emission_factor_NI_SI.csv"
 OUT = HERE / "hourly_fuel_mix_NI_SI.csv"
 
-print("Loading POC -> Island lookup (fuel_attribution.poc_island_map, as the pipeline)...")
+print("Loading POC-to-island lookup (fuel_attribution.poc_island_map, as the pipeline)...")
 poc_island = poc_island_map()
 print(f"  {len(poc_island)} POCs")
 
@@ -104,7 +104,7 @@ fuel_hourly["ef_kg_per_mwh"] = np.where(
     fuel_hourly["gen_mwh"] > 0, fuel_hourly["co2_kg"] / fuel_hourly["gen_mwh"], 0.0
 )
 fuel_hourly.to_csv(OUT, index=False)
-print(f"Wrote {len(fuel_hourly):,} rows -> {OUT}")
+print(f"Wrote {len(fuel_hourly):,} rows to {OUT}")
 
 # Verification: sum this new per-fuel table back to (island, date, hour) and
 # compare against the released hourly_emission_factor_NI_SI.csv.

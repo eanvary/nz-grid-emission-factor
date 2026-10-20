@@ -2,14 +2,14 @@
 Module 2: plant register + commissioning/retirement calendar.
 
 From Generation Stack (all plants, existing + generic future) build, per scenario
-x year 2024-2050, the set of ACTIVE plants with island, capacity, tech->commodity
+x year 2024-2050, the set of active plants with island, capacity, commodity (from Tech)
 and (thermal only) heat rate / variable O&M / fuel-delivery cost. Retirement dates
 come from the EDGS 2024 report, Appendix One. New-build island tags are
 cross-checked against the GEM build schedule.
 
 source_tag:
-  plant attributes                      -> MBIE_annual_disaggregated (Generation Stack)
-  active-year / retirement / biomass    -> calculated (deterministic from Generation Stack + retirement calendar)
+  plant attributes:                     MBIE_annual_disaggregated (Generation Stack)
+  active-year / retirement / biomass:   calculated (deterministic from Generation Stack and retirement calendar)
 
 Outputs (output/edgs/):
   edgs_plant_register.parquet   long: scenario, year, plant, commodity, dispatch_class,
@@ -35,11 +35,11 @@ gem = pd.read_excel(RESULTS_XLSX, sheet_name="GEM build schedule")
 # Retirement / biomass-conversion matcher (EDGS 2024 report, Appendix One)
 def match_retirement(plant_name, rules):
     """Return (retire_year, convert) for a plant given a scenario's rules.
-    retire_year: first year the plant is NO LONGER available (np.inf if never).
-    convert: None, or ('biomass', year) meaning commodity->Wood from `year`."""
+    retire_year: first year the plant is no longer available (np.inf if never).
+    convert: None, or ('biomass', year) meaning the commodity becomes Wood from `year`."""
     p = plant_name.lower()
     if "taranaki combined cycle" in p:
-        return rules.get("Taranaki Combined Cycle", np.inf) + 1, None  # 'end of 2024' -> gone 2025
+        return rules.get("Taranaki Combined Cycle", np.inf) + 1, None  # 'end of 2024', so gone from 2025
     if "huntly unit 5" in p:
         return rules.get("Huntly Unit 5", np.inf) + 1, None
     if "stratford peaker" in p:
@@ -110,9 +110,9 @@ for scenario in SCENARIOS:
     si_thermal_report[scenario] = float(cap.max()) if len(cap) else 0.0
 log("\nSI thermal capacity (max MW across years) by scenario:")
 for sc, mw in si_thermal_report.items():
-    log(f"  {sc}: {mw:.0f} MW" + ("  -> SI EF can be >0" if mw > 0 else "  -> SI EF ~ 0 (all-renewable)"))
+    log(f"  {sc}: {mw:.0f} MW" + ("; SI EF can be >0" if mw > 0 else "; SI EF about 0 (all-renewable)"))
 
-# Thermal capacity trajectory (national): sanity vs retirements
+# Thermal capacity trajectory (national): sanity check against retirements
 log("\nNational thermal capacity (MW) by scenario, selected years:")
 for scenario in SCENARIOS:
     s = reg[(reg["scenario"] == scenario) & (reg["dispatch_class"] == "thermal")]
@@ -139,7 +139,7 @@ gem_out = gem_out[["scenario", "year", "commodity", "technology_type", "island",
                    "capacity_mw", "plant"]]
 log(f"\nGEM build schedule: {len(gem_out):,} rows; commodities={sorted(gem_out['commodity'].unique())}")
 
-# NOTE: no explicit battery/BESS capacity exists in either workbook. The only
+# No battery/BESS capacity figure exists in either workbook. The only
 # storage/flexibility line item MBIE publishes is 'Demand side response'
 # (GEM build schedule + Results generation). Assumption 2 anchors to that
 # MBIE quantity rather than inventing a battery MW figure (which would be a
@@ -151,5 +151,5 @@ log(f"Demand side response new-build in GEM: {len(dsr)} rows, "
 
 reg.to_parquet(OUT_DIR / "edgs_plant_register.parquet", index=False)
 gem_out.to_parquet(OUT_DIR / "edgs_gem_build.parquet", index=False)
-log(f"\nWrote edgs_plant_register.parquet ({len(reg):,} rows) + edgs_gem_build.parquet ({len(gem_out):,} rows)")
+log(f"\nWrote edgs_plant_register.parquet ({len(reg):,} rows) and edgs_gem_build.parquet ({len(gem_out):,} rows)")
 (OUT_DIR / "processing_log_plant_register.txt").write_text("\n".join(lines), encoding="utf-8")

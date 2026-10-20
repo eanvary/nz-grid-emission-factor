@@ -1,10 +1,10 @@
 """
-fix_ddmmyyyy_dates.py -- data-integrity fix for the 2015-2019 EMI raw files.
+fix_ddmmyyyy_dates.py: data-integrity fix for the 2015-2019 EMI raw files.
 
 EA_EMI_raw/*_{Grid_import,Grid_export,Embedded_generation,HVDC_flows}.csv for 2015-01
 through 2019-12 use DD/MM/YYYY in their trading-date column; every file from 2020-01
 onward uses ISO YYYY-MM-DD. The regional-feasibility date parser
-(diag_regional_feasibility.melt_tp -> pd.to_datetime(..., format="mixed", dayfirst=False))
+(diag_regional_feasibility.melt_tp, which calls pd.to_datetime(..., format="mixed", dayfirst=False))
 silently mis-parses DD/MM/YYYY whenever day <= 12 and day != month, swapping day and month.
 Analyses limited to 2021-2025 never hit this (those files are already ISO); it matters only
 when the record is extended back to 2015-2019.
@@ -56,7 +56,7 @@ def main():
                 b, a, n = fix_file(p, date_col)
                 fixed += 1
                 if fixed <= 4 or fixed % 60 == 0:
-                    print(f"  {p.name}: '{b}' -> '{a}'  ({n} rows)")
+                    print(f"  {p.name}: '{b}' to '{a}'  ({n} rows)")
             except Exception as e:
                 errors.append((p.name, str(e)))
     print(f"\nFixed: {fixed}  Skipped (missing): {skipped}  Errors: {len(errors)}")

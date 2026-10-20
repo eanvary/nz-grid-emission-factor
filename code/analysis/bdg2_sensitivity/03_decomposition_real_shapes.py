@@ -1,18 +1,18 @@
 """
 BDG2 real-data sensitivity test (script 3 of 4): re-run the same four-tier error
-decomposition as the main NZ assessment (phase3_decomposition.py), but using
-real, hemisphere-shifted BDG2 building shapes in place of the stylised
-(daytime_office / continuous_24_7 / evening_weighted) shapes -- to test
-whether real hourly demand timing (which can correlate with weather, and
-weather correlates with grid conditions) changes the decomposition's
-conclusions.
+decomposition as the main NZ assessment (phase3_decomposition.py). Real,
+hemisphere-shifted BDG2 building shapes replace the stylised
+(daytime_office / continuous_24_7 / evening_weighted) shapes. The test asks
+whether real hourly demand timing changes the decomposition's conclusions,
+because demand timing can correlate with weather and weather correlates
+with grid conditions.
 
-READ-ONLY with respect to the main assessment: this script reads
-../../tables/phase3_annual_island_ef.csv and phase3_annual_national_ef.csv
-(treatments b/c/d are shape-independent, so re-using them guarantees an
-apples-to-apples comparison against the main results) but writes NOTHING
-back into analysis_paper/tables, analysis_paper/figures, or any file the
-main assessment produced. All new outputs go to
+Read-only with respect to the main assessment. The script reads
+../../tables/phase3_annual_island_ef.csv and phase3_annual_national_ef.csv.
+Treatments b/c/d are shape-independent, so reusing them keeps the
+comparison with the main results like for like. Nothing is written back
+into analysis_paper/tables, analysis_paper/figures, or any file the main
+assessment produced. All new outputs go to
 analysis_paper/sensitivity_realdata_bdg2/{tables,figures,logs}.
 """
 import numpy as np
@@ -52,7 +52,7 @@ shapes = pd.read_csv(TABLES / "real_building_shapes_hemisphere_shifted.csv")
 SHAPE_LABELS = shapes["building_id"].unique().tolist()
 log(f"Real shapes: {SHAPE_LABELS}")
 
-# Precompute load-weighted annual EF for every (shape, scenario, year) --
+# Precompute load-weighted annual EF for every (shape, scenario, year):
 # treatment (a), the only one that needs real hourly detail.
 cache = {}
 for shape_label in SHAPE_LABELS:
@@ -70,7 +70,7 @@ for shape_label in SHAPE_LABELS:
         cache[(shape_label, scenario, year)] = val
     log(f"  cached shape={shape_label}: {len(res)} (scenario,year) entries")
 
-# Load treatments (b)/(c)/(d) source data -- READ-ONLY reuse of the main
+# Load treatments (b)/(c)/(d) source data: read-only reuse of the main
 # assessment's shape-independent annual island/national EF tables.
 annual_island = pd.read_csv(MAIN_TABLES / "phase3_annual_island_ef.csv")
 annual_island_ni = annual_island[annual_island["island"] == BUILDING_ISLAND]
@@ -136,7 +136,7 @@ decomp = pd.DataFrame(decomp_rows)
 decomp.to_csv(TABLES / "real_shape_decomposition_full.csv", index=False)
 log(f"\nWrote real_shape_decomposition_full.csv ({len(decomp)} rows)")
 
-log("\n=== Headline: Reference, NI, start=2027, all 6 real buildings + sample average, 10yr ===")
+log("\n=== Headline: Reference, NI, start=2027, all 6 real buildings and sample average, 10yr ===")
 hl = decomp[(decomp["scenario"] == "Reference") & (decomp["start_year"] == HEADLINE_START) &
             (decomp["study_period_yrs_requested"] == 10)]
 log(hl[["load_shape", "total_error_pct_of_Ea", "temporal_pct_of_total",

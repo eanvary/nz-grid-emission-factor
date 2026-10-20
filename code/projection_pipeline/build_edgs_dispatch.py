@@ -1,5 +1,5 @@
 """
-Module 5: hourly, island-resolved generation + emission factor
+Module 5: hourly, island-resolved generation and emission factor
 for one or more scenarios, reconciled to MBIE annual national totals.
 
 Method:
@@ -9,28 +9,29 @@ Method:
   Demand      : MBIE annual demand (TWh) split NI/SI by MBIE 'Island share of demand',
                 shaped by historical hourly demand weight, then peak-calibrated
                 (energy-preserving) so national hourly max == MBIE annual peak (GW).
-  Thermal     : the merit order (Module 3) + residual load set the thermal hourly SHAPE
+  Thermal     : the merit order (Module 3) and residual load set the thermal hourly shape
                 and the thermal/renewable boundary; MBIE's published annual fuel GWh set
                 the fuel split. Rationale: MBIE publishes no hourly fuel split, and a pure
                 marginal-cost ordering does not reproduce NZ's gas-supply-constrained coal
-                dispatch (coal is dearer than gas yet MBIE still runs ~1 TWh of coal);
-                imposing a gas-supply cap to force that would add a third assumption,
-                which the method excludes. So each thermal fuel = MBIE annual GWh x
-                normalised thermal shape -> annual reconciles exactly per fuel by
-                construction. CO2 per fuel =
+                dispatch (coal is dearer than gas, yet MBIE still runs about 1 TWh of coal).
+                Imposing a gas-supply cap to force that would add a third assumption,
+                which the method excludes. Each thermal fuel is therefore MBIE annual GWh x
+                the normalised thermal shape, so the annual total reconciles exactly per
+                fuel by construction. CO2 per fuel =
                 MBIE published fuel input (Electricity generation use, Gross PJ) x MfE factor
                 (combustion_co2_kg below), not plant heat rates; heat rate is used
                 only for the merit-order ranking.
-                All thermal capacity is North Island (Module 2), so thermal -> NI.
+                All thermal capacity is North Island (Module 2), so all thermal is assigned to NI.
   Geothermal  : fugitive CO2-e is not included (geo_co2_by_island is zero; see the
                 geothermal block in the body). The projection is combustion scope only, so
                 it is not like-for-like with the metered series, which counts geothermal
                 fugitive CO2. Tests on record: (1) a McLean & Richardson (2019) capacity-
                 weighted fleet factor on all geothermal (Ngawha 0 g/kWh from 2024) overshot
-                MBIE's electricity GHG total by ~19-27% (emissions-weighted), worse than
-                combustion only (~6.3%); (2) build_edgs_check2_geothermal_resolution.py
-                found that ~81 g/kWh applied only to geothermal built above the 2024 fleet
-                reproduces MBIE's total to ~1.8%; that factor is not applied here. geothermal_ef_kg_per_mwh (edgs_common.py) is kept for the diagnostics.
+                MBIE's electricity GHG total by about 19-27% (emissions-weighted), worse than
+                combustion only (about 6.3%); (2) build_edgs_check2_geothermal_resolution.py
+                found that about 81 g/kWh applied only to geothermal built above the 2024
+                fleet reproduces MBIE's total to about 1.8%. That factor is not applied here.
+                geothermal_ef_kg_per_mwh (edgs_common.py) is kept for the diagnostics.
   Wood        : non-biogenic CH4+N2O only (MBIE Wood fuel input x MfE Table 3.4); wood CO2 is
                 biogenic and zero-rated.
   Battery/DSR : Assumption 2 (model-original). DSR discharges to shave the highest-residual
@@ -100,7 +101,7 @@ for scen in SCENARIOS:
 
 # MBIE published fuel input per commodity (Electricity generation use, Gross PJ).
 # Combustion CO2 is computed directly from this x MfE factors, not from plant heat rates
-# (heat-rate combustion undershot MBIE by ~11%). Heat rate is retained only for the
+# (heat-rate combustion undershoots MBIE by about 11%). Heat rate is kept only for the
 # merit-order ranking in Module 3.
 _use = pd.read_excel(RESULTS_XLSX, sheet_name="Electricity generation")
 _use = _use[_use["Variable"] == "Electricity generation use"]  # Gross PJ
@@ -109,7 +110,7 @@ MFE_EF = {k: v[0] for k, v in MFE_FUEL_EF_KG_PER_GJ.items()}  # kg CO2-e / GJ
 
 
 def combustion_co2_kg(scenario, year, commodity):
-    """MBIE fuel input (Gross PJ) x MfE factor -> kg CO2-e for one thermal commodity/year."""
+    """MBIE fuel input (Gross PJ) x MfE factor, in kg CO2-e, for one thermal commodity and year."""
     pj = fuel_use_pj.get((scenario, year, commodity), 0.0)
     ef = MFE_EF.get(commodity)
     return (pj * 1e6 * ef) if (ef is not None and pj) else 0.0  # PJ*1e6 GJ * kg/GJ
@@ -117,7 +118,7 @@ def combustion_co2_kg(scenario, year, commodity):
 
 def wood_nonco2_kg(scenario, year):
     """MBIE Wood fuel input (Gross PJ, the same figure used for Wood generation/dispatch)
-    x MfE Table 3.4 non-biogenic CH4+N2O factor -> kg CO2-e for one scenario/year.
+    x MfE Table 3.4 non-biogenic CH4+N2O factor, in kg CO2-e, for one scenario and year.
     Source: WOOD_NONBIOGENIC_SOURCE (edgs_common.py). CO2 from Wood remains biogenic/
     zero-rated, untouched; this is an additive non-CO2 term only."""
     pj = fuel_use_pj.get((scenario, year, "Wood"), 0.0)
@@ -148,7 +149,7 @@ def map_weights(cal, wtab, template_year=None):
     Weekday alignment: the template is a real metered year, so its
     hourly weights carry that year's weekday/weekend structure. A plain (month, day, hour)
     join would place the template's Saturday/Sunday on whatever weekday that calendar date
-    falls on in the projected year (e.g. 2021 weekends landed on Thu/Fri in 2025 and on
+    falls on in the projected year (e.g. 2021 weekends would land on Thu/Fri in 2025 and on
     Wed/Thu in 2030), scrambling the weekly cycle that a weekday-weighted building profile
     depends on. Each projected day takes the template day with the same weekday that
     lies nearest to the same calendar date (shift of at most +/-3 days), which preserves
@@ -229,7 +230,7 @@ for scenario in run_scenarios:
         ni_share = float(ni_share_map.get((scenario, year), 0.61))
 
         # Renewables (MBIE annual x island cap share x hourly weight)
-        ren_hourly = {}          # (island, commodity) -> (mwh_array, fallback_note)
+        ren_hourly = {}          # keyed by (island, commodity): (mwh_array, fallback_note)
         island_ren_total = {"NI": np.zeros(H), "SI": np.zeros(H)}
         for com in RENEWABLE_COMMODITIES:
             gwh = float(annual_gen.get(com, 0.0))
@@ -260,11 +261,11 @@ for scenario in run_scenarios:
                 ren_hourly[(isl, com)] = (mwh, fb)
                 island_ren_total[isl] += mwh
 
-        # Load series: two distinct quantities, deliberately different:
+        # Two load series with different annual totals:
         #  (i) demand series: energy = MBIE Total electricity demand, peak-calibrated to
         #      MBIE Peak demand. Used only for the Check-3 peak validation (demand-side).
         #  (ii) generation-level load series: energy = MBIE net generation total (demand +
-        #      T&D losses + own use, ~7.2% higher). Used for the dispatch residual, because
+        #      T&D losses + own use, about 7.2% higher). Used for the dispatch residual, because
         #      thermal serves generation-level load, not delivered demand. Same historical
         #      hourly shape (MBIE publishes no generation-level shape); only the annual
         #      total the shape is scaled to differs. Not peak-calibrated to the demand peak.
@@ -282,10 +283,10 @@ for scenario in run_scenarios:
         nat_demand = nat_shape * netgen_mwh
 
         # Assumption 2: DSR/battery daily peak-shave load-shift (capacity-driven)
-        # MBIE carries DSR/battery only as CAPACITY (never net generation), so this rule
+        # MBIE carries DSR/battery only as capacity (never net generation), so this rule
         # is model-original. Each day the fleet discharges up to its rated MW in that day's
         # highest-residual hour and charges the same energy in the lowest-residual hour
-        # (energy-neutral daily cycle -> net annual generation ~0, matching MBIE's 0).
+        # (an energy-neutral daily cycle, so net annual generation is near 0, matching MBIE's 0).
         nat_ren = island_ren_total["NI"] + island_ren_total["SI"]
         residual_pre = np.clip(nat_demand - nat_ren, 0.0, None)
         dsr_mw = float(dsr_cap_map.get((scenario, year), 0.0))
@@ -298,9 +299,9 @@ for scenario in run_scenarios:
             shift = np.minimum(dsr_mw, base[rows_idx, hi])          # MWh moved per day
             base[rows_idx, hi] -= shift                              # discharge (supply)
             base[rows_idx, lo] += shift                              # charge (load)
-        dsr_series = residual_pre - residual  # +discharge at peak, -charge at trough; sum ~0
+        dsr_series = residual_pre - residual  # +discharge at peak, -charge at trough; sum near 0
 
-        # Thermal SHAPE from merit fill of residual (capacity-aware)
+        # Thermal shape from merit fill of residual (capacity-aware)
         mplants = merit_s[merit_s.year == year].sort_values("merit_rank")
         caps = mplants["capacity_mw"].to_numpy()
         total_cap = caps.sum()
@@ -368,17 +369,17 @@ for scenario in run_scenarios:
 
         # Geothermal fugitive CO2: tested, not included (see the Check-2 diagnostic).
         # A cited, capacity-weighted, time-varying geothermal factor (McLean & Richardson
-        # 2019 field data, Ngawha=0 from 2024) was trialled here. Adding it overshoots
-        # MBIE's electricity GHG total by ~19-27% (emissions-weighted), worse than
-        # combustion-only (~6.3%). The regression's R2=0.9995
-        # reflected geothermal generation and the small residual co-trending upward over the
-        # 27-year projection, not a valid physical magnitude match (real geothermal CO2,
-        # ~0.6-0.9 Mt/yr, is 2-4x the ~0.05-0.4 Mt/yr gap it was meant to explain). See
+        # 2019 field data, Ngawha=0 from 2024) was tested here. Adding it overshoots
+        # MBIE's electricity GHG total by about 19-27% (emissions-weighted), worse than
+        # combustion-only (about 6.3%). The regression's R2=0.9995 reflects geothermal
+        # generation and the small residual rising together over the 27-year projection,
+        # not a physical magnitude match (real geothermal CO2, about 0.6-0.9 Mt/yr, is
+        # 2-4x the 0.05-0.4 Mt/yr gap it was meant to explain). See
         # README and build_edgs_check2_diagnostic.py. Not included in the CO2/EF calculation
         # below; geo_fleet_ef is retained only for the standalone diagnostic script.
         geo_co2_by_island = {"NI": np.zeros(H), "SI": np.zeros(H)}
 
-        # DSR hourly net series computed above (Assumption 2 load-shift); net annual ~0.
+        # DSR hourly net series computed above (Assumption 2 load-shift); net annual total near 0.
         dsr_hourly = dsr_series
 
         # Assemble generation rows
@@ -415,7 +416,7 @@ for scenario in run_scenarios:
         # (Check 2), not forced.
         island_co2 = {
             "NI": sum(fuel_co2.values()) + geo_co2_by_island["NI"] + wood_nonco2_by_island["NI"],  # kg
-            "SI": geo_co2_by_island["SI"] + wood_nonco2_by_island["SI"],  # kg (0 - no SI thermal/wood capacity)
+            "SI": geo_co2_by_island["SI"] + wood_nonco2_by_island["SI"],  # kg (0: no SI thermal or wood capacity)
         }
         island_gen = {
             "NI": island_ren_total["NI"] + sum(fuel_hourly.values()) + dsr_hourly,  # MWh
@@ -428,8 +429,8 @@ for scenario in run_scenarios:
                 "scenario": scenario, "island": isl, "datetime_hour": dt, "ef_basis": "generation",
                 "emission_factor_kg_co2e_per_kwh": ef_isl, "reconciliation_flag": "pending"}))
         # Consumption-side EF, national: national CO2 / national delivered demand.
-        # The generation-to-consumption gross-up factor embeds MBIE's own generation-vs-demand
-        # gap (~7.7%): T&D losses + generator own-use + MBIE balancing items, not a pure
+        # The generation-to-consumption gross-up factor embeds MBIE's own generation-demand
+        # gap (about 7.7%): T&D losses, generator own-use and MBIE balancing items, not a pure
         # line-loss figure. Reported at national level because island consumption needs HVDC
         # allocation (the historical Consumption pipeline's method), out of scope here.
         national_co2 = island_co2["NI"] + island_co2["SI"]
@@ -457,7 +458,7 @@ peaks.to_parquet(OUT_DIR / f"edgs_peak_calibration{suffix}.parquet", index=False
 
 peaks["err_pct"] = (peaks["model_peak_gw"] / peaks["mbie_peak_gw"] - 1) * 100
 log(f"\nGeneration rows: {len(gen):,}; EF rows: {len(ef):,}")
-log(f"Peak calibration error: max |{peaks['err_pct'].abs().max():.3f}%| (target ~0)")
-log(f"Thermal fuel-years reconciled EXACT by construction: {len(recon)}")
-log(f"Wrote edgs_hourly_generation{suffix}.parquet + edgs_hourly_emission_factor{suffix}.parquet")
+log(f"Peak calibration error: max |{peaks['err_pct'].abs().max():.3f}%| (target 0)")
+log(f"Thermal fuel-years reconciled exactly by construction: {len(recon)}")
+log(f"Wrote edgs_hourly_generation{suffix}.parquet and edgs_hourly_emission_factor{suffix}.parquet")
 (OUT_DIR / f"processing_log_dispatch{suffix}.txt").write_text("\n".join(lines), encoding="utf-8")

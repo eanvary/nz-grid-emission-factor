@@ -5,9 +5,9 @@ Approach-1 propagation as run_ipcc_uncertainty_quantification.py, but against
 hourly_fuel_mix_NI_SI.csv (built by build_hourly_fuel_mix.py, which reconciles
 exactly to the pipeline output) instead of the monthly fuel-mix table.
 
-Same method, same IPCC Table 2.2 fuel bounds, same GEO/ELE exclusion -- only the input
-resolution changes, so any difference between this script's output and the monthly
-script's output is a resolution effect, not a change of method.
+Same method, same IPCC Table 2.2 fuel bounds and same GEO/ELE exclusion; only the input
+resolution changes. Any difference between this script's output and the monthly
+script's output is therefore a resolution effect, not a change of method.
 """
 import math
 from pathlib import Path
@@ -21,7 +21,7 @@ OUT_HOURLY = HERE / "ipcc_uncertainty_by_island_hour.csv"
 OUT_DAILY = HERE / "ipcc_uncertainty_by_island_day.csv"
 OUT_YEAR = HERE / "ipcc_uncertainty_by_island_year_from_hourly.csv"
 
-# Identical to run_ipcc_uncertainty_quantification.py -- IPCC 2006 GL Vol 2 Ch 2 Table 2.2
+# Same as run_ipcc_uncertainty_quantification.py: IPCC 2006 GL Vol 2 Ch 2 Table 2.2
 IPCC_TABLE_2_2 = {
     "CLG": (96100.0, 92800.0, 100000.0),
     "GAS": (56100.0, 54300.0, 58300.0),
@@ -75,10 +75,10 @@ def propagate_group(g):
     })
 
 
-# Vectorised version of the same logic (the row-iterrows version above is the
-# reference/readable form; for 192,864 groups iterrows is too slow, so the actual
-# computation below is a vectorised equivalent, cross-checked against propagate_group
-# on a random sample before trusting it at scale).
+# Vectorised version of the same logic. The iterrows version above is the readable
+# reference, but for 192,864 groups iterrows is too slow. The computation below is a
+# vectorised equivalent, cross-checked against propagate_group on a random sample
+# before it is used at scale.
 df["rel_sigma"] = df["fuel_std"].map(REL_SIGMA).fillna(0.0)
 df["is_quantified_combustion"] = df["fuel_std"].isin(REL_SIGMA.keys())
 df["is_zero_ef"] = df["fuel_std"].isin(ZERO_EF_FUELS)
@@ -111,7 +111,7 @@ result["excluded_coverage_pct"] = (excluded_gen.reindex(result.index).fillna(0.0
 result = result.reset_index()
 
 # Cross-check the vectorised path against the reference row-wise function on a
-# random sample of 200 (island,date,hour) groups before trusting it further.
+# random sample of 200 (island,date,hour) groups before it is used further.
 print("Cross-checking vectorised computation against the reference row-wise function...")
 sample_keys = result.sample(n=min(200, len(result)), random_state=0)[["island", "date", "hour"]]
 max_ef_diff, max_sigma_diff = 0.0, 0.0
@@ -124,7 +124,7 @@ for _, k in sample_keys.iterrows():
 print(f"  max |EF diff| over 200-sample cross-check: {max_ef_diff:.10f}")
 print(f"  max |sigma diff| over 200-sample cross-check: {max_sigma_diff:.10f}")
 assert max_ef_diff < 1e-8 and max_sigma_diff < 1e-8, "vectorised path does not match reference logic"
-print("  PASS -- vectorised and reference computations agree.")
+print("  PASS: vectorised and reference computations agree.")
 
 result["ci95_lower_kg_per_mwh"] = result["point_ef_kg_per_mwh"] - 1.96 * result["sigma_kg_per_mwh"]
 result["ci95_upper_kg_per_mwh"] = result["point_ef_kg_per_mwh"] + 1.96 * result["sigma_kg_per_mwh"]
@@ -134,10 +134,10 @@ result["ci95_pct_of_point"] = np.where(
     np.nan,
 )
 result.to_csv(OUT_HOURLY, index=False)
-print(f"\nWrote {len(result):,} island-hour rows -> {OUT_HOURLY}")
+print(f"\nWrote {len(result):,} island-hour rows to {OUT_HOURLY}")
 
-# Daily roll-up (energy-weighted point EF, variance combined assuming hour-independence
-# Same disclosed simplification as the monthly->annual roll-up already in the report)
+# Daily roll-up (energy-weighted point EF, variance combined assuming independent hours;
+# the same stated simplification as the monthly-to-annual roll-up in the report)
 result["year"] = pd.to_datetime(result["date"]).dt.year
 daily = result.groupby(["island", "date"]).apply(
     lambda g: pd.Series({
@@ -150,7 +150,7 @@ daily = result.groupby(["island", "date"]).apply(
 ).reset_index()
 daily["ci95_pct_of_point"] = 1.96 * daily["sigma_kg_per_mwh"] / daily["point_ef_kg_per_mwh"] * 100.0
 daily.to_csv(OUT_DAILY, index=False)
-print(f"Wrote {len(daily):,} island-day rows -> {OUT_DAILY}")
+print(f"Wrote {len(daily):,} island-day rows to {OUT_DAILY}")
 
 # Annual roll-up from hourly (compare directly against the monthly-derived annual file)
 result["year"] = pd.to_datetime(result["date"]).dt.year
@@ -165,12 +165,12 @@ annual = result.groupby(["island", "year"]).apply(
 ).reset_index()
 annual["ci95_pct_of_point"] = 1.96 * annual["sigma_kg_per_mwh"] / annual["point_ef_kg_per_mwh"] * 100.0
 annual.to_csv(OUT_YEAR, index=False)
-print(f"Wrote {len(annual):,} island-year rows (from hourly) -> {OUT_YEAR}")
+print(f"Wrote {len(annual):,} island-year rows (from hourly) to {OUT_YEAR}")
 
 ni_hourly = result[(result["island"] == "NI") & (result["point_ef_kg_per_mwh"] > 0)]
 ni_daily = daily[(daily["island"] == "NI") & (daily["point_ef_kg_per_mwh"] > 0)]
 ni_annual_h = annual[annual["island"] == "NI"]
-print("\n=== Summary: NI, hourly-native uncertainty vs. the monthly-derived figures already in the report ===")
+print("\n=== Summary: NI, hourly-native uncertainty and the monthly-derived figures in the report ===")
 print(f"Hourly CI%: min={ni_hourly['ci95_pct_of_point'].min():.2f}% "
       f"max={ni_hourly['ci95_pct_of_point'].max():.2f}% mean={ni_hourly['ci95_pct_of_point'].mean():.2f}%  (n={len(ni_hourly):,} hours)")
 print(f"Daily CI%:  min={ni_daily['ci95_pct_of_point'].min():.2f}% "

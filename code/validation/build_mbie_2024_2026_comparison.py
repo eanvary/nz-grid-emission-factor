@@ -8,7 +8,7 @@ only the window differs.
 2024-2025 months: read from the released output/monthly_emission_factor_NI_SI.csv
 (NI+SI summed to national), which is already validated.
 2026 months (Jan-Aug): computed here from the 2026 raw files, using the
-pipeline's own generation reader, POC->island map and fuel/factor attribution
+pipeline's own generation reader, POC-to-island map and fuel/factor attribution
 (generation_pipeline/fuel_attribution.py: FuelAttribution.generation / .attribute,
 poc_island_map), so 2026 is on the same basis as the released 2024-2025 months.
 """
@@ -26,8 +26,8 @@ MBIE_PATH = ROOT / "generation_pipeline" / "MBIE_Quarterly_Electricity_Emissions
 
 NEW_MONTHS = ["202601", "202602", "202603", "202604", "202605", "202606", "202607", "202608"]
 
-# National monthly CO2/generation for the 8 new 2026 months (full scope,
-# matching D1's own method exactly -- no autoproducer exclusion).
+# National monthly CO2/generation for the 8 new 2026 months (full scope with
+# no autoproducer exclusion, as in the D1 method).
 poc_island = poc_island_map()
 fa = FuelAttribution()
 
@@ -62,7 +62,7 @@ dfm = xl.parse("Electricity EFs", header=None)
 q_labels = dfm.iloc[8, 1:].tolist()
 co2c, ch4c, n2oc = dfm.iloc[10, 1:].tolist(), dfm.iloc[11, 1:].tolist(), dfm.iloc[12, 1:].tolist()
 mb = pd.DataFrame({"qlabel": q_labels, "co2": co2c, "ch4": ch4c, "n2o": n2oc}).dropna(subset=["qlabel"])
-mb["mbie_kg_per_mwh"] = mb["co2"] + mb["ch4"] * 28 + mb["n2o"] * 265  # same units as D1's own script -- no scaling applied there either
+mb["mbie_kg_per_mwh"] = mb["co2"] + mb["ch4"] * 28 + mb["n2o"] * 265  # same units as the D1 script, which applies no scaling either
 
 comp = qagg.merge(mb, on="qlabel", how="inner").sort_values("quarter")
 comp["diff_pct"] = (comp["ours_kg_per_mwh"] - comp["mbie_kg_per_mwh"]) / comp["mbie_kg_per_mwh"] * 100
@@ -70,7 +70,7 @@ comp["diff_pct"] = (comp["ours_kg_per_mwh"] - comp["mbie_kg_per_mwh"]) / comp["m
 r = comp["ours_kg_per_mwh"].corr(comp["mbie_kg_per_mwh"])
 mad = comp["diff_pct"].abs().mean()
 
-print(f"\n=== 2024 Q1 -- 2026 Q1 comparison (n={len(comp)} quarters) ===")
+print(f"\n=== 2024 Q1 to 2026 Q1 comparison (n={len(comp)} quarters) ===")
 print(comp[["qlabel", "ours_kg_per_mwh", "mbie_kg_per_mwh", "diff_pct"]].round(2).to_string(index=False))
 print(f"\nPearson r = {r:.4f}")
 print(f"Mean |diff| = {mad:.2f}%")

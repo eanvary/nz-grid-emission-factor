@@ -1,69 +1,67 @@
 """
-Category G2 uncertainty quantification (IPCC Approach 1 / analytic error propagation)
+Category G2 uncertainty quantification (IPCC Approach 1, analytic error propagation)
 for the NI/SI generation-side monthly emission factor.
 
-Input (read-only, no pipeline output touched):
+Input (read-only; no pipeline output is modified):
     output/monthly_fuel_mix_NI_SI.csv
         columns: island, year, month, fuel_code, gen_mwh, co2_kg, share_pct,
                  weighted_ef_kg_per_MWh
-    (this is the finest resolution at which a PER-FUEL generation split is
-    published by this pipeline; the published hourly table
+    (This is the finest resolution at which the pipeline publishes a per-fuel
+    generation split. The published hourly table
     output/hourly_emission_factor_NI_SI.csv carries only the blended
     total EF, with no per-fuel breakdown, so a per-fuel uncertainty
     propagation cannot be built at hourly resolution from the published
     outputs alone. build_hourly_fuel_mix.py builds the per-fuel hourly table.)
 
-Method: IPCC Approach 1 (analytic/first-order error propagation), per
+Method: IPCC Approach 1 (analytic, first-order error propagation), per
 IPCC (2000) Good Practice Guidance and Uncertainty Management in National
 Greenhouse Gas Inventories, Chapter 6, and IPCC (2006) 2019 Refinement Vol 1
-Ch 3. Both PDFs are archived in ../validation_references/.
+Ch 3.
 
 For each island-month, the blended EF is a generation-weighted sum of
 per-fuel EFs:  EF = sum_i ( w_i * ef_i )  where w_i = gen_i / total_gen.
-Treating each fuel's EF uncertainty as independent (a disclosed
-simplification -- fuels are physically different combustion processes,
-so this is more defensible than assuming correlation, but no country-level
-correlation study exists to test it), first-order propagation gives:
+Each fuel's EF uncertainty is treated as independent. This is a stated
+simplification: fuels are physically different combustion processes, so
+independence is more defensible than correlation, but no country-level
+correlation study exists to test it. First-order propagation then gives:
 
     Var(EF) = sum_i ( w_i^2 * sigma_i^2 )
 
 sigma_i is derived from IPCC 2006 Guidelines for National Greenhouse Gas
 Inventories, Volume 2 (Energy), Chapter 2 (Stationary Combustion), Table 2.2
 "Default emission factors for stationary combustion in the energy
-industries" (kg CO2/TJ, net calorific basis) -- archived locally at
-../validation_references/IPCC2006_Vol2_Ch2_StationaryCombustion.pdf, page 16.
-That table gives a Default/Lower/Upper triplet per fuel; this script reads
-off the Lower-Upper range AS PRINTED IN THE TABLE and uses
+industries" (kg CO2/TJ, net calorific basis), page 16.
+That table gives a Default/Lower/Upper triplet per fuel. This script reads
+the Lower-Upper range as printed in the table and uses
 avg(|Default-Lower|, |Upper-Default|) / Default as a relative
-1-sigma-equivalent half-width. This is a disclosed simplification: the
-chapter's own text (Section 2.4.1) does not label the Table 2.2 range as a
-literal 95% CI or literal 1-sigma -- it separately cites an IPCC 1996
-default of ~7% overall CO2 EF uncertainty, and Table 2.13 (country-specific
+1-sigma-equivalent half-width. This is a stated simplification: the
+chapter's text (Section 2.4.1) does not label the Table 2.2 range as a
+literal 95% CI or a literal 1-sigma. It separately cites an IPCC 1996
+default of about 7% overall CO2 EF uncertainty, and Table 2.13 (country-specific
 studies) reports 95% CI ranges of +-0.5% to +-7% depending on fuel and
-country. The Table-2.2-derived per-fuel figures used here (~2-4% for gas/
-coal/diesel, ~16% for wood) sit inside that same 0.5-7% band for the
-fossil fuels and are of a similar order to the wider biomass literature
-range the chapter itself flags as less well measured -- so the method is
-internally consistent with the chapter's own stated uncertainty ranges,
-not an invented number.
+country. The Table-2.2-derived per-fuel figures used here (about 2-4% for gas,
+coal and diesel, about 16% for wood) sit inside that 0.5-7% band for the
+fossil fuels. The wood figure is of a similar order to the wider biomass
+literature range that the chapter flags as less well measured. The method is
+therefore consistent with the chapter's own stated uncertainty ranges.
 
-Fuel coverage (disclosed, not forced):
-  - CLG (coal)      -> Table 2.2 "Sub-Bituminous Coal"   96100 [92800-100000] kg/TJ
-  - GAS (nat. gas)   -> Table 2.2 "Natural Gas"           56100 [54300-58300]  kg/TJ
-  - DSL (diesel)     -> Table 2.2 "Gas/Diesel Oil"        74100 [72600-74800]  kg/TJ
-  - WOOD (wood/waste)-> Table 2.2 "Wood/Wood Waste"      112000 [95000-132000] kg/TJ
-  - HYD, WIN, SOL    -> zero combustion, EF and uncertainty both exactly zero.
-  - GEO (geothermal) -> EXCLUDED from the quantified band. IPCC Vol 2 Ch 2
-    covers FUEL COMBUSTION only; geothermal power-station CO2 originates
-    from dissolved gas in the geothermal fluid, not fuel combustion, and is
-    not covered by any table in this chapter. No IPCC-cited uncertainty
-    range for it was found in the downloaded references. Rather
-    than invent one, GEO's generation share is reported separately as
-    "unquantified coverage". run_ipcc_uncertainty_full_coverage.py adds
+Fuel coverage (stated, not forced):
+  - CLG (coal):        Table 2.2 "Sub-Bituminous Coal"   96100 [92800-100000] kg/TJ
+  - GAS (nat. gas):    Table 2.2 "Natural Gas"           56100 [54300-58300]  kg/TJ
+  - DSL (diesel):      Table 2.2 "Gas/Diesel Oil"        74100 [72600-74800]  kg/TJ
+  - WOOD (wood/waste): Table 2.2 "Wood/Wood Waste"      112000 [95000-132000] kg/TJ
+  - HYD, WIN, SOL:     zero combustion; EF and uncertainty both exactly zero.
+  - GEO (geothermal):  excluded from the quantified band. IPCC Vol 2 Ch 2
+    covers fuel combustion only. Geothermal power-station CO2 comes from
+    dissolved gas in the geothermal fluid, not from fuel combustion, and no
+    table in this chapter covers it. No IPCC-cited uncertainty range for it
+    was found in the downloaded references. GEO's generation share is
+    therefore reported separately as "unquantified coverage" rather than
+    given an invented range. run_ipcc_uncertainty_full_coverage.py adds
     geothermal from station-level data.
-  - ELE              -> EXCLUDED, same reasoning; also negligible share
-    (<0.2% in every island-month checked), so the effect on the reported
-    coverage gap is immaterial regardless.
+  - ELE:               excluded for the same reason. Its share is also
+    negligible (<0.2% in every island-month checked), so the effect on the
+    reported coverage gap is immaterial.
 """
 import csv
 import math
@@ -76,7 +74,7 @@ OUT = Path(__file__).resolve().parent / "ipcc_uncertainty_by_island_month.csv"
 OUT_ANNUAL = Path(__file__).resolve().parent / "ipcc_uncertainty_by_island_year.csv"
 
 # IPCC 2006 GL Vol 2 Ch 2 Table 2.2 (kg CO2/TJ net calorific value), Energy Industries.
-# (default, lower, upper) -- read directly off the downloaded PDF, page 16.
+# (default, lower, upper), read directly from the PDF, page 16.
 IPCC_TABLE_2_2 = {
     "CLG":  (96100.0, 92800.0, 100000.0),   # Sub-Bituminous Coal
     "GAS":  (56100.0, 54300.0, 58300.0),    # Natural Gas
@@ -98,17 +96,17 @@ REL_SIGMA = {f: rel_half_width(*v) for f, v in IPCC_TABLE_2_2.items()}
 
 
 def load_monthly_fuel_mix(path):
-    rows = defaultdict(list)  # (island, year, month) -> [ {fuel_code, gen_mwh, ef} ]
+    rows = defaultdict(list)  # {(island, year, month): [{fuel_code, gen_mwh, ef}]}
     with open(path, newline="") as fh:
         r = csv.DictReader(fh)
         for row in r:
             key = (row["island"], int(row["year"]), int(row["month"]))
             gen = float(row["gen_mwh"])
             ef_raw = row["weighted_ef_kg_per_MWh"]
-            # A blank EF occurs only when gen_mwh is exactly 0 (0/0, undefined) --
-            # verified true for every blank row in this file before relying on it;
-            # such a row contributes nothing to the weighted sums below regardless
-            # of what ef is set to, since its weight (gen/total) is zero.
+            # A blank EF occurs only when gen_mwh is exactly 0 (0/0, undefined);
+            # this holds for every blank row in this file. Such a row contributes
+            # nothing to the weighted sums below, whatever ef is set to, since its
+            # weight (gen/total) is zero.
             if ef_raw == "":
                 assert gen == 0.0, (
                     f"unexpected blank EF with nonzero gen: {row}"
@@ -127,7 +125,7 @@ def load_monthly_fuel_mix(path):
 
 
 def propagate(fuels):
-    """One island-month's list of per-fuel rows -> uncertainty summary dict."""
+    """Uncertainty summary dict for one island-month's list of per-fuel rows."""
     total_gen = sum(f["gen_mwh"] for f in fuels)
     if total_gen <= 0:
         return None
@@ -147,8 +145,8 @@ def propagate(fuels):
             excluded_gen += f["gen_mwh"]
             continue
         if code not in REL_SIGMA:
-            # Unrecognised fuel code not covered by this script's mapping --
-            # do NOT silently assume zero uncertainty; treat as excluded/flagged.
+            # A fuel code outside this script's mapping is treated as excluded
+            # and flagged, not given zero uncertainty.
             excluded_gen += f["gen_mwh"]
             continue
         sigma_i = f["ef"] * REL_SIGMA[code]
@@ -197,11 +195,11 @@ def main():
         for row in monthly_out:
             w.writerow(row)
 
-    # Annual, energy-weighted roll-up per island (re-propagate from monthly
-    # variances treating months as independent -- another disclosed
-    # simplification; same-year months share the same fleet, so this likely
-    # UNDERSTATES correlation and therefore may understate the true annual
-    # band slightly. Flagged, not hidden.)
+    # Annual, energy-weighted roll-up per island, re-propagated from monthly
+    # variances with months treated as independent. This is another stated
+    # simplification: months of the same year share the same fleet, so it
+    # likely understates their correlation and may understate the true annual
+    # band slightly.
     annual = defaultdict(list)
     for row in monthly_out:
         annual[(row["island"], row["year"])].append(row)
@@ -238,8 +236,8 @@ def main():
         for row in annual_out:
             w.writerow(row)
 
-    print(f"Wrote {len(monthly_out)} island-month rows -> {OUT}")
-    print(f"Wrote {len(annual_out)} island-year rows -> {OUT_ANNUAL}")
+    print(f"Wrote {len(monthly_out)} island-month rows to {OUT}")
+    print(f"Wrote {len(annual_out)} island-year rows to {OUT_ANNUAL}")
 
     # Console summary
     ni = [r for r in annual_out if r["island"] == "NI"]

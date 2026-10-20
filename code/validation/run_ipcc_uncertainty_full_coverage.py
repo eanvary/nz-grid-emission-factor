@@ -3,25 +3,24 @@ Adds geothermal (24-48% of NI generation) to the uncertainty band. IPCC Ch.2 doe
 cover geothermal-fluid emissions, so the source is station data from McLean, K. &
 Richardson, I. (2019), "Greenhouse Gas Emissions
 From Geothermal Power Stations: Context and Opportunities", New Zealand Geothermal
-Association -- 12 real NZ geothermal stations, 2018, MW and gCO2eq/kWh each (archived at
-../validation_references/McLean_NZGA_GeothermalGHG.pdf). This script:
+Association: 12 NZ geothermal stations, 2018, MW and gCO2eq/kWh each. Steps:
 
-1. Recomputes the MW-weighted mean from their own per-station table as a cross-check
-   (must reproduce their own published "76" before the derived std is trusted).
-2. Computes the MW-weighted relative std across the 12 stations -- same cross-sectional
-   fleet-spread method already used for GAS (build_fleet_uncertainty.py), applied here to
-   an external field study instead of this project's own single-value plant register.
-3. Adds GEO to REL_SIGMA and re-runs the full propagation (monthly, annual, hourly),
-   alongside (not replacing) the existing GAS-only fleet-adjusted run.
-4. Separately, as its own distinct, non-conflated observation, reports the geothermal EFs
-   in this project's plant register as the pipeline loads it
+1. Recompute the MW-weighted mean from their per-station table as a cross-check
+   (it must reproduce their published "76" before the derived std is used).
+2. Compute the MW-weighted relative std across the 12 stations, with the cross-sectional
+   fleet-spread method of build_fleet_uncertainty.py, applied here to an external field
+   study instead of this project's single-value plant register.
+3. Add GEO to REL_SIGMA and re-run the full propagation (monthly, annual, hourly),
+   alongside (not replacing) the GAS-only fleet-adjusted run.
+4. Separately, as a distinct observation, report the geothermal EFs in this project's
+   plant register as the pipeline loads it
    (generation_pipeline/fuel_attribution.py, FuelAttribution().reg). The raw register
    gives every geothermal POC one flat value (99.996 kg/MWh, identical
-   HeatRate/EmissionsFactor for all registered POCs), ~24% above McLean &
+   HeatRate/EmissionsFactor for all registered POCs), about 24% above McLean &
    Richardson's MW-weighted mean (76 gCO2/kWh). The module's register copy carries the
    per-station correction (geothermal_ef_correction.py), and the pipeline's factors come
-   from the NZGA station intensities (FuelAttribution().nzga), so the observation prints
-   the corrected per-POC values and the NZGA fleet average. This is separate from the
+   from the NZGA station intensities (FuelAttribution().nzga). The observation therefore
+   prints the corrected per-POC values and the NZGA fleet average. This is separate from the
    EDGS projection pipeline's decision not to use this source as a Check-2 gap-filler
    (a different pipeline and a different use of the data).
 """
@@ -61,26 +60,26 @@ geo_rel_sigma = geo_w_std_gco2 / geo_w_mean_gco2
 
 print("=== Step 1: reproduce McLean & Richardson's own published weighted average (cross-check) ===")
 print(f"  Computed: {geo_w_mean_gco2:.2f} gCO2/kWh   |   Published: 76 gCO2/kWh   |   "
-      f"{'MATCH' if abs(geo_w_mean_gco2-76)<0.5 else 'MISMATCH -- STOP, do not trust further'}")
-print(f"\n=== Step 2: MW-weighted relative uncertainty across the real 12-station fleet ===")
+      f"{'MATCH' if abs(geo_w_mean_gco2-76)<0.5 else 'MISMATCH: stop, do not use further'}")
+print(f"\n=== Step 2: MW-weighted relative uncertainty across the 12-station fleet ===")
 print(f"  weighted std = {geo_w_std_gco2:.2f} gCO2/kWh, relative sigma = {geo_rel_sigma*100:.2f}%")
-print(f"  (driven by two outlier fields: Ohaaki 341, Ngawha 304 gCO2/kWh -- vs. Wairakei's 21)")
+print(f"  (driven by two outlier fields, Ohaaki 341 and Ngawha 304 gCO2/kWh, against Wairakei's 21)")
 
 geo_df.to_csv(HERE / "geothermal_mclean_richardson_stations.csv", index=False)
 
 fa = FuelAttribution()
 geo_pocs = fa.reg[fa.reg["FuelCode"] == "GEO"]
 distinct_ef = geo_pocs["EF_kg_per_MWh"].dropna().unique()
-print(f"\n=== Separate observation: this project's OWN geothermal point-EF assumption ===")
+print(f"\n=== Separate observation: this project's geothermal point-EF assumption ===")
 print(f"  {geo_pocs['PointOfConnectionCode'].nunique()} distinct POCs registered, "
       f"{len(distinct_ef)} distinct EF value(s) in the pipeline's register copy: {sorted(distinct_ef)}")
 flat_val = float(distinct_ef[0]) if len(distinct_ef) == 1 else None
 if flat_val:
     diff_pct = (flat_val - geo_w_mean_gco2) / geo_w_mean_gco2 * 100
-    print(f"  This project uses ONE flat value ({flat_val:.3f} kg/MWh = {flat_val:.1f} gCO2/kWh) "
+    print(f"  This project uses one flat value ({flat_val:.3f} kg/MWh = {flat_val:.1f} gCO2/kWh) "
           f"for every geothermal POC.")
-    print(f"  McLean & Richardson's real MW-weighted mean: {geo_w_mean_gco2:.2f} gCO2/kWh.")
-    print(f"  Difference: this project's flat value is {diff_pct:+.1f}% vs. the real weighted mean.")
+    print(f"  McLean & Richardson's MW-weighted mean: {geo_w_mean_gco2:.2f} gCO2/kWh.")
+    print(f"  Difference: this project's flat value is {diff_pct:+.1f}% relative to the weighted mean.")
     print(f"  (Observation only, not a change to the pipeline.)")
 else:
     print(f"  Per-POC values (geothermal_ef_correction.py), not one flat value: "
@@ -90,7 +89,7 @@ if fa.nzga:
     print(f"  Released factors use NZGA station intensities; NZGA MW-weighted average by year (g/kWh): "
           + ", ".join(f"{y}: {v:.1f}" for y, v in sorted(nz.items())))
 
-# Re-run propagation, monthly + hourly, with GEO included in REL_SIGMA.
+# Re-run propagation, monthly and hourly, with GEO included in REL_SIGMA.
 IPCC_TABLE_2_2 = {
     "CLG": (96100.0, 92800.0, 100000.0), "GAS": (56100.0, 54300.0, 58300.0),
     "DSL": (74100.0, 72600.0, 74800.0), "WOOD": (112000.0, 95000.0, 132000.0),
@@ -150,14 +149,14 @@ def propagate_monthly(fuel_mix_path, rel_sigma):
 
 
 monthly_path = HERE / "monthly_fuel_mix_uncertainty.csv"  # GEO split into GEO / GEO_PROXY (build_geo_uncertainty_inputs.py)
-print("\nRunning monthly propagation, full coverage (GAS fleet-adjusted + GEO added)...")
+print("\nRunning monthly propagation, full coverage (GAS fleet-adjusted, GEO added)...")
 monthly_full = propagate_monthly(monthly_path, REL_SIGMA_FULL)
 monthly_full.to_csv(HERE / "ipcc_uncertainty_by_island_month_full_coverage.csv", index=False)
 
 ni_full = monthly_full[monthly_full.island == "NI"]
-print(f"NI monthly CI% -- full coverage: min={ni_full.ci95_pct_of_point.min():.2f}% "
+print(f"NI monthly CI%, full coverage: min={ni_full.ci95_pct_of_point.min():.2f}% "
       f"max={ni_full.ci95_pct_of_point.max():.2f}% mean={ni_full.ci95_pct_of_point.mean():.2f}%")
-print(f"NI monthly coverage% -- full: min={ni_full.quantified_coverage_pct.min():.1f}% "
+print(f"NI monthly coverage%, full: min={ni_full.quantified_coverage_pct.min():.1f}% "
       f"max={ni_full.quantified_coverage_pct.max():.1f}%")
 
 # Annual roll-up
@@ -175,9 +174,9 @@ for (island, year), g in monthly_full.groupby(["island", "year"]):
 annual_full = pd.DataFrame(annual_rows)
 annual_full.to_csv(HERE / "ipcc_uncertainty_by_island_year_full_coverage.csv", index=False)
 ni_annual_full = annual_full[annual_full.island == "NI"]
-print(f"\nNI annual CI% -- full coverage: min={ni_annual_full.ci95_pct_of_point.min():.2f}% "
+print(f"\nNI annual CI%, full coverage: min={ni_annual_full.ci95_pct_of_point.min():.2f}% "
       f"max={ni_annual_full.ci95_pct_of_point.max():.2f}%")
-print(f"NI annual coverage% -- full: min={ni_annual_full.quantified_coverage_pct.min():.1f}% "
+print(f"NI annual coverage%, full: min={ni_annual_full.quantified_coverage_pct.min():.1f}% "
       f"max={ni_annual_full.quantified_coverage_pct.max():.1f}%")
 
 # Hourly (vectorised)
@@ -217,9 +216,9 @@ if hourly_path.exists():
     out.to_csv(HERE / "ipcc_uncertainty_by_island_hour_full_coverage.csv", index=False)
 
     ni_h_full = out[(out.island == "NI") & (out.point_ef_kg_per_mwh > 0)]
-    print(f"NI hourly CI% -- full coverage: min={ni_h_full.ci95_pct_of_point.min():.2f}% "
+    print(f"NI hourly CI%, full coverage: min={ni_h_full.ci95_pct_of_point.min():.2f}% "
           f"max={ni_h_full.ci95_pct_of_point.max():.2f}% mean={ni_h_full.ci95_pct_of_point.mean():.2f}%")
-    print(f"NI hourly coverage% -- full: min={ni_h_full.quantified_coverage_pct.min():.1f}% "
+    print(f"NI hourly coverage%, full: min={ni_h_full.quantified_coverage_pct.min():.1f}% "
           f"max={ni_h_full.quantified_coverage_pct.max():.1f}%")
     print(f"Wrote ipcc_uncertainty_by_island_hour_full_coverage.csv ({len(out):,} rows)")
 else:

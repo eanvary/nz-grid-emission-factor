@@ -1,14 +1,14 @@
 """
-Systematic reliability assessment of the 2015-2025 NI/SI hourly grid emission
-factor database. Read-only: touches no pipeline output. Runs every check
-described in DATA_QUALITY_ASSESSMENT_FRAMEWORK.md and writes a single
-plain-text report (output/DATA_QUALITY_ASSESSMENT_RESULTS.txt) plus a
-machine-readable summary (output/DATA_QUALITY_ASSESSMENT_RESULTS.csv, one row
-per check: id, category, description, status, detail).
+Reliability assessment of the 2015-2025 NI/SI hourly grid emission factor
+database. Read-only: no pipeline output is modified. Every data quality check
+is run, and the results go to a plain-text report
+(output/DATA_QUALITY_ASSESSMENT_RESULTS.txt) and a machine-readable summary
+(output/DATA_QUALITY_ASSESSMENT_RESULTS.csv, one row per check: id, category,
+description, status, detail).
 
 Categories: A completeness, B internal consistency, C physical plausibility,
 D external cross-validation, E temporal integrity, F provenance, G outliers,
-H consumption-side & inter-island transfer.
+H consumption side and inter-island transfer.
 """
 import calendar
 import re
@@ -17,8 +17,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).parent.parent  # repo root (this script lives in generation_pipeline/, one level down)
-SCRIPT_DIR = Path(__file__).parent  # generation_pipeline/ itself -- for files that moved alongside this script
+ROOT = Path(__file__).parent.parent  # project root: the folder above generation_pipeline/
+SCRIPT_DIR = Path(__file__).parent  # generation_pipeline/ itself, for input files kept next to this script
 OUT_DIR = ROOT / "output"
 GEN_DIR = ROOT / "EA_EMI_raw"
 
@@ -31,14 +31,14 @@ def record(check_id, category, description, status, detail=""):
     print(f"[{status:4s}] {check_id} ({category}) {description}" + (f": {detail}" if detail else ""))
 
 
-# Scope (years, month coverage, leap years) is derived from whatever raw files are
-# actually on disk, not hardcoded to 2015-2025 -- this project's raw-data folder is
-# a living series (extended to 2026-08 for the em6 cross-check, docs/validation/
-# build_2026_extension_and_em6_crosscheck.py), and a hardcoded "11 years / 132 months"
-# expectation would fail on any legitimate extension, indistinguishable from a real
-# gap. The expected month set is therefore the contiguous range from the earliest to
-# the latest month found (so a real gap in the middle of the series still fails),
-# and every downstream day/hour/year count derives from that same set.
+# Scope (years, month coverage, leap years) is derived from the raw files on disk,
+# not hardcoded to 2015-2025. The raw-data folder is a living series (extended to
+# 2026-08 for the em6 cross-check in code/validation/build_2026_extension_and_em6_crosscheck.py).
+# A hardcoded "11 years / 132 months" expectation would fail on any legitimate
+# extension, and that failure could not be told apart from a real gap. The expected
+# month set is therefore the contiguous range from the earliest to the latest month
+# found, so a gap inside the series still fails. Every downstream day, hour and year
+# count derives from that same set.
 gen_files = sorted(GEN_DIR.glob("*_Generation_MD.csv"))
 hvdc_files = sorted(GEN_DIR.glob("*_HVDC_flows.csv"))
 gen_months = {f.name[:6] for f in gen_files}
@@ -73,9 +73,8 @@ tiny_hvdc = [f.name for f in hvdc_files if f.stat().st_size < 1024]
 record("A3", "Completeness", "No suspiciously small (<1KB, likely truncated/error-page) raw files",
        "PASS" if not (tiny_gen or tiny_hvdc) else "FAIL", f"{tiny_gen + tiny_hvdc}")
 
-# Real days-in-month for every covered month (not a fixed 365/366 x full-years
-# formula), so a partial trailing/leading year (e.g. 2026 Jan-Aug only) is handled
-# correctly instead of assuming every listed year is complete.
+# Days in each covered month, not a fixed 365/366 x full years, so a partial
+# leading or trailing year (e.g. 2026 Jan-Aug only) is counted correctly.
 days_per_month = {}
 for ym in expected_months:
     yy, mm = int(ym[:4]), int(ym[4:6])
@@ -159,10 +158,10 @@ record("B6", "Consistency", "HVDC directional flow components are non-negative (
 
 # B7: the zone (sub-island) database and this island database share generation and
 # factors (fuel_attribution.py), so zone generation and CO2 summed to each island and
-# month must equal the monthly table. Database v1.0 failed this by up to 22% of annual
-# CO2 (blended_ef dropped Huntly 1-4's gas share). Source: the zone build's monthly table,
-# derived from output/zone_historical/zone_ef_TP_2015_2025.parquet (Generation_MD with fills,
-# genmd_MWh and genmd_MWh x local_intensity) by edgs_pipeline/diag_zh1d_nsp_gapfill.py.
+# month must equal the monthly table. A blended factor that drops Huntly 1-4's gas share
+# misses by up to 22% of annual CO2. Source: the zone build's monthly table, derived from
+# output/zone_historical/zone_ef_TP_2015_2025.parquet (Generation_MD with fills,
+# genmd_MWh and genmd_MWh x local_intensity).
 ZONE_TOL = 1e-4  # 0.01%
 zone_path = ROOT / "output" / "zone_historical" / "zone_generation_emissions_monthly_2015_2025.csv"
 if not zone_path.exists():
@@ -203,14 +202,14 @@ record("C2", "Plausibility", "No negative EF values, hourly table",
        "PASS" if neg_ef == 0 else "FAIL", f"{neg_ef} negative rows")
 
 # Coal's own SCD2 EF (994 kg/MWh, Huntly Rankine) is the highest realistic
-# single-fuel value in this fleet; anything above ~1100 kg/MWh (comfortable
-# margin above even a poor black-coal plant) signals a unit or join error.
+# single-fuel value in this fleet. Anything above about 1100 kg/MWh (a margin
+# above even a poor black-coal plant) signals a unit or join error.
 max_ef = hourly["EF_kg_per_MWh"].max()
 over_bound = (hourly["EF_kg_per_MWh"] > 1100).sum()
 record("C3", "Plausibility", "No EF values exceed 1100 kg/MWh (coal-plant physical ceiling + margin)",
        "PASS" if over_bound == 0 else "FAIL", f"max observed={max_ef:.1f} kg/MWh, {over_bound} rows over bound")
 
-# NZ national annual generation has been ~40-44 TWh/yr throughout 2015-2025
+# NZ national annual generation has been about 40-44 TWh/yr throughout 2015-2025
 # (public record); island split roughly NI 22-24 TWh, SI 16-19 TWh.
 bad_ni = annual[(annual.island == "NI") & ~annual["total_gen_MWh"].between(15e6, 28e6)]
 bad_si = annual[(annual.island == "SI") & ~annual["total_gen_MWh"].between(12e6, 24e6)]
@@ -327,9 +326,9 @@ record("D2", "External-validation",
 # D3: fuel-level check against MBIE, cogeneration excluded (MBIE note 2). MBIE is a
 # validation target only; nothing here feeds back into the pipeline.
 # Thresholds: annual |gap| < 10% in every full year; quarterly r > 0.95.
-#   Coal and geothermal: metered emissions vs MBIE "Electricity CO2-e" Excel rows 13 and 16.
-#   Gas: a FUEL-QUANTITY test, pipeline implied non-cogeneration gas (PJ = gas CO2 / MfE gas factor)
-#   vs MBIE gas data tables "Electricity Generation" (Annual_PJ row 65, Quarterly_PJ row 27; saved
+#   Coal and geothermal: metered emissions against MBIE "Electricity CO2-e" Excel rows 13 and 16.
+#   Gas: a fuel-quantity test, pipeline implied non-cogeneration gas (PJ = gas CO2 / MfE gas factor)
+#   against MBIE gas data tables "Electricity Generation" (Annual_PJ row 65, Quarterly_PJ row 27; saved
 #   as MBIE_gas_electricity_PJ_2026Q2.csv). MBIE's gas emissions row also covers most cogeneration
 #   gas (about 75-93% of its Cogeneration row), which metered exports cannot match, so the gas
 #   emissions comparison is kept as INFO only.
@@ -427,9 +426,9 @@ record("E6", "Temporal", "No POC has a zero/missing month between two months wit
 print("\n" + "=" * 70 + "\nE. Temporal integrity\n" + "=" * 70)
 
 # NZ's DST transitions are month-fixed (spring-forward late September, fall-back
-# first Sunday of April -- see E3), so a year only contributes an expected
-# spring-forward NaN hour if its September is actually within the covered range
-# (a partial trailing/leading year, e.g. 2026 Jan-Aug, correctly contributes none).
+# first Sunday of April; see E3). A year contributes an expected spring-forward
+# NaN hour only if its September lies within the covered range. A partial leading
+# or trailing year (e.g. 2026 Jan-Aug) contributes none.
 years_with_september = {y for y in YEARS if f"{y}09" in expected_months}
 expected_nan_hours = len(years_with_september) * 2  # x2 islands
 nan_hours = hourly["EF_kg_per_MWh"].isna().sum()
@@ -440,8 +439,8 @@ record("E1", "Temporal", "DST spring-forward NaN-hour count matches expected (1/
 
 for y in YEARS:
     ni_days = daily[(daily.island == "NI") & (daily.year == y)].shape[0]
-    # Real day count for whichever months of this year are actually covered (not a
-    # blanket 365/366) -- correct for a partial trailing/leading year too.
+    # Day count of the covered months of this year, not a blanket 365/366, so a
+    # partial leading or trailing year is also counted correctly.
     expected = sum(days for ym, days in days_per_month.items() if ym.startswith(str(y)))
     if ni_days != expected:
         record(f"E2-{y}", "Temporal", f"Day count correct for {y} (in-scope months only)", "FAIL",
@@ -528,7 +527,7 @@ record("H4", "Consumption", "National energy conservation holds exactly at hourl
 
 # NI's own generation is dirtier than what it actually consumes (it imports
 # clean SI hydro), so consumption EF must sit below generation EF in every
-# single year -- not just on average.
+# year, not only on average.
 ni_below = (cons_annual["NI_EF_consumption"] <= cons_annual["NI_EF_generation"]).all()
 record("H5", "Consumption", "NI consumption-based EF <= NI generation-based EF in every year (imports dilute, never inflate)",
        "PASS" if ni_below else "FAIL",
@@ -536,34 +535,33 @@ record("H5", "Consumption", "NI consumption-based EF <= NI generation-based EF i
        f"{dict(zip(cons_annual['year'], (cons_annual['NI_EF_consumption'] <= cons_annual['NI_EF_generation'])))}")
 
 # SI's own generation-side EF is 0 in this dataset (no SI thermal plant), so
-# any nonzero SI consumption EF must come entirely from imported NI power --
-# it should correlate with dry years (low SI hydro surplus -> more NI exports
-# south), the same years already flagged by the generation-side analysis.
+# any nonzero SI consumption EF comes entirely from imported NI power. It should
+# correlate with dry years (low SI hydro surplus, so more NI exports south),
+# the years already flagged by the generation-side analysis.
 hvdc_annual_h = pd.read_csv(CONS_DIR / "annual_hvdc_transfer_NI_SI.csv")
-dry_years = {2017, 2021, 2024}  # already identified by generation-side + HVDC analysis
+dry_years = {2017, 2021, 2024}  # identified by the generation-side and HVDC analysis
 si_ef_dry = cons_annual[cons_annual["year"].isin(dry_years)]["SI_EF_consumption"].mean()
 si_ef_other = cons_annual[~cons_annual["year"].isin(dry_years)]["SI_EF_consumption"].mean()
 record("H6", "Consumption", "SI consumption EF is higher in already-identified dry years than other years (convergent evidence)",
        "PASS" if si_ef_dry > si_ef_other else "WARN",
        f"dry-year mean={si_ef_dry:.2f} kg/MWh vs other-year mean={si_ef_other:.2f} kg/MWh")
 
-# H7: cross-script reconciliation. The daily/hourly script and the monthly/annual
-# script are two separate scripts (consumption_pipeline/build_consumption_ef_*.py),
-# each independently computing the average-mix balance at its own resolution --
-# by design (per NI_SI_Consumption_Emission_Factor_Methodology.docx Section 4:
-# "applied independently at four resolutions... not by averaging a coarser series
-# down"). Energy (MWh) is resolution-independent (pure sums, no EF multiplication),
-# so daily-summed-to-month MUST equal the monthly script's own MWh exactly -- and
-# does. CO2 (kg) at ISLAND level is NOT resolution-independent: the emissions-
-# balance formula multiplies transfer volume by that period's *own* average
-# EF_generation, so Sum_days(transfer_day x EF_day) != transfer_month x EF_month
-# whenever transfer and EF co-vary within the month (they do). This is an inherent
-# property of the average-mix assumption applied independently per resolution, NOT
-# a computation bug -- confirmed algebraically below: NI's discrepancy and SI's
-# discrepancy are exact negatives of each other every month (to float precision),
-# because the *national* total (which is all the transfer terms ever really
-# guarantee) is a pure identity that cancels regardless of which EF was used, while
-# the ISLAND split of that total is inherently resolution-dependent.
+# H7: cross-script reconciliation. The daily/hourly and monthly/annual consumption
+# scripts (consumption_pipeline/build_consumption_ef_*.py) each compute the
+# average-mix balance at their own resolution. This is by design: the method
+# (Section 4 of the consumption methodology) applies the balance independently at
+# four resolutions rather than averaging a coarser series down. Energy (MWh) is
+# resolution-independent (pure sums, no EF multiplication), so daily MWh summed to
+# the month must equal the monthly script's MWh exactly, and it does. Island-level
+# CO2 (kg) is not resolution-independent. The emissions balance multiplies transfer
+# volume by that period's own average EF_generation, so
+# Sum_days(transfer_day x EF_day) != transfer_month x EF_month whenever transfer and
+# EF co-vary within the month (they do). This follows from the average-mix
+# assumption applied per resolution; it is not a computation bug. The check below
+# confirms it algebraically: NI's and SI's discrepancies are exact negatives of each
+# other every month (to float precision). The national total is an identity in which
+# the transfer terms cancel whatever EF is used. Only its island split depends on
+# resolution.
 d2m = daily_c.copy()
 d2m["year"] = pd.to_datetime(d2m["date"]).dt.year
 d2m["month"] = pd.to_datetime(d2m["date"]).dt.month
@@ -583,11 +581,11 @@ ni_diff_abs = chk_h7["NI_CO2_d"] - chk_h7["NI_CO2_consumed_kg"]
 si_diff_abs = chk_h7["SI_CO2_d"] - chk_h7["SI_CO2_consumed_kg"]
 cancel_check = (ni_diff_abs + si_diff_abs).abs().max()
 record("H7b", "Consumption",
-       "Island-level CO2: daily-summed-to-month vs monthly-direct DIFFERS (expected -- resolution-dependent average-mix EF, not a bug)",
+       "Island-level CO2: daily-summed-to-month vs monthly-direct DIFFERS (expected; resolution-dependent average-mix EF, not a bug)",
        "INFO",
        f"NI |diff| mean={ni_co2_diff_pct.abs().mean():.3f}%, max={ni_co2_diff_pct.abs().max():.3f}% of monthly total "
        f"({len(chk_h7)} months); confirmed NI_diff = -SI_diff to float precision every month "
-       f"(max |NI_diff+SI_diff|={cancel_check:.2e} kg) -- i.e. the NATIONAL total is exactly "
+       f"(max |NI_diff+SI_diff|={cancel_check:.2e} kg); i.e. the NATIONAL total is exactly "
        f"resolution-independent (proven algebraically: transfer terms cancel identically "
        f"regardless of which period's EF was used), only the NI/SI SPLIT of it moves.")
 

@@ -1,26 +1,26 @@
 """
-Phase 3: four-tier error decomposition + load-shape + scenario/
+Phase 3: four-tier error decomposition, with load-shape and scenario/
 start-year sensitivity.
 
 Design choices:
-  1. Headline series = generation-side EF (NI). Consumption-side (gross-up
-     corrected for the ~7.7% accounting-basis artefact found in Phase 2 S2.1)
-     run as a one-row sensitivity check only, not a full re-run.
+  1. Headline series = generation-side EF (NI). The consumption side (gross-up
+     corrected for the 7.7% accounting-basis artefact found in Phase 2 S2.1)
+     runs as a one-row sensitivity check only, not a full re-run.
   2. Headline start year = 2027; sensitivity across {2025, 2027, 2030}.
-  3. Three STYLISED load shapes (no BEES/metered data found in project).
+  3. Three stylised load shapes (no BEES/metered data found in project).
   4. Four treatments:
        (a) full hourly, island-resolved, scenario EF
        (b) annual island EF (constant within year, still island-specific, still
            year-by-year trajectory)
-       (c) annual NATIONAL EF (constant within year, blended across islands,
+       (c) annual national EF (constant within year, blended across islands,
            still year-by-year trajectory)
-       (d) static base-year NATIONAL EF (held constant for the entire study
+       (d) static base-year national EF (held constant for the entire study
            period, at the assessment start year's level)
-     Key simplification (used deliberately for speed and clarity): since
-     building load weights within a year always sum to 1, treatments (b),(c),(d)
-     collapse to simple ANNUAL SCALARS (the load-weighted average of a constant
-     is that constant) -- only treatment (a) requires real hourly load x EF
-     computation. This is mathematically exact, not an approximation.
+     Key simplification, chosen for speed and clarity: building load weights
+     within a year always sum to 1, so treatments (b), (c) and (d) collapse to
+     annual scalars (the load-weighted average of a constant is that
+     constant). Only treatment (a) requires the hourly load x EF computation.
+     This is mathematically exact, not an approximation.
   Decomposition (chosen order): total = d - a = (b-a) [temporal] + (c-b)
   [spatial] + (d-c) [trajectory]. An alternate order (spatial-first) is also
   computed to test order-sensitivity.
@@ -63,9 +63,9 @@ STUDY_PERIODS = [10, 25, 30, 50]  # yrs; justified: 10=short lease/fitout cycle,
 START_YEARS = [2025, 2027, 2030]
 HEADLINE_START = 2027
 
-# Load EF data (generation-side, NI+SI) and generation weights (for computing
-# annual island/national EF -- generation-weighted, i.e. the physically correct
-# way to average an intensity over a year of varying output).
+# Load EF data (generation-side, NI+SI) and generation weights. Annual
+# island/national EF is generation-weighted, the physically correct way to
+# average an intensity over a year of varying output.
 ef = pd.read_parquet(EDGS / f"edgs_hourly_emission_factor{SUFFIX}.parquet")
 ef = ef[(ef["ef_basis"] == "generation") & (ef["island"].isin(["NI", "SI"]))].copy()
 ef["year"] = ef["datetime_hour"].dt.year
@@ -87,7 +87,7 @@ annual_island = (efw.groupby(["scenario", "island", "year"])
                  .apply(lambda g: pd.Series({"annual_island_ef": wmean(g)}), include_groups=False)
                  .reset_index())
 
-# Annual NATIONAL generation-side EF (c): pool NI+SI CO2 and generation
+# Annual national generation-side EF (c): pool NI+SI CO2 and generation
 efw["co2_kg"] = efw["emission_factor_kg_co2e_per_kwh"] * efw["generation_mwh"].fillna(0) * 1000
 nat_hourly = efw.groupby(["scenario", "datetime_hour"]).agg(
     co2_kg=("co2_kg", "sum"), gen_mwh=("generation_mwh", "sum")).reset_index()
@@ -102,13 +102,13 @@ annual_national.to_csv(TABLES / f"phase3_annual_national_ef{SUFFIX}.csv", index=
 log(f"Computed annual island EF ({len(annual_island)} rows) and annual national EF ({len(annual_national)} rows)")
 
 # Load shapes: map (dow,hour) raw intensity onto each actual calendar year,
-# normalised to sum exactly 1.0 for THAT year (handles leap years exactly).
+# normalised to sum exactly 1.0 for that year (handles leap years exactly).
 shapes = pd.read_csv(TABLES / "phase3_load_shapes_stylised.csv")
 SHAPE_LABELS = shapes["label"].unique().tolist()
 log(f"Load shapes: {SHAPE_LABELS}")
 
 ef_ni = ef[ef["island"] == BUILDING_ISLAND].copy()
-ef_ni_national = nat_hourly.copy()  # for the "swap island->national but keep hourly" alt-order term
+ef_ni_national = nat_hourly.copy()  # for the "swap island for national but keep hourly" alt-order term
 
 log("\nPrecomputing load-weighted annual EF for every (shape, scenario, year, source) "
     "combination once, to avoid redundant recomputation across overlapping study periods...")
@@ -141,16 +141,16 @@ def load_weighted_annual_ef(shape_label, scenario, year, source="island"):
 # Headline decomposition (Reference, NI, start=2027, all 4 study
 # periods, all 3 load shapes) + order-sensitivity check.
 log("\n" + "=" * 70)
-log("ITEM 14: four-tier error decomposition, headline (Reference, NI, start=2027)")
+log("Item 14: four-tier error decomposition, headline (Reference, NI, start=2027)")
 log("=" * 70)
 
-log("\n--- Study-period feasibility vs. the EDGS projection horizon (2024-2050) ---")
-log("Per user decision (2026-08-02): truncate combinations losing <=20%% of the "
-    "requested period (label explicitly); DROP 50-year periods entirely (out of "
+log("\n--- Study-period feasibility against the EDGS projection horizon (2024-2050) ---")
+log("Rule: truncate combinations losing <=20%% of the "
+    "requested period (labelled as truncated); drop 50-year periods entirely (out of "
     "scope for this dataset, all start years); drop any other combination losing "
-    ">20%% by the same logic. This is a genuine DATASET boundary (MBIE's own EDGS "
-    "2024 horizon ends 2050), not a methodological choice -- feeds Phase 4 item 20 "
-    "limitations and is flagged as a natural re-run point for a future MBIE update.")
+    ">20%% by the same logic. This is a dataset boundary (MBIE's own EDGS "
+    "2024 horizon ends 2050), not a methodological choice. It feeds the Phase 4 item 20 "
+    "limitations and marks a natural re-run point for a future MBIE update.")
 FEASIBLE = {}
 for start_year in START_YEARS:
     for L in STUDY_PERIODS:
@@ -165,7 +165,7 @@ for start_year in START_YEARS:
             status = "full"
         FEASIBLE[(start_year, L)] = (n_years, status)
         log(f"  start={start_year} L={L}: covers {start_year}-{avail_end} "
-            f"({n_years} yrs, {100*loss_frac:.0f}%% lost) -> {status}")
+            f"({n_years} yrs, {100*loss_frac:.0f}%% lost): {status}")
 
 decomp_rows = []
 for shape_label in SHAPE_LABELS:
@@ -189,7 +189,7 @@ for shape_label in SHAPE_LABELS:
                 E_a = sum(a_vals)     # cumulative, per unit annual building energy
                 E_b = sum(b_vals)
                 E_c = sum(c_vals)
-                E_d = base_national_ef * n_years  # static EF x ACTUAL years used (truncation-consistent)
+                E_d = base_national_ef * n_years  # static EF x actual years used (consistent with truncation)
                 E_aprime = sum(aprime_vals)
 
                 temporal = E_b - E_a
@@ -228,7 +228,7 @@ hl = decomp[(decomp["scenario"] == "Reference") & (decomp["start_year"] == HEADL
 log(hl[["study_period_yrs_requested", "fit_status", "E_a_hourly_island", "E_d_static_base", "total_error_pct_of_Ea",
         "temporal_pct_of_total", "spatial_pct_of_total", "trajectory_pct_of_total"]].to_string(index=False))
 
-log("\n=== Order-sensitivity check: does temporal-first vs spatial-first give materially different splits? ===")
+log("\n=== Order-sensitivity check: do temporal-first and spatial-first orders give materially different splits? ===")
 comp = decomp[(decomp["scenario"] == "Reference") & (decomp["start_year"] == HEADLINE_START) & (decomp["load_shape"] == "daytime_office")].copy()
 comp["spatial_first_pct"] = 100 * comp["spatial_alt_component"] / comp["total_error_d_minus_a"]
 comp["temporal_first_pct_orig_order"] = comp["temporal_pct_of_total"]

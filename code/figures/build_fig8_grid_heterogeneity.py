@@ -1,9 +1,9 @@
 """
-Figure 8 -- grid heterogeneity (transferability argument), built entirely
-from analysis/GRID_HETEROGENEITY_REGISTER.csv. All units harmonised to
-gCO2e/kWh at run time (conversion factors applied and printed, not baked
-into stored register values except where the register is already in that
-unit).
+Figure 8: grid heterogeneity (transferability argument), built from
+analysis/GRID_HETEROGENEITY_REGISTER.csv alone. All units are harmonised to
+gCO2e/kWh at run time. Conversion factors are applied and printed, not
+stored in the register values, except where the register is already in
+that unit.
 """
 import sys
 import numpy as np
@@ -24,15 +24,15 @@ from journal_palette import set_journal_style, CATEGORICAL, BASE  # noqa: E402
 
 set_journal_style()
 # Literature systems = CATEGORICAL[0] (deep navy); New Zealand (this study)
-# = CATEGORICAL[1] (amber print) -- these range indicators are drawn with
-# ax.plot (lines), not filled patches, so amber_print is the correct pair
-# per the palette rules (amber_fill is reserved for filled bars/patches).
+# = CATEGORICAL[1] (amber print). These range indicators are drawn with
+# ax.plot (lines), not filled patches, so the palette rules call for
+# amber_print (amber_fill is reserved for filled bars/patches).
 OI = {"blue": CATEGORICAL[0], "vermillion": CATEGORICAL[1]}
 
 reg = pd.read_csv(REG, keep_default_na=True)
 
-# Unit harmonisation -> gCO2e/kWh. Conversion factor applied per row, printed
-# for the record.
+# Unit harmonisation to gCO2e/kWh. The conversion factor is applied per row
+# and printed for the record.
 LB_MWH_TO_G_KWH = 453.59237 / 1000  # 1 lb = 453.59237 g; 1 MWh = 1000 kWh
 KG_KWH_TO_G_KWH = 1000
 
@@ -64,13 +64,13 @@ for _, r in reg.iterrows():
         print(f"{r['system']}: not sourced, no conversion")
     else:
         print(f"{r['system']}: {r['min_intensity']}-{r['max_intensity']} {r['unit']} "
-              f"-> {r['min_g']:.1f}-{r['max_g']:.1f} gCO2e/kWh  ({r['conv_note']})")
+              f"gives {r['min_g']:.1f}-{r['max_g']:.1f} gCO2e/kWh  ({r['conv_note']})")
 
 # recompute ratio from the harmonised (or original, unit-invariant) values
 reg["ratio_recomputed"] = reg["max_g"] / reg["min_g"]
 
-# Sort: literature rows by descending ratio (NaN ratios -- UK, undefined
-# min=0 -- sort last among literature rows); NZ pinned to the bottom,
+# Sort: literature rows by descending ratio, with NaN ratios (UK, undefined
+# because min=0) last among literature rows; NZ pinned to the bottom,
 # visually separated.
 is_nz = reg["system"] == "New Zealand"
 lit = reg[~is_nz].sort_values("ratio_max_min", ascending=False, na_position="last")
@@ -88,7 +88,7 @@ y_positions = [y + gap_before_nz for y in y_positions]  # shift all up so nothin
 
 fig, ax = plt.subplots(figsize=(8.2, 4.6))
 
-X_FLOOR = 0.6  # gCO2e/kWh -- log-scale plotting floor for true zero minima (NZ SI, UK North Scotland)
+X_FLOOR = 0.6  # gCO2e/kWh; log-scale plotting floor for true zero minima (NZ SI, UK North Scotland)
 for i, (_, row) in enumerate(plot_rows.iterrows()):
     y = y_positions[i]
     verified = row["verified"] == "yes"
@@ -101,10 +101,10 @@ for i, (_, row) in enumerate(plot_rows.iterrows()):
 
     lo_plot = max(row["min_g"], X_FLOOR)
     zero_floor = row["min_g"] == 0
-    # Solid bar for verified rows; dashed/lighter overlay reserved for any
-    # unverified row (none currently in the register -- kept so the figure
-    # degrades gracefully if a future row is added before it's verified,
-    # rather than silently presenting it with full visual weight).
+    # Solid bar for verified rows; a dashed, lighter overlay is reserved for
+    # any unverified row. The register holds none at present. The overlay
+    # stops a future row added before verification from appearing with
+    # full visual weight.
     ax.plot([lo_plot, row["max_g"]], [y, y], color=color, lw=6 if verified else 4,
              solid_capstyle="butt", alpha=1.0 if verified else 0.35, zorder=2)
     if not verified:
@@ -148,10 +148,10 @@ title = (f"Sub-regional range of generation-basis emission intensity in six grid
          f"({n_verified} of {n_total} verified against a primary source)")
 ax.set_title(title, fontsize=10.5, loc="left", wrap=True, pad=14)
 
-# Legend is built from what's actually on the plot: the "unverified" style
-# entry only appears if the register has an unverified row (at present
-# none: all 6 systems are primary_agency/operator_data-verified, so that
-# entry is dropped rather than shown as an unused legend key).
+# The legend is built from what is on the plot. The "unverified" style
+# entry appears only if the register has an unverified row. At present all
+# 6 systems are primary_agency/operator_data-verified, so that entry is
+# dropped rather than shown as an unused legend key.
 legend_elems = [
     Line2D([0], [0], color=OI["blue"], lw=6,
            label="verified, primary agency / peer-reviewed" if all_verified else "verified"),
@@ -172,7 +172,7 @@ fig.savefig(FIGS / "fig8_grid_heterogeneity.pdf", bbox_inches="tight")
 fig.savefig(FIGS / "fig8_grid_heterogeneity.png", bbox_inches="tight", dpi=300)
 plt.close(fig)
 
-print("\n=== Ratio recheck (recomputed from min_g/max_g vs. stored ratio_max_min) ===")
+print("\n=== Ratio recheck (recomputed from min_g/max_g against stored ratio_max_min) ===")
 for _, r in reg.iterrows():
     if pd.isna(r["min_g"]):
         continue
@@ -181,12 +181,12 @@ for _, r in reg.iterrows():
     stored_undefined = pd.isna(stored)
     recomputed_undefined = pd.isna(recomputed) or np.isinf(recomputed)
     if stored_undefined and recomputed_undefined:
-        print(f"{r['system']}: both undefined (min=0) -- consistent")
+        print(f"{r['system']}: both undefined (min=0); consistent")
     elif stored_undefined or recomputed_undefined:
-        print(f"{r['system']}: MISMATCH -- stored={stored}, recomputed={recomputed}")
+        print(f"{r['system']}: MISMATCH: stored={stored}, recomputed={recomputed}")
     else:
         match = abs(stored - recomputed) < 0.05  # register stores ratio rounded to 1-2dp
-        print(f"{r['system']}: stored={stored}, recomputed={recomputed:.4f}, match(<=0.01)={match}")
+        print(f"{r['system']}: stored={stored}, recomputed={recomputed:.4f}, match(<0.05)={match}")
 
 print(f"\nTitle: {title}")
 print("Saved fig8_grid_heterogeneity.svg/.pdf/.png")

@@ -2,16 +2,16 @@
 EDGS projection, variant "consistent scope": annual island emission factors built on the same
 scope as the metered historical series, alongside the existing "combustion only" series.
 
-  combustion_only    the current projection (build_edgs_dispatch.py): MBIE fuel input x MfE 2024
+  combustion_only    the base projection (build_edgs_dispatch.py): MBIE fuel input x MfE 2024
                      factors (gas 54.0, coal 92.6, diesel 69.4 kg CO2-e/GJ) + wood CH4+N2O. No
                      geothermal. Includes Glenbrook-class coal.
   consistent_scope   MBIE fuel input x MfE 2025 catalogue factors (Table A.2, gross, CO2: gas
                      54.057909, coal 91.99, diesel 69.203964 t/TJ; as the historical series)
                      + wood CH4+N2O (unchanged)
                      - Glenbrook-class coal: 7.63 PJ carries zero emissions (IPPU 2.C.1, as the
-                       historical series). ASSUMPTION: this component is inside MBIE's coal input
+                        historical series). Assumption: this component is inside MBIE's coal input
                        in every scenario and year; it is only isolated directly in Environmental
-                       and Innovation from 2032, where coal stays at 7.63 PJ / 577 GWh / ~119 MW
+                        and Innovation from 2032, where coal stays at 7.63 PJ / 577 GWh / about 119 MW
                        after the Rankines convert to biomass. Before 2032 all scenarios run 13.59 PJ.
                      + geothermal: plant generation (MBIE geothermal GWh x capacity share, the
                        pipeline's allocation rule) x plant intensity from
@@ -30,10 +30,10 @@ grid-injection basis matching the metered series: grid generation = (MBIE electr
 emissions / MBIE grid emission factor, EDGS 2024 Results "Emission factors") x k, where k is the
 mean over 2015-2023 of metered generation (output/annual_emission_factor_NI_SI.csv) / that
 implied MBIE grid generation (Reference, historical). The same grid share is applied to each
-island (ESTIMATE). MBIE's factor is published to four decimals (about +/-0.2% in the implied
+island (an estimate). MBIE's factor is published to four decimals (about +/-0.2% in the implied
 denominator). All thermal and
 geothermal plant is North Island in the projection register; South Island carries biogas only.
-check2: national totals vs MBIE published "Electricity generation" emissions (EDGS 2024 Results),
+check2: national totals against MBIE published "Electricity generation" emissions (EDGS 2024 Results),
 unforced. Outputs: output/edgs/consistent_scope/. Needs pyarrow (Anaconda interpreter).
 """
 from pathlib import Path

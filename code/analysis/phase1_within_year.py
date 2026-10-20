@@ -43,8 +43,8 @@ diurnal.to_csv(TABLES / "phase1_diurnal_profiles.csv", index=False)
 log(f"Wrote phase1_diurnal_profiles.csv ({len(diurnal)} rows)")
 
 # Diurnal shape persistence: correlation of each rep year's 24-hour profile
-# against the 2024 profile, per scenario x island -- flattens toward 0 as
-# solar/batteries reshape the day; inverts if correlation goes negative.
+# against the 2024 profile, per scenario x island. It flattens toward 0 as
+# solar/batteries reshape the day and inverts if the correlation goes negative.
 log("\n=== Diurnal-shape persistence: corr(hour-of-day profile in year Y, profile in 2024) ===")
 persist_rows = []
 for (scen, isl), g in diurnal.groupby(["scenario", "island"]):
@@ -78,7 +78,7 @@ wkdwknd_p = wkdwknd.pivot_table(index=["scenario", "island", "year"], columns="i
 wkdwknd_p.columns = ["scenario", "island", "year", "weekday_mean_ef", "weekend_mean_ef"]
 wkdwknd_p["weekend_minus_weekday_pct"] = 100 * (wkdwknd_p["weekend_mean_ef"] - wkdwknd_p["weekday_mean_ef"]) / wkdwknd_p["weekday_mean_ef"]
 wkdwknd_p.to_csv(TABLES / "phase1_weekday_weekend.csv", index=False)
-log("\n=== Weekday vs weekend EF, Reference scenario, rep years ===")
+log("\n=== Weekday and weekend EF, Reference scenario, rep years ===")
 log(wkdwknd_p[(wkdwknd_p["scenario"] == "Reference") & (wkdwknd_p["year"].isin(REP_YEARS))].to_string(index=False))
 
 # Seasonal pattern, by year
@@ -90,7 +90,7 @@ log(seasonal[(seasonal["scenario"] == "Reference") & (seasonal["year"].isin(REP_
     .pivot_table(index=["island", "year"], columns="season", values="emission_factor_kg_co2e_per_kwh").to_string())
 
 # Duration curves: percentiles of hourly EF, every year, all scenarios
-log("\n=== Duration-curve percentiles (all years) -> phase1_duration_curve_percentiles.csv ===")
+log("\n=== Duration-curve percentiles (all years), written to phase1_duration_curve_percentiles.csv ===")
 pctiles = [1, 5, 10, 25, 50, 75, 90, 95, 99]
 dur = (ef.groupby(["scenario", "island", "year"])["emission_factor_kg_co2e_per_kwh"]
        .quantile([p / 100 for p in pctiles]).unstack())
@@ -99,11 +99,11 @@ dur = dur.reset_index()
 dur.to_csv(TABLES / "phase1_duration_curve_percentiles.csv", index=False)
 log(f"Wrote phase1_duration_curve_percentiles.csv ({len(dur)} rows)")
 
-# Zero-thermal / near-zero hours and high-EF tail hours, count per year
+# Zero-thermal / near-zero hours and high-EF tail hours, count per year.
 # Data-driven thresholds: "near-zero" = below the 5th percentile of that
-# scenario-island's OWN 2024 distribution (so the bar migrates with the fleet,
-# not a fixed round number); "high-EF tail" = above the 95th percentile of that
-# scenario-island's own 2024 distribution.
+# scenario-island's own 2024 distribution, so the bar moves with the fleet
+# instead of being a fixed round number. "high-EF tail" = above the 95th
+# percentile of the same distribution.
 log("\n=== Zero/near-zero-EF and high-EF-tail hour counts per year (thresholds = own-2024 p5/p95) ===")
 tail_rows = []
 for (scen, isl), g in ef.groupby(["scenario", "island"]):

@@ -1,5 +1,5 @@
 """
-Table 3 -- headline results. Restricted to the rows a reader needs: the
+Table 3: headline results. Restricted to the rows a reader needs: the
 headline case, the three demand profiles at the headline trajectory/start
 year, and one row per trajectory at the headline profile/start year. The
 full 120-row table stays in supplementary (phase4_table1_full_decomposition.csv).

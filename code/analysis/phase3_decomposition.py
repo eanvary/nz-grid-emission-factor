@@ -201,7 +201,6 @@ for shape_label in SHAPE_LABELS:
                 spatial_alt = E_aprime - E_a
                 temporal_alt = E_c - E_aprime
                 trajectory_alt = E_d - E_c
-                total_alt = E_d - E_a
 
                 decomp_rows.append({
                     "load_shape": shape_label, "scenario": scenario, "start_year": start_year,
@@ -215,7 +214,9 @@ for shape_label in SHAPE_LABELS:
                     "trajectory_pct_of_total": 100 * trajectory / total if total else np.nan,
                     "total_error_pct_of_Ea": 100 * total / E_a if E_a else np.nan,
                     "spatial_alt_component": spatial_alt, "temporal_alt_component": temporal_alt,
-                    "order_check_total_matches": abs(total - total_alt) < 1e-9,
+                    # Both orders must add back to the total; a slip in any E term breaks this.
+                    "order_check_total_matches": bool(np.isclose(temporal + spatial + trajectory, total)
+                                                      and np.isclose(spatial_alt + temporal_alt + trajectory_alt, total)),
                 })
 
 decomp = pd.DataFrame(decomp_rows)
@@ -235,7 +236,7 @@ comp["temporal_first_pct_orig_order"] = comp["temporal_pct_of_total"]
 comp["temporal_alt_pct"] = 100 * comp["temporal_alt_component"] / comp["total_error_d_minus_a"]
 log(comp[["study_period_yrs_requested", "fit_status", "temporal_pct_of_total", "spatial_pct_of_total",
           "spatial_first_pct", "temporal_alt_pct"]].to_string(index=False))
-log(f"All order-check totals match exactly (telescoping confirmed): {decomp['order_check_total_matches'].all()}")
+log(f"Components add up to the total in both orders: {decomp['order_check_total_matches'].all()}")
 
 with open(LOGS / f"phase3_decomposition_log{SUFFIX}.txt", "w", encoding="utf-8") as f:
     f.write("\n".join(log_lines))

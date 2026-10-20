@@ -1,5 +1,5 @@
 """
-Figure 2: PRISMA-ScR flow diagram.
+Figure 2: PRISMA-ScR flow diagram. Usage: python build_fig2_prisma.py <extraction workbook>
 
 Layout. Every box's height is computed from its wrapped line count
 before the box is placed; a single vertical cursor (`y_top`) then advances
@@ -45,7 +45,7 @@ from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-WB = Path(r"C:\Users\ehsan\OneDrive - AUT University\PhD\Papers\01 Review Paper\Refeences\Assessment\extraction_output_reviewed_Output_v12.xlsx")
+WB = Path(sys.argv[1])  # the review extraction workbook, extraction_output_reviewed_Output_v12.xlsx (not released)
 FIGS = ROOT / "figures"
 FIGS.mkdir(parents=True, exist_ok=True)
 

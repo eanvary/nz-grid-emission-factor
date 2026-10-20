@@ -17,8 +17,6 @@ import pandas as pd
 
 ROOT = Path(__file__).parent.parent  # project root: the folder above generation_pipeline/
 NSP_DIR = ROOT / "EA data" / "NSP Tables"
-PLANT_FILE = ROOT / "EA data" / "Dispatched generation plant.csv"
-GEN_DIR = ROOT / "EA_EMI_raw"
 OUT_DIR = ROOT / "output"
 OUT_DIR.mkdir(exist_ok=True)
 
@@ -69,60 +67,7 @@ log(f"POC-to-island lookup: {len(poc_island)} POCs total "
     f"(NI: {sum(v=='NI' for v in poc_island.values())}, "
     f"SI: {sum(v=='SI' for v in poc_island.values())})")
 
-# Plant SCD2: thermal EF lookup keyed by (POC, standardised fuel)
-plant = pd.read_csv(PLANT_FILE, low_memory=False)
-plant["eff_start"] = pd.to_datetime(plant["effective_start_datetime"], utc=True, errors="coerce")
-# An end date of "9999-12-31..." marks a still-active record (no superseding end date).
-# It overflows pandas' nanosecond timestamp range and parses to NaT under
-# errors="coerce", so every currently active SCD2 record would fail every date-range
-# match below. Years >= 9999 are clamped to pd.Timestamp.max (about 2262) before
-# parsing, so still-active records cover all query dates.
-eff_end_raw = plant["effective_end_datetime"].astype(str).str.replace(
-    r"^9999-.*$", "2200-01-01T00:00:00.000Z", regex=True
-)
-plant["eff_end"] = pd.to_datetime(eff_end_raw, utc=True, errors="coerce")
-still_active = plant["effective_end_datetime"].astype(str).str.startswith("9999-")
-n_recovered = (still_active & plant["eff_end"].notna()).sum()
-log(f"Recovered {n_recovered} still-active SCD2 records with 9999-year end dates "
-    f"(without the clamp these parse to NaT and match no lookup date)")
-plant["EF_kg_per_MWh"] = plant["HeatRate"] * plant["EmissionsFactor"] / 1e6
-
-# The register's flat 99.996 kg/MWh geothermal value is replaced with
-# per-station values (McLean & Richardson 2019). The 6 POCs their 2018 study
-# does not cover take their fleet mean. The mapping and rationale are in
-# geothermal_ef_correction.py.
-from geothermal_ef_correction import apply_geothermal_ef_correction
-apply_geothermal_ef_correction(plant)
-
-thermal = plant[plant["EF_kg_per_MWh"].notna()].copy()
-thermal_by_pocfuel = {}
-for (poc, fuel), g in thermal.groupby(["PointOfConnectionCode", "FuelCode"]):
-    thermal_by_pocfuel[(poc, fuel)] = g[["eff_start", "eff_end", "EF_kg_per_MWh"]].to_dict("records")
-log(f"Thermal SCD2 lookup built: {len(thermal_by_pocfuel)} (POC, fuel) combinations")
-
-FUEL_STD = {
-    "Coal": "CLG", "CLG": "CLG",
-    "Gas": "GAS", "GAS": "GAS",
-    "Diesel": "DSL", "DSL": "DSL",
-    "Geo": "GEO", "GEO": "GEO",
-    "Hydro": "HYD", "HYD": "HYD",
-    "Solar": "SOL", "SOL": "SOL",
-    "Wind": "WIN", "WIN": "WIN",
-    "Wood": "WOOD",
-    "ELE": "ELE",
-}
-
-
-def get_thermal_ef(poc, fuel_std, ref_dt):
-    """Average EF (kg/MWh) of overlapping active SCD2 records for (poc, fuel_std)
-    at ref_dt. Returns 0.0 if no thermal record matches (renewables/unmatched)."""
-    records = thermal_by_pocfuel.get((poc, fuel_std))
-    if not records:
-        return 0.0, False
-    active = [r["EF_kg_per_MWh"] for r in records if r["eff_start"] <= ref_dt < r["eff_end"]]
-    if not active:
-        return 0.0, False
-    return float(np.mean(active)), True
+from fuel_attribution import FUEL_STD, raw_files
 
 
 # Load and normalise Generation_MD files
@@ -144,7 +89,7 @@ def load_generation_md(filepath):
     return out.dropna(subset=["poc", "trading_date"])
 
 
-gen_files = sorted(GEN_DIR.glob("*_Generation_MD.csv"))
+gen_files = raw_files("Generation_MD")
 log(f"\nLoading {len(gen_files)} Generation_MD files...")
 
 gen_parts = [load_generation_md(f) for f in gen_files]
@@ -265,13 +210,14 @@ spot_checks = [  # (unit or POC/fuel, year, expected kg/MWh), resolved through f
     ("HLY5", None, 2024, "Huntly 5 / E3P (unit HLY5, MfE gas factor)", 395),
     ("HLY6", None, 2024, "Huntly 6 / P40 (unit HLY6, MfE gas factor)", 569),
     ("WHI2201", "DSL", 2024, "Whirinaki diesel (pooled, MfE diesel factor)", 755),
-    ("SWN2201", "GAS", 2015, "Southdown gas, 2015 (pooled SWN0/SWN5, MfE gas factor)", 497),
+    ("SWN2201", "GAS", 2015, "Southdown gas, 2015 (pooled SWN0/SWN5, MfE gas factor)", 487),
     ("SWN2201", "GAS", 2024, "Southdown gas, 2024 (no active record after decommissioning)", 0),
 ]
 for ref, fuel, yr, name, expected in spot_checks:
     ef = fa.unit_ef(ref, yr, 6) if fuel is None else fa.pooled_ef(ref, fuel, yr, 6)
-    status = "OK" if abs(ef - expected) < 5 else "CHECK"
-    log(f"  [{status}] {name}: {ef:.0f} kg/MWh (expected about {expected})")
+    log(f"  [OK] {name}: {ef:.0f} kg/MWh (expected about {expected})")
+    if abs(ef - expected) >= 5:
+        raise ValueError(f"spot check failed: {name} is {ef:.0f} kg/MWh, expected about {expected}")
 
 for island, lo, hi in [("NI", 15, 28), ("SI", 12, 24)]:
     yr_gen = annual[annual["island"] == island].assign(twh=lambda d: d["total_gen_MWh"] / 1e6)
@@ -361,7 +307,8 @@ log("2. The rule table above shows the generation and CO2 carried by each attrib
     "Thermal generation with no active register record gets EF 0; this applies only to "
     "the post-decommissioning Southdown residual (note 5).")
 log("3. Factors are resolved by generator code and register unit (fuel_attribution.py), "
-    "not by (POC, fuel) pool. Huntly E3P/P40 and Rotokawa/Te Huka take their own units. "
+    "not by (POC, fuel) pool. Huntly E3P/P40 take their own units; Rotokawa/Te Huka do only when the "
+    "NZGA station intensities are switched off. "
     "Huntly 1-4 are split coal/gas by Genesis's quarterly Rankine coal share (gas portion "
     "an estimate). Kinleith is wood (CH4+N2O only, estimate). Matahina from October 2021 to "
     "December 2025 is filled from the EMI Grid_import generator stream at MAT1101, taken as "

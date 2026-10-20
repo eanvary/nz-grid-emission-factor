@@ -49,6 +49,49 @@ FUEL_STD = {"Coal": "CLG", "CLG": "CLG", "Gas": "GAS", "GAS": "GAS", "Diesel": "
             "Geo": "GEO", "GEO": "GEO", "Hydro": "HYD", "HYD": "HYD", "Solar": "SOL", "SOL": "SOL",
             "Wind": "WIN", "WIN": "WIN", "Wood": "WOOD", "ELE": "ELE"}
 NSP_DIR = ROOT / "EA data" / "NSP Tables"
+# The database covers 2015-2025; later EMI months lack the Matahina and Huntly 1-4 inputs.
+LAST_MONTH = "202512"
+NZ_TZ = "Pacific/Auckland"
+
+
+def raw_files(kind):
+    """Monthly EMI files of one kind (e.g. 'Generation_MD') within the database period."""
+    return [f for f in sorted(GEN_DIR.glob(f"*_{kind}.csv")) if f.name[:6] <= LAST_MONTH]
+
+
+def periods_in_day(dates):
+    """Trading periods in each NZ trading day: 46 when clocks go forward, 50 when they go back, else 48."""
+    d = pd.DatetimeIndex(pd.to_datetime(dates)).normalize()
+    span = (d + pd.Timedelta(days=1)).tz_localize(NZ_TZ) - d.tz_localize(NZ_TZ)
+    return (span.total_seconds() // 1800).to_numpy().astype(int)
+
+
+def tp_hours(n_tp):
+    """Local clock hour (0-23) of trading periods 1..n_tp. On a 46-period day 02:00-03:00 does not
+    exist; on a 50-period day it runs twice and both runs fall in hour 2."""
+    hour = np.arange(n_tp) // 2
+    if n_tp == 46:
+        hour[4:] += 1
+    elif n_tp == 50:
+        hour[4:8] = 2
+        hour[8:] -= 1
+    elif n_tp != 48:
+        raise ValueError(f"unexpected {n_tp} trading periods in a day")
+    return hour
+
+
+def tp_to_hours(tp, n_tp):
+    """(rows, 50) trading-period values and each row's day length to (rows, 24) clock-hour sums.
+    Hour 2 is NaN on 46-period days, where it does not exist."""
+    out = np.zeros((len(tp), 24))
+    for n in np.unique(n_tp):
+        rows = n_tp == n
+        if tp[rows, n:].any():
+            raise ValueError(f"data in trading periods beyond {n} on a {n}-period day")
+        for j, h in enumerate(tp_hours(n)):
+            out[rows, h] += tp[rows, j]
+    out[n_tp == 46, 2] = np.nan
+    return out
 
 
 def poc_island_map():
@@ -282,7 +325,7 @@ class FuelAttribution:
         (TP1-TP50). months: optional iterable of 'YYYYMM'. exclude_cogen drops EMI Tech_Code
         'Cogen' rows (fills are never cogeneration). Island is not assigned here."""
         parts = []
-        for f in sorted(GEN_DIR.glob("*_Generation_MD.csv")):
+        for f in raw_files("Generation_MD"):
             ym = f.name[:6]
             if months is not None and ym not in set(months):
                 continue

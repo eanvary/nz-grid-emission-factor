@@ -9,9 +9,10 @@ Method:
   Demand      : MBIE annual demand (TWh) split NI/SI by MBIE 'Island share of demand',
                 shaped by historical hourly demand weight, then peak-calibrated
                 (energy-preserving) so national hourly max == MBIE annual peak (GW).
-  Thermal     : the merit order (Module 3) and residual load set the thermal hourly shape
-                and the thermal/renewable boundary; MBIE's published annual fuel GWh set
-                the fuel split. Rationale: MBIE publishes no hourly fuel split, and a pure
+  Thermal     : the residual load (demand left after renewables and storage shifting), capped
+                at the year's total thermal capacity from the merit-order table (Module 3),
+                sets one thermal hourly shape. Every thermal fuel follows that same shape;
+                MBIE's published annual fuel GWh set the fuel split. Rationale: MBIE publishes no hourly fuel split, and a pure
                 marginal-cost ordering does not reproduce NZ's gas-supply-constrained coal
                 dispatch (coal is dearer than gas, yet MBIE still runs about 1 TWh of coal).
                 Imposing a gas-supply cap to force that would add a third assumption,
@@ -19,8 +20,8 @@ Method:
                 the normalised thermal shape, so the annual total reconciles exactly per
                 fuel by construction. CO2 per fuel =
                 MBIE published fuel input (Electricity generation use, Gross PJ) x MfE factor
-                (combustion_co2_kg below), not plant heat rates; heat rate is used
-                only for the merit-order ranking.
+                (combustion_co2_kg below), not plant heat rates. The merit-order ranking
+                itself does not enter the hourly results.
                 All thermal capacity is North Island (Module 2), so all thermal is assigned to NI.
   Geothermal  : fugitive CO2-e is not included (geo_co2_by_island is zero; see the
                 geothermal block in the body). The projection is combustion scope only, so
@@ -301,11 +302,8 @@ for scenario in run_scenarios:
             base[rows_idx, lo] += shift                              # charge (load)
         dsr_series = residual_pre - residual  # +discharge at peak, -charge at trough; sum near 0
 
-        # Thermal shape from merit fill of residual (capacity-aware)
-        mplants = merit_s[merit_s.year == year].sort_values("merit_rank")
-        caps = mplants["capacity_mw"].to_numpy()
-        total_cap = caps.sum()
-        cum = np.concatenate([[0.0], np.cumsum(caps)])
+        # Thermal shape: residual load capped at total thermal capacity
+        total_cap = merit_s.loc[merit_s.year == year, "capacity_mw"].sum()
         # aggregate thermal shape = residual capped at total thermal capacity
         thermal_shape_raw = np.clip(residual, 0.0, total_cap)
         if thermal_shape_raw.sum() <= 0:

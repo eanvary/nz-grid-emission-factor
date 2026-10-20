@@ -1,6 +1,6 @@
 """Build the supplementary material (python-docx).
 Every value comes from Figure/analysis_v1/out (numbers_for_text.json and CSVs), the review coding
-file, or text moved out of the main manuscript. Usage: python p03_build_supplement.py <out.docx>"""
+file, or text moved out of the main manuscript. Usage: python p03_build_supplement.py <out.docx> <copy_root>"""
 import json, sys
 from pathlib import Path
 import pandas as pd
@@ -104,7 +104,7 @@ ov = N["overlap_chain"]
 p(f"Overlap. The median absolute hourly deviation between projected and metered NI factors is {ov['2024']['median_abs_dev_pct']:.0f}% in 2024 and "
   f"{ov['2025']['median_abs_dev_pct']:.0f}% in 2025.")
 
-DBV = Path("C:/Users/ehsan/OneDrive - AUT University/PhD/Database/Grid Emission Factor")
+DBV = Path(sys.argv[2]).resolve()
 d3 = pd.read_csv(DBV / "output" / "D3_fuel_level_validation.csv"); d3 = d3[d3.resolution == "annual"]
 lab = {"CLG": "Coal emissions (kt CO2e)", "GAS-PJ": "Gas used for generation (PJ)", "GAS-emissions": "Gas emissions (kt CO2e)", "GEO": "Geothermal emissions (kt CO2e)"}
 note = {"CLG": "same plant", "GAS-PJ": "same plant", "GAS-emissions": "MBIE includes most cogeneration gas", "GEO": "no scope-matched target (information only)"}

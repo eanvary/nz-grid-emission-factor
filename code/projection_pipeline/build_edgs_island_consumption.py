@@ -206,12 +206,10 @@ for scenario in SCENARIOS:
         nat_gen = g_NI + g_SI
 
         # Island generation-level load, renormalised to actual nat_gen(t)
-        # One hour/year has zero valid demand-shape weight: the DST spring-forward transition
-        # hour (last Sunday of September, when NZ clocks skip 23:00-23:59), the same documented
-        # artifact as in the historical pipeline's hourly EF table. At that hour only, fall back
-        # to MBIE's annual island share alone (no shape weighting) so the split still sums to
-        # 1 exactly and the Step 3 symmetry check holds at floating-point precision
-        # everywhere, not just at 8759/8760 hours.
+        # Any hour with zero demand-shape weight in both islands falls back to MBIE's annual
+        # island share alone, so the split still sums to 1 exactly and the Step 3 symmetry check
+        # holds in every hour. The demand shape fills the clocks-forward day's missing 02:00
+        # (build_edgs_hourly_shape.py), so no such hour is expected.
         raw_share_NI = ni_share * w_ni
         raw_share_SI = (1 - ni_share) * w_si
         share_sum = raw_share_NI + raw_share_SI

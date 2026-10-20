@@ -3,13 +3,13 @@ Same filters as the analysis_paper cohort derivation (pre-2004 construction, Who
 gas share <= 5%, rated area and electricity use > 0), but the island is assigned from a complete city list. The
 list in that derivation leaves out Lower Hutt, Upper Hutt, Porirua and Paeroa. Writes the cohort table the analysis reads
 (<copy_root>/analysis_paper/tables/phase3_eui_derived_v2.csv; the file it replaces is kept as *_before_all_cities.csv).
-Usage: python p03_eui_all_ni_cities.py <copy_root>"""
+Usage: python p03_eui_all_ni_cities.py <copy_root> <NABERSNZ workbook (confidential, not released)>"""
 import re, shutil, sys
 from pathlib import Path
 import numpy as np
 import pandas as pd
 
-SRC = Path(r"C:\Users\ehsan\OneDrive - AUT University\PhD\Database\Archetypes\NABERS\NABERS_With_Vintage_GCCI_v3.xlsx")
+SRC = Path(sys.argv[2])
 SI_CITIES = {"Christchurch", "Nelson", "Dunedin", "Ashburton", "Timaru", "Twizel"}
 NI_CITIES = {"Auckland", "Wellington", "Hamilton", "Palmerston North", "Tauranga", "Whangarei", "Upper Hutt", "Lower Hutt",
              "Paraparaumu", "Rotorua", "New Plymouth", "Paeroa", "Whanganui", "Hastings", "Porirua", "Napier"}

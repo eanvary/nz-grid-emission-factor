@@ -17,6 +17,7 @@ already net of DC-link losses:
   - Southward (NI to SI) = BEN2201 (Benmore, SI) Flow_Direction "I"
 """
 import re
+import sys
 from pathlib import Path
 
 import matplotlib
@@ -28,9 +29,10 @@ import pandas as pd
 ROOT = Path(__file__).parent
 ROOT_ROOT = ROOT.parent  # repo root, one level up
 ROOT_OUT = ROOT_ROOT / "output"       # root pipeline's generation-EF output (read-only from here)
-GEN_DIR = ROOT_ROOT / "EA_EMI_raw"    # shared raw-data folder (single source of truth)
 OUT_DIR = ROOT / "output"             # this folder's own output (HVDC transfer tables)
 OUT_DIR.mkdir(exist_ok=True)
+sys.path.insert(0, str(ROOT_ROOT / "generation_pipeline"))
+from fuel_attribution import periods_in_day, raw_files, tp_to_hours  # noqa: E402
 
 NAVY = "#1A2744"
 TEAL = "#0D7377"
@@ -45,8 +47,8 @@ def log(msg):
 
 
 # Load all raw HVDC_flows files, normalising pre/post-2020 column casing
-files = sorted(GEN_DIR.glob("*_HVDC_flows.csv"))
-log(f"Found {len(files)} raw HVDC_flows files (from {GEN_DIR})")
+files = raw_files("HVDC_flows")
+log(f"Found {len(files)} raw HVDC_flows files")
 
 parts = []
 hourly_parts = []
@@ -58,7 +60,6 @@ for f in files:
     date_col = lower_map["trading_date"]
     # <=50, not <=48: NZ's DST fall-back day (first Sunday of April) has 50
     # trading periods; TP49/TP50 must be included or that day's flow is undercounted.
-    tp_cols_48 = [f"TP{i}" for i in range(1, 49)]
     tp_cols = [c for c in df.columns if re.match(r"^TP\d+$", c) and int(c[2:]) <= 50]
 
     keep = df[poc_col].isin(["BEN2201", "HAY2201"]) & (df[dir_col] == "I")
@@ -84,20 +85,16 @@ for f in files:
     d["gwh"] = d[tp_cols].fillna(0).sum(axis=1) / 1e6  # kWh to GWh
     parts.append(d[["poc", "trading_date", "gwh"]])
 
-    # Hourly: TP(2h+1)+TP(2h+2) form hour h (0-23). TP49/TP50 fold into
-    # hour 23, as in the generation-side hourly pipeline.
-    tp48 = df.loc[keep, tp_cols_48].fillna(0).to_numpy(dtype=float)
-    hour_mwh = tp48.reshape(len(d), 24, 2).sum(axis=2) / 1000.0  # kWh to MWh, shape (n, 24)
-    if "TP49" in df.columns:
-        extra = df.loc[keep, ["TP49", "TP50"]].fillna(0).to_numpy(dtype=float)
-        hour_mwh[:, 23] += extra.sum(axis=1) / 1000.0
+    # Hourly by local clock hour, as in the generation-side hourly pipeline (fuel_attribution.tp_to_hours).
+    tp50 = df.loc[keep].reindex(columns=[f"TP{i}" for i in range(1, 51)]).fillna(0).to_numpy(dtype=float)
+    hour_mwh = tp_to_hours(tp50, periods_in_day(d["trading_date"])) / 1000.0  # kWh to MWh, shape (n, 24)
     n = len(d)
     hourly_parts.append(pd.DataFrame({
         "poc": np.repeat(d["poc"].to_numpy(), 24),
         "trading_date": np.repeat(d["trading_date"].to_numpy(), 24),
         "hour": np.tile(np.arange(24), n),
         "mwh": hour_mwh.reshape(-1),
-    }))
+    }).dropna(subset=["mwh"]))
 
 raw = pd.concat(parts, ignore_index=True)
 log(f"Loaded {len(raw):,} POC-day import records, "

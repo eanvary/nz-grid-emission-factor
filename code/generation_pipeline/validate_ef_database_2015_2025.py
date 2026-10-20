@@ -39,8 +39,10 @@ def record(check_id, category, description, status, detail=""):
 # month set is therefore the contiguous range from the earliest to the latest month
 # found, so a gap inside the series still fails. Every downstream day, hour and year
 # count derives from that same set.
-gen_files = sorted(GEN_DIR.glob("*_Generation_MD.csv"))
-hvdc_files = sorted(GEN_DIR.glob("*_HVDC_flows.csv"))
+from fuel_attribution import periods_in_day, raw_files
+
+gen_files = raw_files("Generation_MD")
+hvdc_files = raw_files("HVDC_flows")
 gen_months = {f.name[:6] for f in gen_files}
 hvdc_months = {f.name[:6] for f in hvdc_files}
 all_found_months = sorted(gen_months | hvdc_months)
@@ -425,17 +427,14 @@ record("E6", "Temporal", "No POC has a zero/missing month between two months wit
 # E. Temporal integrity
 print("\n" + "=" * 70 + "\nE. Temporal integrity\n" + "=" * 70)
 
-# NZ's DST transitions are month-fixed (spring-forward late September, fall-back
-# first Sunday of April; see E3). A year contributes an expected spring-forward
-# NaN hour only if its September lies within the covered range. A partial leading
-# or trailing year (e.g. 2026 Jan-Aug) contributes none.
-years_with_september = {y for y in YEARS if f"{y}09" in expected_months}
-expected_nan_hours = len(years_with_september) * 2  # x2 islands
-nan_hours = hourly["EF_kg_per_MWh"].isna().sum()
-record("E1", "Temporal", "DST spring-forward NaN-hour count matches expected (1/year/island, "
-       "counting only years whose September is in scope)",
-       "PASS" if nan_hours == expected_nan_hours else "WARN",
-       f"actual={nan_hours}, expected={expected_nan_hours} ({len(years_with_september)} in-scope Septembers)")
+# Hours are local clock hours: 24 rows per island-day, 23 on the clocks-forward day (no 02:00).
+rows_per_day = hourly.groupby(["island", "date"]).size()
+expected_rows = np.where(periods_in_day(rows_per_day.index.get_level_values("date")) == 46, 23, 24)
+bad_days = int((rows_per_day.to_numpy() != expected_rows).sum())
+nan_hours = int(hourly["EF_kg_per_MWh"].isna().sum())
+record("E1", "Temporal", "Every island-day has one row per local clock hour and no hour has EF = NaN",
+       "PASS" if nan_hours == 0 and bad_days == 0 else "FAIL",
+       f"NaN hours={nan_hours}, island-days with the wrong hour count={bad_days} of {len(rows_per_day)}")
 
 for y in YEARS:
     ni_days = daily[(daily.island == "NI") & (daily.year == y)].shape[0]
@@ -597,7 +596,7 @@ chk_h7c = h2d_agg.merge(daily_c2[["date", "NI_CO2_consumed_kg"]], on="date")
 h2d_diff_pct = ((chk_h7c["NI_CO2_h"] - chk_h7c["NI_CO2_consumed_kg"]) / chk_h7c["NI_CO2_consumed_kg"] * 100).abs()
 record("H7c", "Consumption",
        "Same effect confirmed at the hourly->daily boundary too (not limited to daily->monthly)",
-       "INFO", f"NI |diff| mean={h2d_diff_pct.mean():.3f}%, max={h2d_diff_pct.max():.3f}% of daily total (4018 days)")
+       "INFO", f"NI |diff| mean={h2d_diff_pct.mean():.3f}%, max={h2d_diff_pct.max():.3f}% of daily total ({len(chk_h7c)} days)")
 
 # Summary
 print("\n" + "=" * 70 + "\nSUMMARY\n" + "=" * 70)

@@ -1,17 +1,11 @@
 fuel_std,rel_sigma,step,station,s_station,source
 GEO,0.07071067811865475,1,,,"NIR 2026 Vol 1 s3.2.3 Table 3.2.3 (printed pp72-73): geothermal AD +/-5.0%, EF +/-5.0%; sqrt(5^2+5^2)"
 GEO_PROXY,0.9397372064732893,3-4,,,McLean and Richardson (2019) 12-station MW-weighted spread (geothermal_mclean_richardson_stations.csv)
-GEO_S2_Kawerau_KGL,0.161057690878728,2,Kawerau KGL,0.14470514777017404,"sqrt(7.07%^2 + s_station^2), s_station own series (NZGA series 2015-2024, geothermal_intensity_nzga.csv)"
-GEO_S2_Mokai,0.18321558539155552,2,Mokai,0.1690205630400348,"sqrt(7.07%^2 + s_station^2), s_station own series (NZGA series 2015-2024, geothermal_intensity_nzga.csv)"
-GEO_S2_Nga_Awa_Purua,0.12094062645497368,2,Nga Awa Purua,0.09811541737831765,"sqrt(7.07%^2 + s_station^2), s_station own series (NZGA series 2015-2024, geothermal_intensity_nzga.csv)"
-GEO_S2_Nga_Tamariki,0.1535363589294498,2,Nga Tamariki,0.1362843113249388,"sqrt(7.07%^2 + s_station^2), s_station own series (NZGA series 2015-2024, geothermal_intensity_nzga.csv)"
 GEO_S2_Ngawha_OEC1_3,0.3999408843614227,2,Ngawha OEC1-3,0.3936403320085442,"sqrt(7.07%^2 + s_station^2), s_station own series (NZGA series 2015-2024, geothermal_intensity_nzga.csv)"
 GEO_S2_Ohaaki,0.14384252414235474,2,Ohaaki,0.1252624115672531,"sqrt(7.07%^2 + s_station^2), s_station own series (NZGA series 2015-2024, geothermal_intensity_nzga.csv)"
 GEO_S2_Poihipi,0.39576100694114213,2,Poihipi,0.38939282815052817,"sqrt(7.07%^2 + s_station^2), s_station own series (NZGA series 2015-2024, geothermal_intensity_nzga.csv)"
-GEO_S2_Rotokawa,0.17535227513771334,2,Rotokawa,0.1604631434192049,"sqrt(7.07%^2 + s_station^2), s_station own series (NZGA series 2015-2024, geothermal_intensity_nzga.csv)"
 GEO_S2_TAOM,0.19057797504806537,2,TAOM,0.17697447435554378,"sqrt(7.07%^2 + s_station^2), s_station own series (NZGA series 2015-2024, geothermal_intensity_nzga.csv)"
 GEO_S2_Tauhara,0.23023278679567266,2,Tauhara,0.2191053082782379,"sqrt(7.07%^2 + s_station^2), s_station pooled (fewer than 3 published years) (NZGA series 2015-2024, geothermal_intensity_nzga.csv)"
 GEO_S2_Te_Huka,0.36583904540175277,2,Te Huka,0.35894039496894986,"sqrt(7.07%^2 + s_station^2), s_station own series (NZGA series 2015-2024, geothermal_intensity_nzga.csv)"
-GEO_S2_Te_Huka_3,0.23023278679567266,2,Te Huka 3,0.2191053082782379,"sqrt(7.07%^2 + s_station^2), s_station pooled (no NZGA series) (NZGA series 2015-2024, geothermal_intensity_nzga.csv)"
 GEO_S2_Te_Mihi,0.0990303805744835,2,Te Mihi,0.0693326494281521,"sqrt(7.07%^2 + s_station^2), s_station own series (NZGA series 2015-2024, geothermal_intensity_nzga.csv)"
 GEO_S2_Wairakei_A_B_binary,0.13689435074018344,2,Wairakei A&B & binary,0.11721801595563869,"sqrt(7.07%^2 + s_station^2), s_station own series (NZGA series 2015-2024, geothermal_intensity_nzga.csv)"

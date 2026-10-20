@@ -1,6 +1,8 @@
 # New Zealand grid emission factor database: specification
 
-Version: ef-database-v1.0.1 (2026-09-29), a bug-fix release of v1.0. Every statement below
+Version: 1.0.2 (2026-10-21), built on ef-database-v1.0.1 (2026-09-29). Version 1.0.2 maps trading periods to
+local clock hours on daylight-saving days, ends the historical series in December 2025, and retires the Huntly
+Rankine coal and gas units in 2032 where the scenarios convert them to wood. Every statement below
 cites the file, override row (`override_id` in `generation_pipeline/fuel_attribution_overrides.csv`)
 or external source it rests on.
 
@@ -12,7 +14,7 @@ Generation Scenarios (EDGS) 2024 of the Ministry of Business, Innovation and Emp
 
 | Part | Period | Resolution | Files | Built by |
 |---|---|---|---|---|
-| Historical, generation side | Jan 2015 to Aug 2026 (full years 2015-2025) | annual, monthly, daily, hourly; North Island (NI), South Island (SI) | `output/{annual,monthly,daily,hourly}_emission_factor_NI_SI.csv`, `output/monthly_fuel_mix_NI_SI.csv` | `generation_pipeline/build_ef_timeseries.py`, `build_ef_timeseries_daily_hourly.py` |
+| Historical, generation side | January 2015 to December 2025 | annual, monthly, daily, hourly; North Island (NI), South Island (SI) | `output/{annual,monthly,daily,hourly}_emission_factor_NI_SI.csv`, `output/monthly_fuel_mix_NI_SI.csv` | `generation_pipeline/build_ef_timeseries.py`, `build_ef_timeseries_daily_hourly.py` |
 | Historical, consumption side | as above | annual to hourly | `Consumption_Island/output/*_consumption_EF_NI_SI.csv` | `Consumption_Island/build_*.py` (reallocates the generation-side series across the HVDC link) |
 | Projection, primary | 2024-2050, five MBIE EDGS 2024 scenarios | annual and hourly; NI, SI, National | annual `output/edgs/consistent_scope/annual_ef_by_variant.csv` (variant `consistent_scope`, `EF_*_grid`); hourly `output/edgs/edgs_hourly_emission_factor_primary.parquet` | `edgs_pipeline/build_edgs_consistent_scope.py`, `edgs_pipeline/build_edgs_primary_hourly.py` |
 | Projection, MBIE-reproducing | as above | annual and hourly | annual variant `combustion_only`; hourly `output/edgs/edgs_hourly_emission_factor*.parquet` | `edgs_pipeline/build_edgs_dispatch.py` and the other `build_edgs_*.py` |
@@ -387,12 +389,10 @@ Share of North Island geothermal CO2 by step:
 ### Resulting bands
 
 Monte Carlo gives the North Island mean 95% bands below, as % of the point value
-(`run_ipcc_uncertainty_montecarlo.py`). Over all years, 2015 to August 2026, the bands are hourly
-12.84%, monthly 12.05% and annual 11.23%. With the fleet-wide geothermal spread in place of the
-step terms, they would be 72.01%, 63.15% and 54.04%.
-
-For 2015-2025 alone the bands are hourly 12.48%, monthly 11.82% and annual 10.96%, with 10.1% to
-12.2% by year. The annual band is 10.2% for 2025 and 14.1% for partial 2026. The sources are
+(`run_ipcc_uncertainty_montecarlo.py`). Over 2015 to 2025 the bands are hourly 12.48%, monthly 11.82%
+and annual 10.96%, with 10.1% to 12.2% by year; the annual band is 10.2% for 2025.
+With the fleet-wide geothermal spread in place of the step terms, the bands for 2015 to August 2026
+were 72.01%, 63.15% and 54.04% (not rerun for the 2015-2025 scope). The sources are
 `docs/validation/ipcc_uncertainty_by_island_{hour,month,year}_montecarlo.csv`.
 
 Approach 1 (analytic) gives 12.9% for the hourly band, against Approach 2's 12.8%. No hour has a

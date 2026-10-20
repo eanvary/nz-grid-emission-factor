@@ -1,9 +1,9 @@
 cff-version: 1.2.0
 message: "If you use these data or code, please cite the paper and this repository."
 title: "New Zealand island-resolved grid emission factors, 2015 to 2050"
-version: "1.0.1"
+version: "1.0.2"
 doi: "10.5281/zenodo.23487331"
-date-released: "2026-10-19"
+date-released: "2026-10-21"
 license: [MIT, CC-BY-4.0]
 authors:
   # Add co-authors in paper order before publishing.

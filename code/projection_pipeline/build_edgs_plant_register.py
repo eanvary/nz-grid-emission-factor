@@ -32,24 +32,22 @@ gs_all = pd.read_excel(ASSUMPTIONS_XLSX, sheet_name="Generation Stack")
 gem = pd.read_excel(RESULTS_XLSX, sheet_name="GEM build schedule")
 
 
-# Retirement / biomass-conversion matcher (EDGS 2024 report, Appendix One)
+# Retirement matcher (EDGS 2024 report, Appendix One)
 def match_retirement(plant_name, rules):
-    """Return (retire_year, convert) for a plant given a scenario's rules.
-    retire_year: first year the plant is no longer available (np.inf if never).
-    convert: None, or ('biomass', year) meaning the commodity becomes Wood from `year`."""
+    """First year the plant is no longer available in a scenario (np.inf if never)."""
     p = plant_name.lower()
     if "taranaki combined cycle" in p:
-        return rules.get("Taranaki Combined Cycle", np.inf) + 1, None  # 'end of 2024', so gone from 2025
+        return rules.get("Taranaki Combined Cycle", np.inf) + 1  # 'end of 2024', so gone from 2025
     if "huntly unit 5" in p:
-        return rules.get("Huntly Unit 5", np.inf) + 1, None
+        return rules.get("Huntly Unit 5", np.inf) + 1
     if "stratford peaker" in p:
-        return rules.get("Stratford peaker", np.inf) + 1, None
-    if "huntly unit 1" in p or "huntly unit 2" in p:  # Rankine units (coal+gas)
-        conv = rules.get("Huntly Rankine")
-        if conv:  # ('biomass', 2032)
-            return np.inf, conv
-        return np.inf, None
-    return np.inf, None
+        return rules.get("Stratford peaker", np.inf) + 1
+    if ("huntly unit 1" in p or "huntly unit 2" in p) and "wood" not in p:
+        # The Generation Stack lists the converted Rankine units as separate Wood plants from the
+        # conversion year, so the coal and gas entries retire then instead of being converted.
+        conv = rules.get("Huntly Rankine")  # ('biomass', 2032) in Innovation and Environmental
+        return conv[1] if conv else np.inf
+    return np.inf
 
 
 # Build per-scenario, per-year active plant register
@@ -76,7 +74,7 @@ for scenario in SCENARIOS:
         if island is None:
             log(f"WARNING [{scenario}]: region '{row['Region']}' not mapped ({row['Plant']})")
             continue
-        retire_year, convert = match_retirement(row["Plant"], rules)
+        retire_year = match_retirement(row["Plant"], rules)
         cap = float(row["Capacity (MW)"]) if pd.notna(row["Capacity (MW)"]) else 0.0
 
         for yr in YEARS:
@@ -84,10 +82,6 @@ for scenario in SCENARIOS:
                 continue
             com, dclass = commodity, COMMODITY[commodity][1]
             src = f"Assumptions!Generation Stack[{row['Status']}]"
-            # Huntly Rankine biomass conversion (Innovation/Environmental from 2032)
-            if convert and convert[0] == "biomass" and yr >= convert[1]:
-                com, dclass = "Wood", "renewable"
-                src = f"calculated: {row['Plant']} converted to biomass from {convert[1]} (EDGS 2024 report, Appendix One)"
             records.append({
                 "scenario": scenario, "year": yr, "plant": row["Plant"],
                 "commodity": com, "dispatch_class": dclass, "island": island,

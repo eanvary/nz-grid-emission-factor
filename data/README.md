@@ -1,13 +1,15 @@
 # Data
 
-All times are New Zealand local time, as recorded in the source data. NI is the North Island and SI the
+All times are New Zealand local time, as recorded in the source data. Hourly rows are clock hours:
+the day clocks go forward (last Sunday of September) has no 02:00 row, and on the day clocks go back
+(first Sunday of April) the 02:00 row holds both runs of that hour. NI is the North Island and SI the
 South Island. The Ministry of Business, Innovation and Employment (MBIE) publishes the Electricity Demand
 and Generation Scenarios (EDGS) 2024 that the projection reconstructs.
 
 ## historical/generation_basis/
 
 These files attribute emissions to the island where electricity is generated. They are built from
-Electricity Authority half-hourly metered generation, January 2015 to August 2026.
+Electricity Authority half-hourly metered generation, January 2015 to December 2025.
 
 `{annual,monthly,daily,hourly}_emission_factor_NI_SI.csv`
 
@@ -82,7 +84,7 @@ from these copies.
 
 | Archive | Contents |
 |---|---|
-| `ea_emi_generation_md.zip` | `EA_EMI_raw/YYYYMM_Generation_MD.csv`, half-hourly metered generation, January 2015 to August 2026 |
+| `ea_emi_generation_md.zip` | `EA_EMI_raw/YYYYMM_Generation_MD.csv`, half-hourly metered generation, January 2015 to December 2025 |
 | `ea_emi_grid_import.zip` | `EA_EMI_raw/YYYYMM_Grid_import.csv`, half-hourly grid import by point of connection, used for the flagged fills |
 | `ea_emi_hvdc_flows.zip` | `EA_EMI_raw/YYYYMM_HVDC_flows.csv`, half-hourly flows on the HVDC link |
 | `ea_reference_tables.zip` | `EA data/Dispatched generation plant.csv` and `EA data/NSP Tables/` (point of connection to island lookup) |

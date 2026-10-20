@@ -1,4 +1,6 @@
 """
+Usage: python build_fig3_disclosure.py <extraction workbook>
+
 Figure 3: disclosure matrix, built from extraction_output_reviewed_Output_v12.xlsx,
 sheet 'Extraction', restricted to the 68 Include==Yes records.
 
@@ -23,7 +25,7 @@ from matplotlib.lines import Line2D
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-WB = Path(r"C:\Users\ehsan\OneDrive - AUT University\PhD\Papers\01 Review Paper\Refeences\Assessment\extraction_output_reviewed_Output_v12.xlsx")
+WB = Path(sys.argv[1])  # the review extraction workbook, extraction_output_reviewed_Output_v12.xlsx (not released)
 FIGS = ROOT / "figures"
 FIGS.mkdir(parents=True, exist_ok=True)
 

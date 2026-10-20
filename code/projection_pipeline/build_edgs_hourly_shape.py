@@ -30,10 +30,15 @@ Outputs (output/edgs/):
   edgs_shape_renewables.parquet  template_year, island, fuel_std, month, day, hour, weight
   edgs_shape_demand.parquet      template_year, island, month, day, hour, weight
 """
+import sys
+
 import numpy as np
 import pandas as pd
 
 from edgs_common import ROOT, OUT_DIR, CONSUMPTION_OUT, log_factory
+
+sys.path.insert(0, str(ROOT / "generation_pipeline"))
+from fuel_attribution import periods_in_day, tp_to_hours  # noqa: E402
 
 log, lines = log_factory()
 
@@ -66,23 +71,18 @@ log(f"Loading {len(gen_files)} Generation_MD files for template years {sorted(wa
 parts = []
 for f in gen_files:
     df = pd.read_csv(f, low_memory=False)
-    tp = df[[f"TP{i}" for i in range(1, 49)]].fillna(0).to_numpy(float)
-    hour_mwh = tp.reshape(len(df), 24, 2).sum(axis=2) / 1000.0  # (n,24): trading-period pairs summed to hours
-    # NZ's DST fall-back day (first Sunday of April) has 50 trading periods. Dropping
-    # TP49/TP50 would miss about 3,500-3,900 MWh nationally on that one day in each of
-    # 2021/2023/2024. They are folded into hour 23 for the same reason as
-    # build_ef_timeseries_daily_hourly.py (a 25th hour bucket would break the fixed
-    # 24-hour/day shape every downstream consumer of edgs_shape_*.parquet assumes).
-    # The effect is under 0.02% of one fuel's annual total. edgs_shape_*.parquet files
-    # built without this fold differ by no more than that; the fold applies whenever
-    # Modules 4-7 are re-run.
-    if "TP49" in df.columns:
-        tp_extra = df[["TP49", "TP50"]].fillna(0).to_numpy(float)
-        hour_mwh[:, 23] += tp_extra.sum(axis=1) / 1000.0
     # Column casing differs before 2020 (Trading_date or Trading_Date), which matters
     # for the "median" (2017) template; same case-insensitive lookup as
     # build_ef_timeseries.py's lower_map.
     lower_map = {c.lower(): c for c in df.columns}
+    tp = df.reindex(columns=[f"TP{i}" for i in range(1, 51)]).fillna(0).to_numpy(float)
+    n_tp = periods_in_day(df[lower_map["trading_date"]])
+    hour_mwh = tp_to_hours(tp, n_tp) / 1000.0  # (n, 24) local clock hours, MWh
+    # A shape needs one value per clock hour: the clocks-back day's repeated 02:00 is averaged,
+    # and the clocks-forward day's missing 02:00 is taken as the mean of 01:00 and 03:00.
+    hour_mwh[n_tp == 50, 2] /= 2
+    fwd = n_tp == 46
+    hour_mwh[fwd, 2] = (hour_mwh[fwd, 1] + hour_mwh[fwd, 3]) / 2
     island = pd.Series(df[lower_map["poc_code"]]).map(poc_island).to_numpy()
     fuel = pd.Series(df[lower_map["fuel_code"]]).map(FUEL_STD).fillna(df[lower_map["fuel_code"]]).to_numpy()
     date = pd.to_datetime(df[lower_map["trading_date"]])
@@ -127,6 +127,13 @@ for isl, col in [("NI", "NI_consumption_MWh"), ("SI", "SI_consumption_MWh")]:
     })
     dem_long.append(d)
 dem = pd.concat(dem_long, ignore_index=True)
+# Same one-value-per-clock-hour rule as the renewable shapes above.
+dem = dem.pivot_table(index=["template_year", "island", "month", "day"], columns="hour", values="mwh", aggfunc="sum")
+n_tp = periods_in_day(pd.to_datetime(dem.index.to_frame(index=False)[["template_year", "month", "day"]]
+                                     .rename(columns={"template_year": "year"})))
+dem.loc[n_tp == 50, 2] /= 2
+dem.loc[n_tp == 46, 2] = (dem.loc[n_tp == 46, 1] + dem.loc[n_tp == 46, 3]) / 2
+dem = dem.stack().rename("mwh").reset_index()
 dem["weight"] = dem["mwh"] / dem.groupby(["template_year", "island"])["mwh"].transform("sum")
 dem_out = dem[["template_year", "island", "month", "day", "hour", "weight"]].copy()
 dchk = dem.groupby(["template_year", "island"])["weight"].sum()

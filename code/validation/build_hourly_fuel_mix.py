@@ -30,9 +30,9 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 sys.path.insert(0, str(ROOT / "generation_pipeline"))
-from fuel_attribution import FUEL_STD, FuelAttribution, poc_island_map  # noqa: E402
+from fuel_attribution import (FUEL_STD, FuelAttribution, periods_in_day, poc_island_map, raw_files,  # noqa: E402
+                              tp_hours, tp_to_hours)
 
-GEN_DIR = ROOT / "EA_EMI_raw"
 RELEASED_HOURLY = ROOT / "output" / "hourly_emission_factor_NI_SI.csv"
 OUT = HERE / "hourly_fuel_mix_NI_SI.csv"
 
@@ -41,16 +41,14 @@ poc_island = poc_island_map()
 print(f"  {len(poc_island)} POCs")
 
 fa = FuelAttribution()
-gen_files = sorted(GEN_DIR.glob("*_Generation_MD.csv"))
+gen_files = raw_files("Generation_MD")
 
 print(f"Loading {len(gen_files)} Generation_MD files and building hourly per-fuel table...")
 hourly_parts = []
 for f in gen_files:
     df = pd.read_csv(f, low_memory=False)
     trading_date_col = {c.lower(): c for c in df.columns}["trading_date"]
-    tp_cols = [f"TP{i}" for i in range(1, 49)]
-    tp = df[tp_cols].fillna(0).to_numpy(dtype=float)
-    tp_extra = df[["TP49", "TP50"]].fillna(0).to_numpy(dtype=float) if "TP49" in df.columns else np.zeros((len(df), 2))
+    tp = df.reindex(columns=[f"TP{i}" for i in range(1, 51)]).fillna(0).to_numpy(dtype=float)
 
     poc = df["POC_Code"].to_numpy()
     gen_code = df["Gen_Code"].to_numpy()
@@ -60,8 +58,7 @@ for f in gen_files:
     fuel_std = pd.Series(fuel_raw).map(FUEL_STD).fillna(pd.Series(fuel_raw)).to_numpy()
     keep = np.array([isl in ("NI", "SI") for isl in island])
 
-    hour_mwh = tp.reshape(len(df), 24, 2).sum(axis=2) / 1000.0
-    hour_mwh[:, 23] += tp_extra.sum(axis=1) / 1000.0
+    hour_mwh = tp_to_hours(tp, periods_in_day(date)) / 1000.0  # local clock hours, as the hourly EF table
     h_island = np.repeat(island[keep], 24)
     h_poc = np.repeat(poc[keep], 24)
     h_gc = np.repeat(gen_code[keep], 24)
@@ -72,18 +69,18 @@ for f in gen_files:
     hourly_parts.append(pd.DataFrame({
         "island": h_island, "date": h_date, "hour": h_hour,
         "poc": h_poc, "gen_code": h_gc, "fuel_std": h_fuel, "gen_mwh": h_mwh,
-    }))
+    }).dropna(subset=["gen_mwh"]))
 
 hourly_raw = pd.concat(hourly_parts, ignore_index=True)
 hourly_raw["date"] = pd.to_datetime(hourly_raw["date"])
 
-# Flagged fills (fuel_attribution.fills), folded into hours as build_ef_timeseries_daily_hourly.py
-# does: TP49/TP50 go to hour 23.
+# Flagged fills (fuel_attribution.fills), folded into clock hours as in build_ef_timeseries_daily_hourly.py.
 fill_tp = fa.fills()
 fill_tp = fill_tp[fill_tp["trading_date"].isin(hourly_raw["date"].unique())]
 fill_tp["fuel_std"] = fill_tp["fuel_code_raw"].map(FUEL_STD)
-fill_h = (fill_tp.assign(hour=((fill_tp["tp"] - 1) // 2).clip(upper=23))
-          .groupby(["trading_date", "hour", "poc", "gen_code", "fuel_std"], as_index=False)["gen_mwh"].sum()
+hour_of = {n: tp_hours(n) for n in (46, 48, 50)}
+fill_tp["hour"] = [hour_of[n][t - 1] for n, t in zip(periods_in_day(fill_tp["trading_date"]), fill_tp["tp"])]
+fill_h = (fill_tp.groupby(["trading_date", "hour", "poc", "gen_code", "fuel_std"], as_index=False)["gen_mwh"].sum()
           .rename(columns={"trading_date": "date"}))
 fill_h["island"] = fill_h["poc"].map(poc_island)
 hourly_raw = pd.concat([hourly_raw, fill_h[hourly_raw.columns]], ignore_index=True)

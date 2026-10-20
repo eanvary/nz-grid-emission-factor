@@ -90,13 +90,14 @@ FIGS = ROOT / "figures"
 FIGS.mkdir(parents=True, exist_ok=True)
 # All-scenario, solar-corrected files (see the data-vintage note above).
 # Filtered to scenario=="Reference" below, same as phase3_decomposition.py.
-HOURLY_EF_PARQUET = Path(r"C:\Users\ehsan\OneDrive - AUT University\PhD\Database\Grid Emission Factor\output\edgs\edgs_hourly_emission_factor.parquet")
-HOURLY_GEN_PARQUET = Path(r"C:\Users\ehsan\OneDrive - AUT University\PhD\Database\Grid Emission Factor\output\edgs\edgs_hourly_generation.parquet")
+# Usage: python build_fig4_treatment_schematic_v2.py <copy_root>, the database copy the paper's results come from.
+DB = Path(sys.argv[1]).resolve()
+HOURLY_EF_PARQUET = DB / "output" / "edgs" / "edgs_hourly_emission_factor.parquet"
+HOURLY_GEN_PARQUET = DB / "output" / "edgs" / "edgs_hourly_generation.parquet"
 # phase3_decomposition_full.csv / phase3_annual_island_ef.csv / phase3_annual_national_ef.csv /
-# phase3_load_shapes_stylised.csv are not under Figure/tables/. Read them from the location
-# phase3_decomposition.py / phase3_load_profiles.py write to, the same way
-# HOURLY_EF_PARQUET above points at the Database repo's output.
-DB_TABLES = Path(r"C:\Users\ehsan\OneDrive - AUT University\PhD\Database\Grid Emission Factor\analysis_paper\tables")
+# phase3_load_shapes_stylised.csv are read from where phase3_decomposition.py and
+# phase3_load_profiles.py write them in the same copy.
+DB_TABLES = DB / "analysis_paper" / "tables"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from journal_palette import set_journal_style, CATEGORICAL, BASE  # noqa: E402

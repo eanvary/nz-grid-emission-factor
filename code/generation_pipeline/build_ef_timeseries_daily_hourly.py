@@ -1,7 +1,7 @@
 """
 NI/SI grid emission factor time series at daily and hourly resolution.
 Period and method match build_ef_timeseries.py: every Generation_MD month on
-disk (2015-2025 in the released database), generation-weighted
+up to LAST_MONTH (2015-2025), generation-weighted
 EF = sum(CO2)/sum(generation), with factors resolved per month by
 fuel_attribution.py from the Dispatched generation plant register.
 
@@ -13,9 +13,6 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).parent.parent  # project root: the folder above generation_pipeline/
-NSP_DIR = ROOT / "EA data" / "NSP Tables"
-PLANT_FILE = ROOT / "EA data" / "Dispatched generation plant.csv"
-GEN_DIR = ROOT / "EA_EMI_raw"
 OUT_DIR = ROOT / "output"
 OUT_DIR.mkdir(exist_ok=True)
 
@@ -27,75 +24,17 @@ def log(msg):
     log_lines.append(str(msg))
 
 
-# POC-to-island lookup (same logic as the monthly pipeline)
-nsp_files = sorted(NSP_DIR.glob("*_NetworkSupplyPointsTable.csv"))
-nsp_all = pd.concat([pd.read_csv(f, low_memory=False) for f in nsp_files], ignore_index=True)
-nsp_unique = nsp_all.drop_duplicates(
-    subset=["POC code", "Reconciliation type", "Island", "Start date", "End date"]
-)
-poc_island = (
-    nsp_unique.dropna(subset=["Island"])
-    .sort_values("Start date", ascending=False)
-    .drop_duplicates(subset=["POC code"])
-    .set_index("POC code")["Island"]
-    .to_dict()
-)
+from fuel_attribution import FUEL_STD, periods_in_day, poc_island_map, raw_files, tp_hours, tp_to_hours
+
+poc_island = poc_island_map()
 log(f"POC-to-island lookup: {len(poc_island)} POCs")
 
-# Thermal SCD2 EF lookup, keyed by (POC, standardised fuel)
-plant = pd.read_csv(PLANT_FILE, low_memory=False)
-plant["eff_start"] = pd.to_datetime(plant["effective_start_datetime"], utc=True, errors="coerce")
-# An end date of "9999-12-31..." (still-active record) overflows pandas' nanosecond
-# timestamp range and parses to NaT under errors="coerce". Every currently active
-# SCD2 record would then fail every date-range match below. Years >= 9999 are
-# clamped to an in-range sentinel before parsing, as in build_ef_timeseries.py.
-eff_end_raw = plant["effective_end_datetime"].astype(str).str.replace(
-    r"^9999-.*$", "2200-01-01T00:00:00.000Z", regex=True
-)
-plant["eff_end"] = pd.to_datetime(eff_end_raw, utc=True, errors="coerce")
-plant["EF_kg_per_MWh"] = plant["HeatRate"] * plant["EmissionsFactor"] / 1e6
-
-# Per-station geothermal EF (McLean & Richardson 2019), with their fleet
-# mean for unmatched stations (geothermal_ef_correction.py).
-from geothermal_ef_correction import apply_geothermal_ef_correction
-apply_geothermal_ef_correction(plant)
-
-thermal = plant[plant["EF_kg_per_MWh"].notna()].copy()
-thermal_by_pocfuel = {}
-for (poc, fuel), g in thermal.groupby(["PointOfConnectionCode", "FuelCode"]):
-    thermal_by_pocfuel[(poc, fuel)] = g[["eff_start", "eff_end", "EF_kg_per_MWh"]].to_dict("records")
-log(f"Thermal SCD2 lookup built: {len(thermal_by_pocfuel)} (POC, fuel) combinations")
-
-FUEL_STD = {
-    "Coal": "CLG", "CLG": "CLG",
-    "Gas": "GAS", "GAS": "GAS",
-    "Diesel": "DSL", "DSL": "DSL",
-    "Geo": "GEO", "GEO": "GEO",
-    "Hydro": "HYD", "HYD": "HYD",
-    "Solar": "SOL", "SOL": "SOL",
-    "Wind": "WIN", "WIN": "WIN",
-    "Wood": "WOOD",
-    "ELE": "ELE",
-}
-THERMAL_FUELS = {"CLG", "GAS", "DSL", "GEO"}
-
-
-def get_thermal_ef(poc, fuel_std, ref_dt):
-    records = thermal_by_pocfuel.get((poc, fuel_std))
-    if not records:
-        return 0.0
-    active = [r["EF_kg_per_MWh"] for r in records if r["eff_start"] <= ref_dt < r["eff_end"]]
-    if not active:
-        return 0.0
-    return float(np.mean(active))
-
-
 # Emission factors are assigned per generator code and unit by fuel_attribution.py (below).
-gen_files = sorted(GEN_DIR.glob("*_Generation_MD.csv"))
+gen_files = raw_files("Generation_MD")
 
 
-# Each Generation_MD file is loaded once and gives a daily row (sum of TP1-48)
-# and 24 hourly rows (TP[2h+1]+TP[2h+2]) per POC/fuel/date.
+# Each Generation_MD file is loaded once and gives a daily row (all trading periods)
+# and one row per local clock hour per POC/fuel/date.
 daily_parts = []
 hourly_parts = []
 
@@ -104,15 +43,8 @@ for f in gen_files:
     # The column is Trading_date in older files and Trading_Date in later ones
     # (the change is around 2020); a case-insensitive lookup loads both.
     trading_date_col = {c.lower(): c for c in df.columns}["trading_date"]
-    tp_cols = [f"TP{i}" for i in range(1, 49)]
-    tp = df[tp_cols].fillna(0).to_numpy(dtype=float)
-    # NZ's DST fall-back day (first Sunday of April) has 50 trading periods.
-    # TP49/TP50 are the extra repeated hour, present as columns in every file
-    # (empty or 0 on all other days). They stay out of the 24-hour reshape below,
-    # since that day's wall-clock hours do not map onto a fixed 24-bucket scheme.
-    # They must still enter the daily total, or that day loses about
-    # 3,500-3,900 MWh nationally each year.
-    tp_extra = df[["TP49", "TP50"]].fillna(0).to_numpy(dtype=float) if "TP49" in df.columns else np.zeros((len(df), 2))
+    # TP1-TP50: 46 periods when clocks go forward, 50 when they go back (TP49/TP50 present).
+    tp = df.reindex(columns=[f"TP{i}" for i in range(1, 51)]).fillna(0).to_numpy(dtype=float)
 
     poc = df["POC_Code"].to_numpy()
     gen_code = df["Gen_Code"].to_numpy()
@@ -124,21 +56,16 @@ for f in gen_files:
 
     keep = np.array([isl in ("NI", "SI") for isl in island])
 
-    # Daily (includes TP49/TP50 where present)
-    daily_mwh = (tp.sum(axis=1) + tp_extra.sum(axis=1)) / 1000.0
+    daily_mwh = tp.sum(axis=1) / 1000.0
     d = pd.DataFrame({
         "island": island[keep], "date": date[keep], "poc": poc[keep], "gen_code": gen_code[keep],
         "fuel_std": fuel_std[keep], "gen_mwh": daily_mwh[keep],
     })
     daily_parts.append(d)
 
-    # Hourly: TP(2h+1)+TP(2h+2) form hour h (0-23). TP49/TP50 fold into hour 23
-    # (the last hour of the trading day), so the hourly sum reconciles exactly to
-    # the daily total above. A 25th hour bucket would break the fixed 24-hour day
-    # that downstream scripts expect.
-    hour_mwh = tp.reshape(len(df), 24, 2).sum(axis=2) / 1000.0  # (n, 24)
-    hour_mwh[:, 23] += tp_extra.sum(axis=1) / 1000.0  # kWh to MWh, matching hour_mwh's units
-    n = len(df)
+    # Hourly by local clock hour. On the clocks-forward day 02:00 does not exist (NaN, dropped
+    # below); on the clocks-back day both runs of 02:00 sum into hour 2.
+    hour_mwh = tp_to_hours(tp, periods_in_day(date)) / 1000.0  # (n, 24), kWh to MWh
     h_island = np.repeat(island[keep], 24)
     h_poc = np.repeat(poc[keep], 24)
     h_gc = np.repeat(gen_code[keep], 24)
@@ -150,7 +77,7 @@ for f in gen_files:
         "island": h_island, "date": h_date, "hour": h_hour,
         "poc": h_poc, "gen_code": h_gc, "fuel_std": h_fuel, "gen_mwh": h_mwh,
     })
-    hourly_parts.append(h)
+    hourly_parts.append(h.dropna(subset=["gen_mwh"]))
 
 log(f"Loaded {len(gen_files)} Generation_MD files for daily/hourly disaggregation")
 
@@ -168,8 +95,9 @@ fill_tp = fill_tp[fill_tp["trading_date"].isin(pd.to_datetime(daily_raw["date"].
 fill_tp["fuel_std"] = fill_tp["fuel_code_raw"].map(FUEL_STD)
 fkeys = ["poc", "gen_code", "fuel_std"]
 fill_d = fill_tp.groupby(["trading_date"] + fkeys, as_index=False)["gen_mwh"].sum().rename(columns={"trading_date": "date"})
-# TP49/TP50 (DST fall-back day) fold into hour 23, as for the raw files above
-fill_h = (fill_tp.assign(hour=((fill_tp["tp"] - 1) // 2).clip(upper=23)).groupby(["trading_date", "hour"] + fkeys, as_index=False)["gen_mwh"].sum()
+hour_of = {n: tp_hours(n) for n in (46, 48, 50)}
+fill_tp["hour"] = [hour_of[n][t - 1] for n, t in zip(periods_in_day(fill_tp["trading_date"]), fill_tp["tp"])]
+fill_h = (fill_tp.groupby(["trading_date", "hour"] + fkeys, as_index=False)["gen_mwh"].sum()
           .rename(columns={"trading_date": "date"}))
 for f_ in (fill_d, fill_h):
     f_["island"] = f_["poc"].map(poc_island)
@@ -261,14 +189,13 @@ max_co2_diff2 = (chk2["total_CO2_kg_hourly"] - chk2["total_CO2_kg_daily"]).abs()
 log(f"Hourly-to-daily reconciliation: max |gen diff| = {max_gen_diff2:.6f} MWh, "
     f"max |CO2 diff| = {max_co2_diff2:.6f} kg (expected: about 0)")
 
-nan_hours = hourly_out["EF_kg_per_MWh"].isna().sum()
-log(f"\nNOTE: {nan_hours} hourly rows have EF = NaN (0 generation / 0 CO2). These are "
-    f"the DST spring-forward transition hour (last Sunday of September, NZ clocks "
-    f"skip 23:00-23:59). TP47/TP48 do not exist for that POC-day, so total "
-    f"generation for that hour is zero, not a data gap.")
+nan_hours = int(hourly_out["EF_kg_per_MWh"].isna().sum())
+log(f"\nNOTE: hours are local clock hours. The clocks-forward day (last Sunday of September) has no "
+    f"02:00 row; on the clocks-back day (first Sunday of April) hour 2 holds both runs of 02:00. "
+    f"Hourly rows with EF = NaN: {nan_hours} (expected 0).")
 log("\nFuel attribution: fuel_attribution.py resolves factors by generator code and "
     "register unit, with the sourced overrides in fuel_attribution_overrides.csv (Huntly 1-4 coal/gas "
-    "split, E3P/P40 and Rotokawa/Te Huka units, Kinleith wood, Matahina fill, records inactive after "
+    "split, E3P/P40 units, Kinleith wood, Matahina fill, records inactive after "
     "DateDecommissioned). See build_ef_timeseries.py NOTES items 3 and 5.")
 
 (OUT_DIR / "processing_log_daily_hourly.txt").write_text("\n".join(log_lines), encoding="utf-8")

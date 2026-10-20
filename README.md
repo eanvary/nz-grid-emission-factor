@@ -10,7 +10,7 @@ Innovation and Employment (MBIE) at hourly resolution for each island.
 
 | Part | Period | Resolution | Folder |
 |---|---|---|---|
-| Historical, generation basis | January 2015 to August 2026 | annual, monthly, daily, hourly | `data/historical/generation_basis/` |
+| Historical, generation basis | January 2015 to December 2025 | annual, monthly, daily, hourly | `data/historical/generation_basis/` |
 | Historical, consumption basis | as above | annual, monthly, daily, hourly | `data/historical/consumption_basis/` |
 | Projection, five MBIE EDGS 2024 scenarios | 2024 to 2050 | annual and hourly; NI, SI, national | `data/projection/` |
 
@@ -37,14 +37,18 @@ files report kg CO2e/kWh (`emission_factor_kg_co2e_per_kwh`). Column definitions
 - `code/`: the three database pipelines, the validation scripts, and the paper's analysis and figure
   scripts. The run order is in `code/README.md`.
 - `docs/DATABASE_SPEC.md`: the database specification.
+- `tests/`: checks for the trading-period to clock-hour mapping (`python tests/test_trading_periods.py`).
 - `MANIFEST.csv`: size and SHA-256 checksum of every file in the repository.
 - `zenodo_manifest.csv`: files too large for GitHub, such as hourly generation by fuel and the
   unsplit hourly factor. They are in the archived data deposit, https://doi.org/10.5281/zenodo.23487331.
 
 ## Version
 
-The data are database tag `ef-database-v1.0.1` (29 September 2026), the version the paper's results come
-from. Hourly projection files are stored with zstd compression, and their values are identical to the
+This is version 1.0.2 (21 October 2026), the version the paper's results come from. It builds on database
+tag `ef-database-v1.0.1` (29 September 2026) with three corrections: hourly rows follow local clock time on
+daylight-saving days, the historical series ends in December 2025, and the Huntly Rankine coal and gas units
+retire in 2032 where the scenarios convert them to wood. Annual, monthly and daily factors for 2015-2025 are
+unchanged. Hourly projection files are stored with zstd compression, and their values are identical to the
 database files. The headline hourly factor is split into one file per accounting basis, because a single
 file exceeds GitHub's size limit.
 

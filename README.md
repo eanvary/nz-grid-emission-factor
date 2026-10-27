@@ -45,7 +45,7 @@ files report kg CO2e/kWh (`emission_factor_kg_co2e_per_kwh`). Column definitions
 
 ## Version
 
-This is version 1.0.2 (21 October 2026), the version the paper's results come from. It builds on database
+This is version 1.0.2 (27 October 2026), the version the paper's results come from. It builds on database
 tag `ef-database-v1.0.1` (29 September 2026) with three corrections: hourly rows follow local clock time on
 daylight-saving days, the historical series ends in December 2025, and the Huntly Rankine coal and gas units
 retire in 2032 where the scenarios convert them to wood. Annual, monthly and daily factors for 2015-2025 are

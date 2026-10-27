@@ -3,14 +3,21 @@ message: "If you use these data or code, please cite the paper and this reposito
 title: "New Zealand island-resolved grid emission factors, 2015 to 2050"
 version: "1.0.2"
 doi: "10.5281/zenodo.23487331"
-date-released: "2026-10-21"
+date-released: "2026-10-27"
 license: [MIT, CC-BY-4.0]
 authors:
-  # Add co-authors in paper order before publishing.
   - family-names: "Arab Anvari"
     given-names: "Ehsan"
     affiliation: "Auckland University of Technology"
     email: "ehsan.anvari@autuni.ac.nz"
+  - family-names: "Jalali"
+    given-names: "Zahra"
+    affiliation: "School of Future Environments, Auckland University of Technology"
+    orcid: "https://orcid.org/0000-0001-5769-9981"
+  - family-names: "Ghaffarianhoseini"
+    given-names: "Amirhosein"
+    affiliation: "School of Future Environments, Auckland University of Technology"
+    orcid: "https://orcid.org/0000-0002-3189-0566"
 keywords:
   - grid emission factor
   - New Zealand
@@ -23,5 +30,9 @@ preferred-citation:
   authors:
     - family-names: "Arab Anvari"
       given-names: "Ehsan"
+    - family-names: "Jalali"
+      given-names: "Zahra"
+    - family-names: "Ghaffarianhoseini"
+      given-names: "Amirhosein"
   status: submitted
   year: 2026

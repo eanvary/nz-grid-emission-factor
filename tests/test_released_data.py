@@ -41,6 +41,17 @@ def test_hourly_daily_annual_totals_agree():
         assert np.allclose(h2a[c], h2a[f"{c}_a"], rtol=1e-9)
 
 
+def test_consumption_balances_generation():
+    # Island consumption moves energy and CO2 between the islands; national totals must not change.
+    for res, keys in [("daily", ["date"]), ("hourly", ["date", "hour"]), ("monthly", ["year", "month"]), ("annual", ["year"])]:
+        gen = pd.read_csv(GEN / f"{res}_emission_factor_NI_SI.csv").groupby(keys)[["total_gen_MWh", "total_CO2_kg"]].sum()
+        cons = pd.read_csv(CONS / f"{res}_consumption_EF_NI_SI.csv").set_index(keys)
+        j = gen.join(cons, how="outer")
+        assert len(j) == len(gen) == len(cons), res
+        assert np.allclose(j.NI_consumption_MWh + j.SI_consumption_MWh, j.total_gen_MWh, rtol=1e-9), res
+        assert np.allclose(j.NI_CO2_consumed_kg + j.SI_CO2_consumed_kg, j.total_CO2_kg, rtol=1e-9), res
+
+
 def test_series_ends_in_december_2025():
     assert hourly["date"].max() == pd.Timestamp("2025-12-31")
     assert pd.read_csv(GEN / "annual_emission_factor_NI_SI.csv")["year"].max() == 2025

@@ -9,7 +9,6 @@ emission factors). Nothing is invented; every constant carries a source string.
 Traceability tags used across the pipeline output:
     MBIE_annual_disaggregated | assumption_1 | assumption_2 | calculated
 """
-import os
 from pathlib import Path
 
 import numpy as np
@@ -283,8 +282,8 @@ def map_weights(cal, wtab, template_year=None):
     lies nearest to the same calendar date (shift of at most +/-3 days), which preserves
     the seasonal position to within three days and the weekly cycle exactly. Feb 29 / DST
     gaps between template and target year are still handled by the renormalisation.
-    template_year=None gives the plain calendar-date join instead (regression knob)."""
-    if template_year is None or os.environ.get("EDGS_DISABLE_WEEKDAY_ALIGN", "0") == "1":
+    template_year=None gives the plain calendar-date join instead (used by the sensitivity scripts)."""
+    if template_year is None:
         m = cal.merge(wtab, on=["month", "day", "hour"], how="left")
         w = m["weight"].fillna(0.0).to_numpy()
         s = w.sum()

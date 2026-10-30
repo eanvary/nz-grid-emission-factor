@@ -20,6 +20,8 @@ Raw Electricity Authority inputs are in `data/raw/`. Unzip the four archives int
 they create `EA_EMI_raw/` (generation, grid import and high-voltage direct current link files) and
 `EA data/` (plant list and Network Supply Points tables). The MBIE workbooks and the other small inputs
 are included next to the scripts that read them.
+If you download the EMI files yourself instead, run `projection_pipeline/fix_ddmmyyyy_dates.py` first:
+the 2015 to 2019 grid import and HVDC files use day-first dates.
 
 ## Run order
 

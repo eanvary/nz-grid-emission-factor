@@ -131,6 +131,9 @@ h2d = hourly_wide.groupby("date").agg(
 chk_h2d = h2d.merge(daily, on="date", suffixes=("_h", "_d"))
 max_h2d_diff = (chk_h2d["SI_to_NI_GWh_h"] - chk_h2d["SI_to_NI_GWh_d"]).abs().max()
 log(f"Hourly-to-daily reconciliation: max |SI_to_NI diff| = {max_h2d_diff:.9f} GWh (expected: about 0)")
+assert len(chk_h2d) == len(daily), "hourly HVDC output is missing days that the daily output has"
+for c in ("SI_to_NI_GWh", "NI_to_SI_GWh"):
+    assert np.allclose(chk_h2d[f"{c}_h"], chk_h2d[f"{c}_d"], rtol=1e-9), f"hourly {c} does not sum to daily"
 
 monthly = (
     wide.groupby(["year", "month"])[["SI_to_NI_GWh", "NI_to_SI_GWh", "net_to_NI_GWh"]]

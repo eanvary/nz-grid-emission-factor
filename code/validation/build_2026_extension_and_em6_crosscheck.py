@@ -22,7 +22,8 @@ This script builds the overlap:
    class. The table is written to a separate validation-only file
    (generation_by_fuel_daily_2026.csv). The published output/*.csv files are not
    modified and stay scoped to 2015-2025.
-3. em6's /free/price generation-by-fuel data for the same window is fetched live.
+3. em6's /free/price generation-by-fuel data for the same window is fetched live once and saved
+   (em6_free_generation_by_fuel_daily.csv); reruns read the saved file.
 4. The two are compared day by day and fuel by fuel over the overlapping period.
 
 This gives an external cross-check at daily resolution (em6's free endpoint is daily,
@@ -62,34 +63,38 @@ print(f"Built national daily generation-by-fuel for {len(NEW_MONTHS)} new months
       f"{national_daily.trading_date.min().date()} to {national_daily.trading_date.max().date()}, "
       f"{len(national_daily)} (date, fuel) rows, written to generation_by_fuel_daily_2026.csv")
 
-# em6's free generation-by-fuel data, fetched live.
-print("\nFetching em6 free/price generation-by-fuel data (live)...")
-url = "https://api.em6.co.nz/ords/em6/data_api/free/price?grid_zone_id="
-with urllib.request.urlopen(url, timeout=30) as resp:
-    em6_raw = json.loads(resp.read().decode())
-
-em6_rows = []
-for item in em6_raw["items"]:
-    td = pd.to_datetime(item["trading_date"]).normalize()
-    for gt in item["generation_type"]:
-        for key, val in gt.items():
-            if key.endswith("_mwh"):
-                fuel_em6 = key[:-4].upper()
-                em6_rows.append({"trading_date": td, "fuel_em6": fuel_em6, "gen_mwh_em6": val})
-em6_df = pd.DataFrame(em6_rows)
-em6_df["trading_date"] = em6_df["trading_date"].dt.tz_localize(None)
-em6_df.to_csv(HERE / "em6_free_generation_by_fuel_daily.csv", index=False)
+# em6's free generation-by-fuel data. The free window rolls forward (about 185 days), so a later
+# live fetch no longer overlaps 2026-03 to 2026-08; reruns read the saved fetch when it exists.
+EM6_SNAPSHOT = HERE / "em6_free_generation_by_fuel_daily.csv"
+if EM6_SNAPSHOT.exists():
+    print(f"\nReading the saved em6 fetch {EM6_SNAPSHOT.name}")
+    em6_df = pd.read_csv(EM6_SNAPSHOT, parse_dates=["trading_date"])
+else:
+    print("\nFetching em6 free/price generation-by-fuel data (live)...")
+    url = "https://api.em6.co.nz/ords/em6/data_api/free/price?grid_zone_id="
+    with urllib.request.urlopen(url, timeout=30) as resp:
+        em6_raw = json.loads(resp.read().decode())
+    em6_rows = []
+    for item in em6_raw["items"]:
+        td = pd.to_datetime(item["trading_date"]).normalize()
+        for gt in item["generation_type"]:
+            for key, val in gt.items():
+                if key.endswith("_mwh"):
+                    em6_rows.append({"trading_date": td, "fuel_em6": key[:-4].upper(), "gen_mwh_em6": val})
+    em6_df = pd.DataFrame(em6_rows)
+    em6_df["trading_date"] = em6_df["trading_date"].dt.tz_localize(None)
+    em6_df.to_csv(EM6_SNAPSHOT, index=False)
 
 # Day alignment (diagnosed in fix_em6_dayshift_and_rebuild_crosscheck.py): em6's
 # trading_date is one calendar day earlier than this project's NZT trading-day
 # convention for the same physical generation. A lag sweep shows it: HYD/WIN
 # correlation rises from r=0.78/0.51 (no shift) to r=0.998/0.999 (+1 day shift).
-# The shift is applied here so a re-run of this live fetch is aligned. The
+# The shift is applied after loading, to the saved or fetched data alike. The
 # diagnostic is in that script's docstring.
 EM6_DAY_SHIFT = 1
 em6_df["trading_date"] = em6_df["trading_date"] + pd.Timedelta(days=EM6_DAY_SHIFT)
-print(f"Fetched em6 data: {em6_df.trading_date.min().date()} to {em6_df.trading_date.max().date()}, "
-      f"{len(em6_raw['items'])} days, written to em6_free_generation_by_fuel_daily.csv")
+print(f"em6 data: {em6_df.trading_date.min().date()} to {em6_df.trading_date.max().date()}, "
+      f"{em6_df.trading_date.nunique()} days")
 
 # Mapping from em6 fuel codes to this project's fuel_std. COG/LIQ/BAT have no direct
 # analogue in this project's FUEL_STD set, so they are excluded from the cross-check

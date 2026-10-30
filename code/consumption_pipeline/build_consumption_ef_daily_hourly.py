@@ -50,44 +50,7 @@ hvdc_hourly = pd.read_csv(OUT_DIR / "hourly_hvdc_transfer_NI_SI.csv", parse_date
 log(f"Loaded HVDC transfer: {len(hvdc_daily)} daily rows, {len(hvdc_hourly)} hourly rows")
 
 
-# Consumption balance (same formulas as the monthly/annual script)
-# Same as build_consumption in build_consumption_ef_timeseries.py, which runs on import and so cannot be
-# imported here; change both together.
-def build_consumption(gen_df, hvdc_df, group_keys):
-    ni = gen_df[gen_df.island == "NI"].set_index(group_keys)
-    si = gen_df[gen_df.island == "SI"].set_index(group_keys)
-    h = hvdc_df.set_index(group_keys)
-
-    idx = ni.index.union(si.index).union(h.index)
-    ni = ni.reindex(idx, fill_value=0.0)
-    si = si.reindex(idx, fill_value=0.0)
-    h = h.reindex(idx, fill_value=0.0)
-
-    out = pd.DataFrame(index=idx)
-    out["NI_generation_MWh"] = ni["total_gen_MWh"]
-    out["NI_CO2_generated_kg"] = ni["total_CO2_kg"]
-    out["NI_EF_generation"] = (ni["total_CO2_kg"] / ni["total_gen_MWh"]).replace([np.inf, -np.inf], np.nan)
-    out["SI_generation_MWh"] = si["total_gen_MWh"]
-    out["SI_CO2_generated_kg"] = si["total_CO2_kg"]
-    out["SI_EF_generation"] = (si["total_CO2_kg"] / si["total_gen_MWh"]).replace([np.inf, -np.inf], np.nan)
-    out["SI_to_NI_MWh"] = h["SI_to_NI_MWh"]
-    out["NI_to_SI_MWh"] = h["NI_to_SI_MWh"]
-    out["net_to_NI_MWh"] = h["net_to_NI_MWh"]
-
-    out["NI_consumption_MWh"] = out["NI_generation_MWh"] + out["net_to_NI_MWh"]
-    out["SI_consumption_MWh"] = out["SI_generation_MWh"] - out["net_to_NI_MWh"]
-
-    out["NI_CO2_consumed_kg"] = (
-        out["NI_CO2_generated_kg"] - out["NI_to_SI_MWh"] * out["NI_EF_generation"]
-        + out["SI_to_NI_MWh"] * out["SI_EF_generation"]
-    )
-    out["SI_CO2_consumed_kg"] = (
-        out["SI_CO2_generated_kg"] - out["SI_to_NI_MWh"] * out["SI_EF_generation"]
-        + out["NI_to_SI_MWh"] * out["NI_EF_generation"]
-    )
-    out["NI_EF_consumption"] = out["NI_CO2_consumed_kg"] / out["NI_consumption_MWh"]
-    out["SI_EF_consumption"] = out["SI_CO2_consumed_kg"] / out["SI_consumption_MWh"]
-    return out.reset_index()
+from consumption_balance import build_consumption  # noqa: E402
 
 
 daily_cons = build_consumption(gen_daily, hvdc_daily, ["date"]).sort_values("date").reset_index(drop=True)
@@ -107,6 +70,8 @@ for name, d in [("daily", daily_cons), ("hourly", hourly_cons)]:
     co2_cons_total = d["NI_CO2_consumed_kg"] + d["SI_CO2_consumed_kg"]
     log(f"{name}: max |energy diff| = {(gen_total - cons_total).abs().max():.6f} MWh, "
         f"max |CO2 diff| = {(co2_gen_total - co2_cons_total).abs().max():.6f} kg (both expected: about 0)")
+    assert np.allclose(gen_total, cons_total, rtol=1e-9), f"{name}: island consumption does not balance generation"
+    assert np.allclose(co2_gen_total, co2_cons_total, rtol=1e-9), f"{name}: consumed CO2 does not balance generated CO2"
 
 daily_to_hourly = (
     hourly_cons.groupby(hourly_cons["date"])[["NI_consumption_MWh", "SI_consumption_MWh"]].sum()
@@ -115,6 +80,8 @@ chk = daily_to_hourly.join(daily_cons.set_index("date")[["NI_consumption_MWh", "
                             lsuffix="_h", rsuffix="_d")
 max_h2d = (chk["NI_consumption_MWh_h"] - chk["NI_consumption_MWh_d"]).abs().max()
 log(f"Hourly consumption sums to daily exactly: max |NI diff| = {max_h2d:.6f} MWh (expected: about 0)")
+assert len(chk) == len(daily_cons), "hourly consumption is missing days that the daily output has"
+assert np.allclose(chk["NI_consumption_MWh_h"], chk["NI_consumption_MWh_d"], rtol=1e-9), "hourly consumption does not sum to daily"
 
 # Outputs
 daily_out = daily_cons[[

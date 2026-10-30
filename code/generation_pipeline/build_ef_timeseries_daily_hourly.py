@@ -177,6 +177,9 @@ max_gen_diff = (chk["total_gen_MWh_daily"] - chk["total_gen_MWh_monthly"]).abs()
 max_co2_diff = (chk["total_CO2_kg_daily"] - chk["total_CO2_kg_monthly"]).abs().max()
 log(f"Daily-to-monthly reconciliation: max |gen diff| = {max_gen_diff:.6f} MWh, "
     f"max |CO2 diff| = {max_co2_diff:.6f} kg (expected: about 0)")
+assert len(chk) == len(monthly_existing), "daily output is missing months that the monthly output has"
+for c in ("total_gen_MWh", "total_CO2_kg"):
+    assert np.allclose(chk[f"{c}_daily"], chk[f"{c}_monthly"], rtol=1e-9), f"daily {c} does not sum to monthly"
 
 hourly_to_daily = (
     hourly_out.groupby(["island", "date"])
@@ -188,11 +191,15 @@ max_gen_diff2 = (chk2["total_gen_MWh_hourly"] - chk2["total_gen_MWh_daily"]).abs
 max_co2_diff2 = (chk2["total_CO2_kg_hourly"] - chk2["total_CO2_kg_daily"]).abs().max()
 log(f"Hourly-to-daily reconciliation: max |gen diff| = {max_gen_diff2:.6f} MWh, "
     f"max |CO2 diff| = {max_co2_diff2:.6f} kg (expected: about 0)")
+assert len(chk2) == len(daily_out), "hourly output is missing days that the daily output has"
+for c in ("total_gen_MWh", "total_CO2_kg"):
+    assert np.allclose(chk2[f"{c}_hourly"], chk2[f"{c}_daily"], rtol=1e-9), f"hourly {c} does not sum to daily"
 
 nan_hours = int(hourly_out["EF_kg_per_MWh"].isna().sum())
 log(f"\nNOTE: hours are local clock hours. The clocks-forward day (last Sunday of September) has no "
     f"02:00 row; on the clocks-back day (first Sunday of April) hour 2 holds both runs of 02:00. "
     f"Hourly rows with EF = NaN: {nan_hours} (expected 0).")
+assert nan_hours == 0, "hourly rows with no emission factor"
 log("\nFuel attribution: fuel_attribution.py resolves factors by generator code and "
     "register unit, with the sourced overrides in fuel_attribution_overrides.csv (Huntly 1-4 coal/gas "
     "split, E3P/P40 units, Kinleith wood, Matahina fill, records inactive after "

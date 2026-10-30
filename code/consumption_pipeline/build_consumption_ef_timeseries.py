@@ -82,45 +82,7 @@ for c in ["SI_to_NI_MWh", "NI_to_SI_MWh", "net_to_NI_MWh"]:
 
 log(f"Loaded HVDC transfer: {len(hvdc_monthly)} monthly rows, {len(hvdc_annual)} annual rows")
 
-# Consumption balance
-def build_consumption(gen_df, hvdc_df, group_keys):
-    ni = gen_df[gen_df.island == "NI"].set_index(group_keys)
-    si = gen_df[gen_df.island == "SI"].set_index(group_keys)
-    h = hvdc_df.set_index(group_keys)
-
-    idx = ni.index.union(si.index).union(h.index)
-    ni = ni.reindex(idx, fill_value=0.0)
-    si = si.reindex(idx, fill_value=0.0)
-    h = h.reindex(idx, fill_value=0.0)
-
-    out = pd.DataFrame(index=idx)
-    out["NI_generation_MWh"] = ni["total_gen_MWh"]
-    out["NI_CO2_generated_kg"] = ni["total_CO2_kg"]
-    out["NI_EF_generation"] = (ni["total_CO2_kg"] / ni["total_gen_MWh"]).replace([np.inf, -np.inf], np.nan)
-    out["SI_generation_MWh"] = si["total_gen_MWh"]
-    out["SI_CO2_generated_kg"] = si["total_CO2_kg"]
-    out["SI_EF_generation"] = (si["total_CO2_kg"] / si["total_gen_MWh"]).replace([np.inf, -np.inf], np.nan)
-    out["SI_to_NI_MWh"] = h["SI_to_NI_MWh"]
-    out["NI_to_SI_MWh"] = h["NI_to_SI_MWh"]
-    out["net_to_NI_MWh"] = h["net_to_NI_MWh"]
-
-    out["NI_consumption_MWh"] = out["NI_generation_MWh"] + out["net_to_NI_MWh"]
-    out["SI_consumption_MWh"] = out["SI_generation_MWh"] - out["net_to_NI_MWh"]
-
-    out["NI_CO2_consumed_kg"] = (
-        out["NI_CO2_generated_kg"] - out["NI_to_SI_MWh"] * out["NI_EF_generation"]
-        + out["SI_to_NI_MWh"] * out["SI_EF_generation"]
-    )
-    out["SI_CO2_consumed_kg"] = (
-        out["SI_CO2_generated_kg"] - out["SI_to_NI_MWh"] * out["SI_EF_generation"]
-        + out["NI_to_SI_MWh"] * out["NI_EF_generation"]
-    )
-
-    out["NI_EF_consumption"] = out["NI_CO2_consumed_kg"] / out["NI_consumption_MWh"]
-    out["SI_EF_consumption"] = out["SI_CO2_consumed_kg"] / out["SI_consumption_MWh"]
-
-    out = out.reset_index()
-    return out
+from consumption_balance import build_consumption  # noqa: E402
 
 
 monthly_cons = build_consumption(gen_monthly, hvdc_monthly, ["year", "month"])
@@ -144,6 +106,8 @@ chk["co2_cons_total"] = chk["NI_CO2_consumed_kg"] + chk["SI_CO2_consumed_kg"]
 max_co2_diff = (chk["co2_gen_total"] - chk["co2_cons_total"]).abs().max()
 log(f"Emissions conservation (sum of generated CO2 == sum of consumed CO2, nationally): "
     f"max |diff| = {max_co2_diff:.6f} kg (expected: about 0)")
+assert np.allclose(chk["gen_total"], chk["cons_total"], rtol=1e-9), "island consumption does not balance generation"
+assert np.allclose(chk["co2_gen_total"], chk["co2_cons_total"], rtol=1e-9), "consumed CO2 does not balance generated CO2"
 
 log(f"\nAnnual NI consumption-based EF: {annual_cons.set_index('year')['NI_EF_consumption'].round(1).to_dict()}")
 log(f"Annual NI generation-based EF:  {annual_cons.set_index('year')['NI_EF_generation'].round(1).to_dict()}")

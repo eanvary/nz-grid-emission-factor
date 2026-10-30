@@ -82,6 +82,11 @@ The Electricity Authority files the database was built from, as published on Ele
 Information (EMI) when the database was built. EMI revises its datasets, so a fresh download can differ
 from these copies.
 
+One change was made to the downloaded files. The 2015 to 2019 `Grid_import` and `HVDC_flows` files
+write the trading date as DD/MM/YYYY, and later files use YYYY-MM-DD. The date column of those files was
+rewritten to YYYY-MM-DD with `code/projection_pipeline/fix_ddmmyyyy_dates.py`; no other value was changed.
+Run that script once on a fresh EMI download before the pipelines.
+
 | Archive | Contents |
 |---|---|
 | `ea_emi_generation_md.zip` | `EA_EMI_raw/YYYYMM_Generation_MD.csv`, half-hourly metered generation, January 2015 to December 2025 |

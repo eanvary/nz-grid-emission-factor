@@ -96,8 +96,10 @@ record("A5", "Completeness", "Daily EF table has one row per island per calendar
        f"actual={len(daily)}, expected={expected_days}")
 
 hourly = pd.read_csv(OUT_DIR / "hourly_emission_factor_NI_SI.csv", parse_dates=["datetime", "date"])
-expected_hours = expected_days * 24
-record("A6", "Completeness", "Hourly EF table has 24 rows/day/island (fixed-grid convention)",
+# Local clock hours: 23 on the clocks-forward day, which has no 02:00.
+scope_dates = pd.date_range(pd.Timestamp(first_y, first_m, 1), pd.Timestamp(last_y, last_m, 1) + pd.offsets.MonthEnd(0))
+expected_hours = int(np.where(periods_in_day(scope_dates) == 46, 23, 24).sum()) * 2  # x2 islands
+record("A6", "Completeness", "Hourly EF table has one row per local clock hour per island",
        "PASS" if len(hourly) == expected_hours else "FAIL",
        f"actual={len(hourly)}, expected={expected_hours}")
 

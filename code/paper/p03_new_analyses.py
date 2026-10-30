@@ -29,7 +29,7 @@ from scipy import stats
 
 ROOT = Path(sys.argv[1]).resolve(); OUT = Path(sys.argv[2]).resolve(); OUT.mkdir(parents=True, exist_ok=True)
 EDGS = ROOT / "output" / "edgs"; T = ROOT / "analysis_paper" / "tables"
-PAPER = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[2]
 SCEN = ["Reference", "Growth", "Constraint", "Innovation", "Environmental"]
 MFE_2025 = 0.0786625
 N = {}
@@ -199,7 +199,7 @@ na = nat[nat.scenario == "Reference"].set_index("year").annual_national_ef
 N["reference_annual_g_per_kwh"] = {y: {"NI": r1(1000 * ni[y]), "national": r1(1000 * na[y]), "NI_over_national": r2(ni[y] / na[y])} for y in (2024, 2025, 2027, 2030, 2035, 2049, 2050)}
 
 # A6 screening bound
-reg = pd.read_csv(PAPER / "Figure" / "analysis" / "GRID_HETEROGENEITY_REGISTER.csv")
+reg = pd.read_csv(REPO / "data" / "literature_review" / "GRID_HETEROGENEITY_REGISTER.csv")
 reg.loc[reg.system == "New Zealand", ["max_intensity", "national_average", "reference_year"]] = [r2(1000 * ni[2027]), r2(1000 * na[2027]), "2027"]
 reg.to_csv(OUT / "GRID_HETEROGENEITY_REGISTER_v1.csv", index=False)
 sb = []

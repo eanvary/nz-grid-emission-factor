@@ -42,7 +42,10 @@ the 2015 to 2019 grid import and HVDC files use day-first dates.
      output is the released `phase3_eui_derived_v2.csv`.
    - `p03_run_chain.py <copy_root> <python>`
    - `p03_new_analyses.py <copy_root> <out_dir>`, `p03_six_order_sensitivity.py <copy_root> <out_dir>`,
-     `p03_temporal_by_year.py <copy_root> <out_dir>`, `p03_build_supplement.py <out.docx> <copy_root>`
+     `p03_temporal_by_year.py <copy_root> <out_dir>`
+   - `p03_build_supplement.py <out.docx> <copy_root>` builds the supplementary material. It also reads the
+     authors' figure, reference list and coding-agreement files, which are not released, so it does not run
+     from this repository.
 6. Figures and tables (`code/figures/`):
    - `build_fig2_prisma.py <extraction workbook>` and `build_fig3_disclosure.py <extraction workbook>`
    - `build_fig4_treatment_schematic_v2.py <copy_root>`

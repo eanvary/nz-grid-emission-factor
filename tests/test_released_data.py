@@ -11,6 +11,7 @@ from fuel_attribution import periods_in_day  # noqa: E402
 
 GEN = REPO / "data" / "historical" / "generation_basis"
 CONS = REPO / "data" / "historical" / "consumption_basis"
+VAL = REPO / "data" / "historical" / "validation" / "detail"
 hourly = pd.read_csv(GEN / "hourly_emission_factor_NI_SI.csv", parse_dates=["date"])
 
 
@@ -55,6 +56,15 @@ def test_consumption_balances_generation():
 def test_series_ends_in_december_2025():
     assert hourly["date"].max() == pd.Timestamp("2025-12-31")
     assert pd.read_csv(GEN / "annual_emission_factor_NI_SI.csv")["year"].max() == 2025
+    # Tables built by other scripts must cover the same period, not an earlier, longer run.
+    annual = pd.read_csv(GEN / "annual_emission_factor_NI_SI.csv")
+    plants = pd.read_csv(GEN / "plant_level_generation_emissions_2015_2025.csv")
+    assert np.isclose(plants.total_gen_MWh.sum(), annual.total_gen_MWh.sum(), rtol=1e-9)
+    for f in VAL.glob("ipcc_uncertainty_by_island_*.csv"):
+        years = pd.read_csv(f)["year"]
+        assert years.min() == 2015 and years.max() == 2025, f.name
+    status = pd.read_csv(REPO / "data" / "historical" / "validation" / "DATA_QUALITY_ASSESSMENT_RESULTS.csv")["status"]
+    assert (status != "FAIL").all()
 
 
 def test_decomposition_components_sum_to_total():

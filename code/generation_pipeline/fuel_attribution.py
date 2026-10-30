@@ -54,9 +54,9 @@ LAST_MONTH = "202512"
 NZ_TZ = "Pacific/Auckland"
 
 
-def raw_files(kind):
-    """Monthly EMI files of one kind (e.g. 'Generation_MD') within the database period."""
-    return [f for f in sorted(GEN_DIR.glob(f"*_{kind}.csv")) if f.name[:6] <= LAST_MONTH]
+def raw_files(kind, last=LAST_MONTH):
+    """Monthly EMI files of one kind (e.g. 'Generation_MD') up to month `last` (default: the database period)."""
+    return [f for f in sorted(GEN_DIR.glob(f"*_{kind}.csv")) if f.name[:6] <= last]
 
 
 def periods_in_day(dates):
@@ -335,7 +335,8 @@ class FuelAttribution:
         (TP1-TP50). months: optional iterable of 'YYYYMM'. exclude_cogen drops EMI Tech_Code
         'Cogen' rows (fills are never cogeneration). Island is not assigned here."""
         parts = []
-        for f in raw_files("Generation_MD"):
+        # An explicit month list may reach past the database period (the 2026 em6 cross-check).
+        for f in raw_files("Generation_MD", last=max(months) if months is not None else LAST_MONTH):
             ym = f.name[:6]
             if months is not None and ym not in set(months):
                 continue

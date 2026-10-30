@@ -4,14 +4,14 @@ A2,Completeness,"All HVDC_flows monthly files present, no gaps (2015-01 to 2025-
 A3,Completeness,"No suspiciously small (<1KB, likely truncated/error-page) raw files",PASS,[]
 A4,Completeness,"Monthly EF table has exactly 264 rows (132 months x 2 islands, 2015-01 to 2025-12)",PASS,actual=264
 A5,Completeness,"Daily EF table has one row per island per calendar day, full range",PASS,"actual=8036, expected=8036"
-A6,Completeness,Hourly EF table has 24 rows/day/island (fixed-grid convention),FAIL,"actual=192842, expected=192864"
+A6,Completeness,Hourly EF table has one row per local clock hour per island,PASS,"actual=192842, expected=192842"
 A7,Completeness,"No duplicate (island, date, hour) rows in hourly table",PASS,0 duplicates
 A8,Completeness,"No duplicate (island, date) rows in daily table",PASS,0 duplicates
 B1,Consistency,Hourly sums reconcile exactly to daily table,PASS,"max gen diff=0.000000000 MWh, max CO2 diff=0.000000007 kg"
 B2,Consistency,Daily sums reconcile exactly to monthly table,PASS,"max gen diff=0.000000000 MWh, max CO2 diff=0.000000119 kg"
 B3,Consistency,Monthly sums reconcile exactly to annual table,PASS,max gen diff=0.000000004 MWh
 B4,Consistency,Fuel-mix breakdown sums to the same total as monthly EF table,PASS,max diff=0.000000000 MWh
-B5,Consistency,Plant-level total generation matches EF-pipeline annual total,FAIL,"plant=479.319 TWh, EF-pipeline=451.483 TWh"
+B5,Consistency,Plant-level total generation matches EF-pipeline annual total,PASS,"plant=451.483 TWh, EF-pipeline=451.483 TWh"
 B6,Consistency,HVDC directional flow components are non-negative (signs pre-separated),PASS,0 negative rows
 B7,Consistency,"Zone generation and CO2, summed by island and month, equal the island database (2015-2025, within 0.01%)",PASS,"264 island-months, 0 missing on either side; max relative diff generation 2.18e-16, CO2 2.68e-16 (worst ('NI', np.int64(2022), np.int64(5)))"
 C1,Plausibility,"No negative generation values, hourly table",PASS,0 negative rows
@@ -36,7 +36,7 @@ F2,Provenance,"All known pipeline bugs documented with fix date, magnitude, and 
 G1,Outliers,"NI daily EF: count of >3xIQR outliers (flagged for manual review, not auto-removed)",PASS,0/4018 rows (0.00%) beyond 3xIQR
 H1,Consumption,Consumption-side annual table covers all 11 years (2015-01 to 2025-12),PASS,"years present=[2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]"
 H2,Consumption,"National energy & CO2 conservation (generation == consumption, summed both islands), annual",PASS,"max energy diff=0.000000007 MWh, max CO2 diff=0.000000477 kg"
-H3,Consumption,"Hourly consumption table has one row per hour, full 2015-01 to 2025-12 range",FAIL,"actual=96421, expected=96432"
+H3,Consumption,"Hourly consumption table has one row per hour, full 2015-01 to 2025-12 range",PASS,"actual=96421, expected=96421"
 H4,Consumption,National energy conservation holds exactly at hourly resolution too,PASS,max diff=0.000000000 MWh
 H5,Consumption,"NI consumption-based EF <= NI generation-based EF in every year (imports dilute, never inflate)",PASS,"NI_EF_consumption vs NI_EF_generation by year: {2015: True, 2016: True, 2017: True, 2018: True, 2019: True, 2020: True, 2021: True, 2022: True, 2023: True, 2024: True, 2025: True}"
 H6,Consumption,SI consumption EF is higher in already-identified dry years than other years (convergent evidence),PASS,dry-year mean=5.79 kg/MWh vs other-year mean=2.05 kg/MWh
